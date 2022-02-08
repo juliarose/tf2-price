@@ -1,5 +1,5 @@
 [package]
-name = "tf2_price"
+name = "tf2-price"
 version = "0.1.0"
 edition = "2021"
 
