@@ -148,6 +148,7 @@ impl TryFrom<String> for Currencies {
 }
 
 impl fmt::Display for Currencies {
+    
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut strings: Vec<String> = Vec::new();
         
