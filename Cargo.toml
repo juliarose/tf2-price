@@ -7,7 +7,6 @@ authors = ["Julia"]
 homepage = "https://github.com/juliarose/tf2-price"
 repository = "https://github.com/juliarose/tf2-price"
 license = "MIT"
-license-file = "LICENSE"
 keywords = ["tf2", "steam"]
 readme = "README.md"
 
