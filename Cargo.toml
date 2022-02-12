@@ -1,9 +1,15 @@
 [package]
 name = "tf2-price"
+description = "Price formating for Team Fortress 2 items."
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Julia"]
+homepage = "https://github.com/juliarose/tf2-price"
+repository = "https://github.com/juliarose/tf2-price"
+license = "MIT"
+license-file = "LICENSE"
+keywords = ["tf2", "steam"]
+readme = "README.md"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

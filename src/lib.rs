@@ -7,6 +7,7 @@ pub const ONE_SCRAP: u32 = ONE_WEAPON * 2;
 pub const ONE_REC: u32 = ONE_SCRAP * 3;
 pub const ONE_REF: u32 = ONE_REC * 3;
 
+// Generate value for refined metal
 #[macro_export]
 macro_rules! refined {
     ($a:expr) => {
@@ -16,20 +17,13 @@ macro_rules! refined {
     }
 }
 
+// Generate value for scrap metal
 #[macro_export]
 macro_rules! scrap {
     ($a:expr) => {
         {
             $a * 2
         }
-    }
-}
-
-fn pluralize(symbol: &str, amount: usize) -> String {
-    if amount == 1 {
-        symbol.to_string()
-    } else {
-        format!("{}s", symbol)
     }
 }
 
@@ -45,11 +39,11 @@ pub struct Currencies {
     pub metal: u32,
 }
 
-fn get_metal_float(value: u32) -> f32 {
-    f32::trunc((value as f32 / (ONE_REF as f32)) * 100.0) / 100.0
-}
-
 impl Currencies {
+    
+    pub fn new() -> Self {
+        Self::default()
+    }
     
     pub fn default() -> Self {
         Self {
@@ -81,6 +75,10 @@ impl Currencies {
                 },
             };
         }
+    }
+    
+    pub fn empty(&self) -> bool {
+        self.keys == 0 && self.metal == 0
     }
 }
 
@@ -165,6 +163,7 @@ impl fmt::Display for Currencies {
     }
 }
 
+// For use in requests. 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 pub struct CurrenciesForm {
     pub keys: Option<u32>,
@@ -189,6 +188,18 @@ impl From<Currencies> for CurrenciesForm {
         
         form
     }
+}
+
+fn pluralize(symbol: &str, amount: usize) -> String {
+    if amount == 1 {
+        symbol.to_string()
+    } else {
+        format!("{}s", symbol)
+    }
+}
+
+fn get_metal_float(value: u32) -> f32 {
+    f32::trunc((value as f32 / (ONE_REF as f32)) * 100.0) / 100.0
 }
 
 #[cfg(test)]
