@@ -3,7 +3,7 @@
 Price formatting for Team Fortress 2 items.
 
 ```rs
-use tf2_price::{Currencies};
+use tf2_price::Currencies;
 
 let currencies = Currencies {
     keys: 5,
