@@ -9,9 +9,6 @@ repository = "https://github.com/juliarose/tf2-price"
 license = "MIT"
 keywords = ["tf2", "steam"]
 readme = "README.md"
-exclude = [
-    "benches/*"
-]
 
 [dependencies]
 serde = { version = "^1.0", features = ["derive"] }
