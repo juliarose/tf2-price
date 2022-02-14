@@ -12,12 +12,12 @@ let currencies = Currencies {
 };
 
 println!("{}", currencies);
-// "5 keys, 2 ref"
+// "5 keys, 2.33 ref"
 
 let currencies = Currencies::try_from("5 keys, 2.33 ref").unwrap();
 // Currencies {
 //     keys: 5,
-//     metal: 36,
+//     metal: 42,
 // }
 ```
 
