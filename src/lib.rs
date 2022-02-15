@@ -1,6 +1,6 @@
 mod helpers;
 
-use std::fmt;
+use std::{fmt, ops::{Add, Sub, Mul, Div}};
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
 
 pub const ONE_WEAPON: u32 = 1;
@@ -75,8 +75,16 @@ impl Currencies {
         }
     }
     
-    pub fn to_value(&self, key_price: u32) -> u32 {
+    pub fn to_metal(&self, key_price: u32) -> u32 {
         self.metal + (self.keys * key_price)
+    }
+    
+    pub fn from_metal(&self, metal: u32, key_price: u32) -> Self {
+        Self {
+            // Will be 0 if metal is 30 and 32 (rounds down)
+            keys: metal / key_price,
+            metal: metal % key_price,
+        }
     }
     
     pub fn is_empty(&self) -> bool {
@@ -86,15 +94,14 @@ impl Currencies {
     pub fn round(&mut self, rounding: &Rounding) {
         if self.metal > 0 {
             match rounding {
-                // no rounding needed if the metal value is an even number
+                // No rounding needed if the metal value is an even number.
                 Rounding::Up if self.metal % 2 != 0 => {
                     self.metal = self.metal + 1;
                 },
-                // no rounding needed if the metal value is an even number
+                // No rounding needed if the metal value is an even number.
                 Rounding::Down if self.metal % 2 != 0 => {
-                    // if we have keys, this is allowed to be 0
-                    // otherwise this needs to be above 1,
-                    // otherwise we will have none on both fields (this shouldn't happen)
+                    // If we have keys, this is allowed to be 0.
+                    // Otherwise we will have none on both fields (this shouldn't happen)
                     if self.metal > 1 || self.keys > 0 {
                         self.metal = self.metal - 1;
                     }
@@ -122,6 +129,50 @@ impl Currencies {
                     // do nothing
                 },
             };
+        }
+    }
+}
+
+impl Add<Currencies> for Currencies {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            keys: self.keys + other.keys,
+            metal: self.metal + other.metal,
+        }
+    }
+}
+
+impl Sub<Currencies> for Currencies {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            keys: self.keys - other.keys,
+            metal: self.metal - other.metal,
+        }
+    }
+}
+
+impl Div<u32> for Currencies {
+    type Output = Self;
+
+    fn div(self, other: u32) -> Self {
+        Self {
+            keys: self.keys / other,
+            metal: self.metal / other,
+        }
+    }
+}
+
+impl Mul<u32> for Currencies {
+    type Output = Self;
+
+    fn mul(self, other: u32) -> Self {
+        Self {
+            keys: self.keys * other,
+            metal: self.metal * other,
         }
     }
 }
@@ -292,6 +343,74 @@ mod tests {
     }
     
     #[test]
+    fn currencies_added() {
+        let currencies = {
+            let a = Currencies {
+                keys: 10,
+                metal: refined!(10),
+            };
+            let b = Currencies {
+                keys: 5,
+                metal: refined!(5),
+            };
+            
+            a + b
+        };
+        
+        assert_eq!(currencies, Currencies {
+            keys: 15,
+            metal: refined!(15),
+        });
+    }
+    
+    #[test]
+    fn currencies_subtracted() {
+        let currencies = {
+            let a = Currencies {
+                keys: 10,
+                metal: refined!(10),
+            };
+            let b = Currencies {
+                keys: 5,
+                metal: refined!(5),
+            };
+            
+            a - b
+        };
+        
+        assert_eq!(currencies, Currencies {
+            keys: 5,
+            metal: refined!(5),
+        });
+    }
+    
+    #[test]
+    fn currencies_multiplied_by_u32() {
+        let currencies = Currencies {
+            keys: 10,
+            metal: refined!(10),
+        };
+        
+        assert_eq!(currencies * 5, Currencies {
+            keys: 50,
+            metal: refined!(50),
+        });
+    }
+    
+    #[test]
+    fn currencies_divided_by_u32() {
+        let currencies = Currencies {
+            keys: 10,
+            metal: refined!(10),
+        };
+        
+        assert_eq!(currencies / 5, Currencies {
+            keys: 2,
+            metal: refined!(2),
+        });
+    }
+    
+    #[test]
     fn parses_currencies_from_string() {
         let currencies = Currencies::try_from("2 keys, 23.44 ref").unwrap();
         
@@ -370,13 +489,13 @@ mod tests {
     }
     
     #[test]
-    fn converts_to_value() {
+    fn converts_to_metal() {
         let currencies = Currencies {
             keys: 1,
             metal: refined!(23) + scrap!(4),
         };
         let key_price = 422;
-        let value = currencies.to_value(key_price);
+        let value = currencies.to_metal(key_price);
         
         assert_eq!(value, 844);
     }
