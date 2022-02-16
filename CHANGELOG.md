@@ -15,3 +15,16 @@
   
 ### Removed
 - `CurrenciesForm` struct, as `Currencies` can now serialize/deserialize into the proper format now.
+
+## 0.3.0 (2022-04-15)
+
+### Added
+- `Currencies.from_metal` associated function.
+- `std::ops::Add<Currencies>` implementation for `Currencies`.
+- `std::ops::Sub<Currencies>` implementation for `Currencies`.
+- `std::ops::Div<i32>` implementation for `Currencies`.
+- `std::ops::Mul<i32>` implementation for `Currencies`.
+
+### Changed
+- `Currencies.to_value` method is now `Currencies.to_metal`.
+- `Currencies` uses i32 instead of u32.

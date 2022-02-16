@@ -3,15 +3,15 @@ mod helpers;
 use std::{fmt, ops::{Add, Sub, Mul, Div}};
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
 
-pub const ONE_WEAPON: u32 = 1;
-pub const ONE_SCRAP: u32 = ONE_WEAPON * 2;
-pub const ONE_REC: u32 = ONE_SCRAP * 3;
-pub const ONE_REF: u32 = ONE_REC * 3;
+pub const ONE_WEAPON: i32 = 1;
+pub const ONE_SCRAP: i32 = ONE_WEAPON * 2;
+pub const ONE_REC: i32 = ONE_SCRAP * 3;
+pub const ONE_REF: i32 = ONE_REC * 3;
 
-const KEY_SYMBOL: &'static str = "key";
-const KEYS_SYMBOL: &'static str = "keys";
-const METAL_SYMBOL: &'static str = "ref";
-const INVALID_CURRENCIES_FORMAT: &'static str = "Invalid currencies format";
+const KEY_SYMBOL: &str = "key";
+const KEYS_SYMBOL: &str = "keys";
+const METAL_SYMBOL: &str = "ref";
+const INVALID_CURRENCIES_FORMAT: &str = "Invalid currencies format";
 
 // Generate value for refined metal
 #[macro_export]
@@ -57,34 +57,37 @@ pub enum Rounding {
 #[serde(remote = "Self")]
 pub struct Currencies {
     #[serde(default)]
-    pub keys: u32,
+    pub keys: i32,
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
-    pub metal: u32,
+    pub metal: i32,
+}
+
+impl Default for Currencies {
+    
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Currencies {
     
     pub fn new() -> Self {
-        Self::default()
-    }
-    
-    pub fn default() -> Self {
         Self {
             keys: 0,
-            metal: 0
+            metal: 0,
         }
     }
     
-    pub fn to_metal(&self, key_price: u32) -> u32 {
-        self.metal + (self.keys * key_price)
-    }
-    
-    pub fn from_metal(&self, metal: u32, key_price: u32) -> Self {
+    pub fn from_metal(metal: i32, key_price: u32) -> Self {
         Self {
             // Will be 0 if metal is 30 and 32 (rounds down)
-            keys: metal / key_price,
-            metal: metal % key_price,
+            keys: metal / key_price as i32,
+            metal: metal % key_price as i32,
         }
+    }
+    
+    pub fn to_metal(&self, key_price: u32) -> i32 {
+        self.metal + (self.keys * key_price as i32)
     }
     
     pub fn is_empty(&self) -> bool {
@@ -92,43 +95,47 @@ impl Currencies {
     }
     
     pub fn round(&mut self, rounding: &Rounding) {
-        if self.metal > 0 {
-            match rounding {
-                // No rounding needed if the metal value is an even number.
-                Rounding::Up if self.metal % 2 != 0 => {
-                    self.metal = self.metal + 1;
-                },
-                // No rounding needed if the metal value is an even number.
-                Rounding::Down if self.metal % 2 != 0 => {
-                    // If we have keys, this is allowed to be 0.
-                    // Otherwise we will have none on both fields (this shouldn't happen)
-                    if self.metal > 1 || self.keys > 0 {
-                        self.metal = self.metal - 1;
+        if self.metal == 0 {
+            return;
+        }
+        
+        match *rounding {
+            // No rounding needed if the metal value is an even number.
+            Rounding::Up if self.metal % 2 != 0 => {
+                self.metal += 1;
+            },
+            // No rounding needed if the metal value is an even number.
+            Rounding::Down if self.metal % 2 != 0 => {
+                self.metal -= 1;
+            },
+            Rounding::Refined => {
+                let value = self.metal + ONE_REF / 2;
+                
+                self.metal = value - (value % ONE_REF);
+            },
+            Rounding::UpRefined => {
+                let remainder = self.metal % ONE_REF;
+                
+                if remainder != 0 {
+                    if self.metal > 0 {
+                        self.metal -= remainder + -ONE_REF;
+                    } else {
+                        self.metal -= remainder;
                     }
-                },
-                Rounding::Refined => {
-                    let value = self.metal + ONE_REF / 2;
-                    
-                    self.metal = value - (value % ONE_REF);
-                },
-                Rounding::UpRefined => {
-                    let remainder = self.metal % ONE_REF;
-                    
-                    if remainder > 0 {
-                        self.metal = (self.metal - remainder) + ONE_REF;
+                }
+            },
+            Rounding::DownRefined => {
+                let remainder = self.metal % ONE_REF;
+                
+                if remainder != 0 {
+                    if self.metal > 0 {
+                        self.metal -= remainder;
+                    } else {
+                        self.metal -= remainder + ONE_REF;
                     }
-                },
-                Rounding::DownRefined => {
-                    let remainder = self.metal % ONE_REF;
-                    
-                    if remainder > 0 {
-                        self.metal = self.metal - remainder;
-                    }
-                },
-                _ => {
-                    // do nothing
-                },
-            };
+                }
+            },
+            _ => {},
         }
     }
 }
@@ -155,10 +162,10 @@ impl Sub<Currencies> for Currencies {
     }
 }
 
-impl Div<u32> for Currencies {
+impl Div<i32> for Currencies {
     type Output = Self;
 
-    fn div(self, other: u32) -> Self {
+    fn div(self, other: i32) -> Self {
         Self {
             keys: self.keys / other,
             metal: self.metal / other,
@@ -166,10 +173,10 @@ impl Div<u32> for Currencies {
     }
 }
 
-impl Mul<u32> for Currencies {
+impl Mul<i32> for Currencies {
     type Output = Self;
 
-    fn mul(self, other: u32) -> Self {
+    fn mul(self, other: i32) -> Self {
         Self {
             keys: self.keys * other,
             metal: self.metal * other,
@@ -184,7 +191,7 @@ impl<'a> TryFrom<&'a str> for Currencies {
         let mut currencies = Currencies::default();
         
         for element in text.split(", ") {
-            let mut element_split = element.split(" ");
+            let mut element_split = element.split(' ');
             let (
                 count_str,
                 currency_name,
@@ -207,7 +214,7 @@ impl<'a> TryFrom<&'a str> for Currencies {
             
             match currency_name {
                 KEY_SYMBOL | KEYS_SYMBOL => {
-                    if let Ok(count) = count_str.parse::<u32>() {
+                    if let Ok(count) = count_str.parse::<i32>() {
                         currencies.keys = count;
                     } else {
                         return Err("Error parsing key count");
@@ -215,7 +222,7 @@ impl<'a> TryFrom<&'a str> for Currencies {
                 },
                 METAL_SYMBOL => {
                     if let Ok(count) = count_str.parse::<f32>() {
-                        let value: u32 = (count * (ONE_REF as f32)).round() as u32;
+                        let value: i32 = (count * (ONE_REF as f32)).round() as i32;
                         
                         currencies.metal = value;
                     } else {
@@ -304,7 +311,7 @@ impl Serialize for Currencies {
             let float = helpers::get_metal_float(self.metal);
             
             if float.fract() == 0.0 {
-                currencies.serialize_field("metal", &(float as u32))?;
+                currencies.serialize_field("metal", &(float as i32))?;
             } else {
                 currencies.serialize_field("metal", &float)?;
             }
@@ -385,7 +392,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_multiplied_by_u32() {
+    fn currencies_multiplied_by_i32() {
         let currencies = Currencies {
             keys: 10,
             metal: refined!(10),
@@ -398,7 +405,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_divided_by_u32() {
+    fn currencies_divided_by_i32() {
         let currencies = Currencies {
             keys: 10,
             metal: refined!(10),
@@ -522,6 +529,54 @@ mod tests {
         currencies.round(&Rounding::DownRefined);
         
         assert_eq!(currencies.metal, refined!(23));
+    }
+    
+    #[test]
+    fn rounds_metal_up_refined_negative() {
+        let mut currencies = Currencies {
+            keys: 1,
+            metal: -refined!(23) + scrap!(1),
+        };
+        
+        currencies.round(&Rounding::UpRefined);
+        
+        assert_eq!(currencies.metal, -refined!(22));
+    }
+    
+    #[test]
+    fn rounds_metal_up_refined_negative_whole_value() {
+        let mut currencies = Currencies {
+            keys: 1,
+            metal: -refined!(23),
+        };
+        
+        currencies.round(&Rounding::UpRefined);
+        
+        assert_eq!(currencies.metal, -refined!(23));
+    }
+    
+    #[test]
+    fn rounds_metal_down_refined_negative() {
+        let mut currencies = Currencies {
+            keys: 1,
+            metal: -refined!(23) + scrap!(8),
+        };
+        
+        currencies.round(&Rounding::DownRefined);
+        
+        assert_eq!(currencies.metal, -refined!(23));
+    }
+    
+    #[test]
+    fn rounds_metal_down_refined_negative_whole_value() {
+        let mut currencies = Currencies {
+            keys: 1,
+            metal: -refined!(23),
+        };
+        
+        currencies.round(&Rounding::DownRefined);
+        
+        assert_eq!(currencies.metal, -refined!(23));
     }
     
     #[test]
