@@ -16,7 +16,7 @@
 ### Removed
 - `CurrenciesForm` struct, as `Currencies` can now serialize/deserialize into the proper format now.
 
-## 0.3.0 (2022-04-15)
+## 0.3.0 (2022-04-20)
 
 ### Added
 - `Currencies.from_metal` associated function.
