@@ -22,3 +22,7 @@ pub fn pluralize(amount: i32, singular: &'static str, plural: &'static str) -> &
 pub fn get_metal_float(value: i32) -> f32 {
     f32::trunc((value as f32 / (ONE_REF as f32)) * 100.0) / 100.0
 }
+
+pub fn get_metal_from_float(value: f32) -> i32 {
+    (value * (ONE_REF as f32)).round() as i32
+}

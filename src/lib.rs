@@ -1,7 +1,6 @@
 mod helpers;
 
-use std::{fmt, ops::{Add, Sub, Mul, Div}};
-use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
+pub use helpers::{get_metal_from_float, get_metal_float};
 
 pub const ONE_WEAPON: i32 = 1;
 pub const ONE_SCRAP: i32 = ONE_WEAPON * 2;
@@ -12,6 +11,9 @@ const KEY_SYMBOL: &str = "key";
 const KEYS_SYMBOL: &str = "keys";
 const METAL_SYMBOL: &str = "ref";
 const INVALID_CURRENCIES_FORMAT: &str = "Invalid currencies format";
+
+use std::{fmt, ops::{Add, Sub, Mul, Div, AddAssign, SubAssign}};
+use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
 
 // Generate value for refined metal
 #[macro_export]
@@ -151,6 +153,33 @@ impl Add<Currencies> for Currencies {
     }
 }
 
+impl Add<&Currencies> for Currencies {
+    type Output = Self;
+
+    fn add(self, other: &Self) -> Self {
+        Self {
+            keys: self.keys + other.keys,
+            metal: self.metal + other.metal,
+        }
+    }
+}
+
+impl AddAssign<Currencies> for Currencies {
+    
+    fn add_assign(&mut self, other: Self) {
+        self.keys += other.keys;
+        self.metal += other.metal;
+    }
+}
+
+impl AddAssign<&Currencies> for Currencies {
+    
+    fn add_assign(&mut self, other: &Self) {
+        self.keys += other.keys;
+        self.metal += other.metal;
+    }
+}
+
 impl Sub<Currencies> for Currencies {
     type Output = Self;
 
@@ -159,6 +188,33 @@ impl Sub<Currencies> for Currencies {
             keys: self.keys - other.keys,
             metal: self.metal - other.metal,
         }
+    }
+}
+
+impl Sub<&Currencies> for Currencies {
+    type Output = Self;
+
+    fn sub(self, other: &Self) -> Self {
+        Self {
+            keys: self.keys - other.keys,
+            metal: self.metal - other.metal,
+        }
+    }
+}
+
+impl SubAssign<Currencies> for Currencies {
+    
+    fn sub_assign(&mut self, other: Self) {
+        self.keys -= other.keys;
+        self.metal -= other.metal;
+    }
+}
+
+impl SubAssign<&Currencies> for Currencies {
+    
+    fn sub_assign(&mut self, other: &Self) {
+        self.keys -= other.keys;
+        self.metal -= other.metal;
     }
 }
 
@@ -222,7 +278,7 @@ impl<'a> TryFrom<&'a str> for Currencies {
                 },
                 METAL_SYMBOL => {
                     if let Ok(count) = count_str.parse::<f32>() {
-                        let value: i32 = (count * (ONE_REF as f32)).round() as i32;
+                        let value = helpers::get_metal_from_float(count);
                         
                         currencies.metal = value;
                     } else {

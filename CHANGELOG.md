@@ -28,3 +28,11 @@
 ### Changed
 - `Currencies.to_value` method is now `Currencies.to_metal`.
 - `Currencies` uses i32 instead of u32.
+
+## 0.4.0 (2022-03-02)
+
+### Added
+- `get_metal_from_float` helper method.
+- `get_metal_float` helper method.
+- `std::ops::AddAssign<Currencies>` implementation for `Currencies`.
+- `std::ops::SubAssign<Currencies>` implementation for `Currencies`.
