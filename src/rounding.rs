@@ -9,7 +9,7 @@ pub enum Rounding {
     Refined,
     /// Rounds up to the nearest refined.
     UpRefined,
-    /// Rounds up to the nearest refined.
+    /// Rounds down to the nearest refined.
     DownRefined,
     /// No rounding.
     None,

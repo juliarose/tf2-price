@@ -50,7 +50,7 @@ pub fn print_float(amount: f32) -> String {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(0.33, tf2_price::get_metal_float(6));
+/// assert_eq!(tf2_price::get_metal_float(6), 0.33);
 /// ```
 pub fn get_metal_float(value: i32) -> f32 {
     f32::trunc((value as f32 / (ONE_REF as f32)) * 100.0) / 100.0
@@ -61,7 +61,7 @@ pub fn get_metal_float(value: i32) -> f32 {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(6, tf2_price::get_metal_from_float(0.33));
+/// assert_eq!(tf2_price::get_metal_from_float(0.33), 6);
 /// ```
 pub fn get_metal_from_float(value: f32) -> i32 {
     (value * (ONE_REF as f32)).round() as i32

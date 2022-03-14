@@ -12,7 +12,7 @@ pub use rounding::Rounding;
 pub use helpers::{get_metal_from_float, get_metal_float};
 pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
 
-// Generate value for refined metal
+/// Generate value for refined metal
 #[macro_export]
 macro_rules! refined {
     ($a:expr) => {
@@ -22,7 +22,7 @@ macro_rules! refined {
     }
 }
 
-// Generate value for reclaimed metal
+/// Generate value for reclaimed metal
 #[macro_export]
 macro_rules! reclaimed {
     ($a:expr) => {
@@ -32,7 +32,7 @@ macro_rules! reclaimed {
     }
 }
 
-// Generate value for scrap metal
+/// Generate value for scrap metal
 #[macro_export]
 macro_rules! scrap {
     ($a:expr) => {

@@ -62,7 +62,7 @@ impl Currencies {
         }
     }
     
-    /// Checks if the currencies contain any value.
+    /// Converts an f32 key value into `Currencies` using the given key price.
     pub fn from_keys_f32(keys: f32, key_price: i32) -> Self {
         Self {
             keys: keys as i32,
@@ -86,10 +86,11 @@ impl Currencies {
     }
 }
 
+/// Comparson with `ListingCurrencies` will fail if `ListingCurrencies` has a fractional key value.
 impl PartialEq<ListingCurrencies> for Currencies {
     
     fn eq(&self, other: &ListingCurrencies) -> bool {
-        other.keys.fract() == 0.0 &&
+        !other.is_fract() &&
         self.keys == other.keys as i32 &&
         self.metal == other.metal
     }

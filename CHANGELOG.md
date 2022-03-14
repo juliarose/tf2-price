@@ -52,3 +52,8 @@
 
 ### Fixed
 - Missing borrowed `std::ops` for `Currencies` and `ListingCurrencies`.
+
+## 0.5.2 (2022-03-14)
+
+### Fixed
+- Incorrect documentation comments.
