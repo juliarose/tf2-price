@@ -30,4 +30,5 @@ criterion_group!{
     config = Criterion::default().sample_size(100);
     targets = criterion_benchmark
 }
+
 criterion_main!(benches);
