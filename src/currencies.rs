@@ -86,7 +86,7 @@ impl Currencies {
     }
 }
 
-/// Comparson with `ListingCurrencies` will fail if `ListingCurrencies` has a fractional key value.
+/// Comparison with `ListingCurrencies` will fail if `ListingCurrencies` has a fractional key value.
 impl PartialEq<ListingCurrencies> for Currencies {
     
     fn eq(&self, other: &ListingCurrencies) -> bool {
