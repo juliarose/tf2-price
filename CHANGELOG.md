@@ -36,3 +36,14 @@
 - `get_metal_float` helper method.
 - `std::ops::AddAssign<Currencies>` implementation for `Currencies`.
 - `std::ops::SubAssign<Currencies>` implementation for `Currencies`.
+
+## 0.5.0 (2022-03-13)
+
+### Added
+- `ListingCurrencies` for currencies which require a float value for keys.
+- `from_keys_f32` method for `Currencies`.
+- `from_listing_currencies` method for `Currencies`.
+
+### Changed
+- `Rounding::Up` is now `Rounding::UpScrap`.
+- `Rounding::Down` is now `Rounding::DownScrap`.
