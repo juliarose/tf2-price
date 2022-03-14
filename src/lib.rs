@@ -1,3 +1,5 @@
+#[macro_use] extern crate impl_ops;
+
 mod helpers;
 mod currencies;
 mod listing_currencies;

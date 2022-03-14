@@ -47,3 +47,8 @@
 ### Changed
 - `Rounding::Up` is now `Rounding::UpScrap`.
 - `Rounding::Down` is now `Rounding::DownScrap`.
+
+## 0.5.1 (2022-03-14)
+
+### Fixed
+- Missing borrowed `std::ops` for `Currencies` and `ListingCurrencies`.

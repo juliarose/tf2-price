@@ -8,7 +8,7 @@ use crate::{
         METAL_SYMBOL,
     },
 };
-use std::{fmt, ops::{Add, Sub, Mul, Div, AddAssign, SubAssign}};
+use std::{fmt, ops::{self, AddAssign, SubAssign}};
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
 
 /// Currencies.
@@ -80,7 +80,7 @@ impl Currencies {
         self.keys == 0 && self.metal == 0
     }
     
-    /// Checks if the currencies contain any value.
+    /// Rounds the metal value using the given rounding method.
     pub fn round(&mut self, rounding: &Rounding) {
         self.metal = helpers::round_metal(self.metal, rounding);
     }
@@ -95,27 +95,47 @@ impl PartialEq<ListingCurrencies> for Currencies {
     }
 }
 
-impl Add<Currencies> for Currencies {
-    type Output = Self;
+impl_op_ex!(+ |a: &Currencies, b: &Currencies| -> Currencies { 
+    Currencies {
+        keys: a.keys + b.keys,
+        metal: a.metal + b.metal
+    } 
+});
 
-    fn add(self, other: Self) -> Self {
-        Self {
-            keys: self.keys + other.keys,
-            metal: self.metal + other.metal,
-        }
+impl_op_ex!(- |a: &Currencies, b: &Currencies| -> Currencies { 
+    Currencies {
+        keys: a.keys - b.keys,
+        metal: a.metal - b.metal,
     }
-}
+});
 
-impl Add<&Currencies> for Currencies {
-    type Output = Self;
-
-    fn add(self, other: &Self) -> Self {
-        Self {
-            keys: self.keys + other.keys,
-            metal: self.metal + other.metal,
-        }
+impl_op_ex!(* |currencies: &Currencies, num: i32| -> Currencies {
+    Currencies {
+        keys: currencies.keys * num,
+        metal: currencies.metal * num,
     }
-}
+});
+
+impl_op_ex!(/ |currencies: &Currencies, num: i32| -> Currencies {
+    Currencies {
+        keys: currencies.keys / num,
+        metal: currencies.metal / num,
+    }
+});
+
+impl_op_ex!(* |currencies: &Currencies, num: f32| -> Currencies {
+    Currencies { 
+        keys: (currencies.keys as f32 * num).round() as i32,
+        metal: (currencies.metal as f32 * num).round() as i32,
+    }
+});
+
+impl_op_ex!(/ |currencies: &Currencies, num: f32| -> Currencies {
+    Currencies {
+        keys: (currencies.keys as f32 / num).round() as i32,
+        metal: (currencies.metal as f32 / num).round() as i32,
+    }
+});
 
 impl AddAssign<Currencies> for Currencies {
     
@@ -133,28 +153,6 @@ impl AddAssign<&Currencies> for Currencies {
     }
 }
 
-impl Sub<Currencies> for Currencies {
-    type Output = Self;
-
-    fn sub(self, other: Self) -> Self {
-        Self {
-            keys: self.keys - other.keys,
-            metal: self.metal - other.metal,
-        }
-    }
-}
-
-impl Sub<&Currencies> for Currencies {
-    type Output = Self;
-
-    fn sub(self, other: &Self) -> Self {
-        Self {
-            keys: self.keys - other.keys,
-            metal: self.metal - other.metal,
-        }
-    }
-}
-
 impl SubAssign<Currencies> for Currencies {
     
     fn sub_assign(&mut self, other: Self) {
@@ -168,54 +166,6 @@ impl SubAssign<&Currencies> for Currencies {
     fn sub_assign(&mut self, other: &Self) {
         self.keys -= other.keys;
         self.metal -= other.metal;
-    }
-}
-
-// Operations for integers
-
-impl Div<i32> for Currencies {
-    type Output = Self;
-
-    fn div(self, other: i32) -> Self {
-        Self {
-            keys: self.keys / other,
-            metal: self.metal / other,
-        }
-    }
-}
-
-impl Mul<i32> for Currencies {
-    type Output = Self;
-
-    fn mul(self, other: i32) -> Self {
-        Self {
-            keys: self.keys * other,
-            metal: self.metal * other,
-        }
-    }
-}
-
-// Operations for floats
-
-impl Div<f32> for Currencies {
-    type Output = Self;
-
-    fn div(self, other: f32) -> Self {
-        Self {
-            keys: (self.keys as f32 / other).round() as i32,
-            metal: (self.metal as f32 / other).round() as i32,
-        }
-    }
-}
-
-impl Mul<f32> for Currencies {
-    type Output = Self;
-
-    fn mul(self, other: f32) -> Self {
-        Self {
-            keys: (self.keys as f32 * other).round() as i32,
-            metal: (self.metal as f32 * other).round() as i32,
-        }
     }
 }
 

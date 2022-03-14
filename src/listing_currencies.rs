@@ -8,7 +8,7 @@ use crate::{
         METAL_SYMBOL,
     },
 };
-use std::{fmt, ops::{Add, Sub, Mul, Div, AddAssign, SubAssign}};
+use std::{fmt, ops::{self, AddAssign, SubAssign}};
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
 
 /// Currencies for listings.
@@ -55,6 +55,7 @@ impl ListingCurrencies {
         self.keys == 0.0 && self.metal == 0
     }
     
+    /// Rounds the metal value using the given rounding method.
     pub fn round(&mut self, rounding: &Rounding) {
         self.metal = helpers::round_metal(self.metal, rounding);
     }
@@ -69,27 +70,75 @@ impl PartialEq<Currencies> for ListingCurrencies {
     }
 }
 
-impl Add<ListingCurrencies> for ListingCurrencies {
-    type Output = Self;
+impl_op_ex!(+ |a: &ListingCurrencies, b: &ListingCurrencies| -> ListingCurrencies { 
+    ListingCurrencies {
+        keys: a.keys + b.keys,
+        metal: a.metal + b.metal
+    } 
+});
 
-    fn add(self, other: Self) -> Self {
-        Self {
-            keys: self.keys + other.keys,
-            metal: self.metal + other.metal,
-        }
+impl_op_ex!(+ |a: &ListingCurrencies, b: &Currencies| -> ListingCurrencies { 
+    ListingCurrencies {
+        keys: a.keys + b.keys as f32,
+        metal: a.metal + b.metal
+    } 
+});
+
+impl_op_ex!(+ |a: &Currencies, b: &ListingCurrencies| -> ListingCurrencies { 
+    ListingCurrencies {
+        keys: a.keys as f32 + b.keys,
+        metal: a.metal + b.metal
+    } 
+});
+
+impl_op_ex!(- |a: &ListingCurrencies, b: &ListingCurrencies| -> ListingCurrencies { 
+    ListingCurrencies {
+        keys: a.keys - b.keys,
+        metal: a.metal - b.metal,
     }
-}
+});
 
-impl Add<&ListingCurrencies> for ListingCurrencies {
-    type Output = Self;
+impl_op_ex!(- |a: &ListingCurrencies, b: &Currencies| -> ListingCurrencies { 
+    ListingCurrencies {
+        keys: a.keys - b.keys as f32,
+        metal: a.metal - b.metal
+    } 
+});
 
-    fn add(self, other: &Self) -> Self {
-        Self {
-            keys: self.keys + other.keys,
-            metal: self.metal + other.metal,
-        }
+impl_op_ex!(- |a: &Currencies, b: &ListingCurrencies| -> ListingCurrencies { 
+    ListingCurrencies {
+        keys: a.keys as f32 - b.keys,
+        metal: a.metal - b.metal
+    } 
+});
+
+impl_op_ex!(* |currencies: &ListingCurrencies, num: i32| -> ListingCurrencies {
+    ListingCurrencies {
+        keys: currencies.keys * num as f32,
+        metal: currencies.metal * num,
     }
-}
+});
+
+impl_op_ex!(/ |currencies: &ListingCurrencies, num: i32| -> ListingCurrencies {
+    ListingCurrencies {
+        keys: currencies.keys / num as f32,
+        metal: currencies.metal / num,
+    }
+});
+
+impl_op_ex!(* |currencies: &ListingCurrencies, num: f32| -> ListingCurrencies {
+    ListingCurrencies { 
+        keys: currencies.keys * num,
+        metal: (currencies.metal as f32 * num).round() as i32,
+    }
+});
+
+impl_op_ex!(/ |currencies: &ListingCurrencies, num: f32| -> ListingCurrencies {
+    ListingCurrencies {
+        keys: currencies.keys / num,
+        metal: (currencies.metal as f32 / num).round() as i32,
+    }
+});
 
 impl AddAssign<ListingCurrencies> for ListingCurrencies {
     
@@ -104,28 +153,6 @@ impl AddAssign<&ListingCurrencies> for ListingCurrencies {
     fn add_assign(&mut self, other: &Self) {
         self.keys += other.keys;
         self.metal += other.metal;
-    }
-}
-
-impl Sub<ListingCurrencies> for ListingCurrencies {
-    type Output = Self;
-
-    fn sub(self, other: Self) -> Self {
-        Self {
-            keys: self.keys - other.keys,
-            metal: self.metal - other.metal,
-        }
-    }
-}
-
-impl Sub<&ListingCurrencies> for ListingCurrencies {
-    type Output = Self;
-
-    fn sub(self, other: &Self) -> Self {
-        Self {
-            keys: self.keys - other.keys,
-            metal: self.metal - other.metal,
-        }
     }
 }
 
@@ -147,28 +174,6 @@ impl SubAssign<&ListingCurrencies> for ListingCurrencies {
 
 // Operations for non-float currencies
 
-impl Add<Currencies> for ListingCurrencies {
-    type Output = Self;
-
-    fn add(self, other: Currencies) -> Self {
-        Self {
-            keys: self.keys + other.keys as f32,
-            metal: self.metal + other.metal,
-        }
-    }
-}
-
-impl Add<&Currencies> for ListingCurrencies {
-    type Output = Self;
-
-    fn add(self, other: &Currencies) -> Self {
-        Self {
-            keys: self.keys + other.keys as f32,
-            metal: self.metal + other.metal,
-        }
-    }
-}
-
 impl AddAssign<Currencies> for ListingCurrencies {
     
     fn add_assign(&mut self, other: Currencies) {
@@ -185,28 +190,6 @@ impl AddAssign<&Currencies> for ListingCurrencies {
     }
 }
 
-impl Sub<Currencies> for ListingCurrencies {
-    type Output = Self;
-
-    fn sub(self, other: Currencies) -> Self {
-        Self {
-            keys: self.keys - other.keys as f32,
-            metal: self.metal - other.metal,
-        }
-    }
-}
-
-impl Sub<&Currencies> for ListingCurrencies {
-    type Output = Self;
-
-    fn sub(self, other: &Currencies) -> Self {
-        Self {
-            keys: self.keys - other.keys as f32,
-            metal: self.metal - other.metal,
-        }
-    }
-}
-
 impl SubAssign<Currencies> for ListingCurrencies {
     
     fn sub_assign(&mut self, other: Currencies) {
@@ -220,54 +203,6 @@ impl SubAssign<&Currencies> for ListingCurrencies {
     fn sub_assign(&mut self, other: &Currencies) {
         self.keys -= other.keys as f32;
         self.metal -= other.metal;
-    }
-}
-
-// Operations for integers
-
-impl Div<i32> for ListingCurrencies {
-    type Output = Self;
-
-    fn div(self, other: i32) -> Self {
-        Self {
-            keys: self.keys / other as f32,
-            metal: self.metal / other,
-        }
-    }
-}
-
-impl Mul<i32> for ListingCurrencies {
-    type Output = Self;
-
-    fn mul(self, other: i32) -> Self {
-        Self {
-            keys: self.keys * other as f32,
-            metal: self.metal * other,
-        }
-    }
-}
-
-// Operations for floats
-
-impl Div<f32> for ListingCurrencies {
-    type Output = Self;
-
-    fn div(self, other: f32) -> Self {
-        Self {
-            keys: self.keys / other,
-            metal: (self.metal as f32 / other).round() as i32,
-        }
-    }
-}
-
-impl Mul<f32> for ListingCurrencies {
-    type Output = Self;
-
-    fn mul(self, other: f32) -> Self {
-        Self {
-            keys: self.keys * other,
-            metal: (self.metal as f32 * other).round() as i32,
-        }
     }
 }
 
@@ -496,6 +431,22 @@ mod tests {
             keys: 10,
             metal: refined!(10),
         });
+    }
+    
+    #[test]
+    fn subtracts_non_float_currencies() {
+        assert_eq!(&ListingCurrencies {
+            keys: 1.5,
+            metal: 0,
+        } - Currencies { keys: 1, metal: 0 }, ListingCurrencies { keys: 0.5, metal: 0 });
+    }
+    
+    #[test]
+    fn adds_non_float_currencies() {
+        assert_eq!(ListingCurrencies {
+            keys: 1.5,
+            metal: 0,
+        } + Currencies { keys: 1, metal: 0 }, ListingCurrencies { keys: 2.5, metal: 0 });
     }
     
     #[test]
