@@ -57,3 +57,15 @@
 
 ### Fixed
 - Incorrect documentation comments.
+
+## 0.5.3 (2022-03-18)
+
+### Added
+- `std::ops::MulAssign<i32>` implementation for `Currencies`.
+- `std::ops::MulAssign<f32>` implementation for `Currencies`.
+- `std::ops::DivAssign<i32>` implementation for `Currencies`.
+- `std::ops::DivAssign<f32>` implementation for `Currencies`.
+- `std::ops::MulAssign<i32>` implementation for `ListingCurrencies`.
+- `std::ops::MulAssign<f32>` implementation for `ListingCurrencies`.
+- `std::ops::DivAssign<i32>` implementation for `ListingCurrencies`.
+- `std::ops::DivAssign<f32>` implementation for `ListingCurrencies`.

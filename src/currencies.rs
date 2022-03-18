@@ -8,7 +8,7 @@ use crate::{
         METAL_SYMBOL,
     },
 };
-use std::{fmt, ops::{self, AddAssign, SubAssign}};
+use std::{fmt, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
 
 /// Currencies.
@@ -167,6 +167,38 @@ impl SubAssign<&Currencies> for Currencies {
     fn sub_assign(&mut self, other: &Self) {
         self.keys -= other.keys;
         self.metal -= other.metal;
+    }
+}
+
+impl MulAssign<i32> for Currencies {
+    
+    fn mul_assign(&mut self, other: i32) {
+        self.keys *= other;
+        self.metal *= other;
+    }
+}
+
+impl MulAssign<f32> for Currencies {
+    
+    fn mul_assign(&mut self, other: f32) {
+        self.keys = (self.keys as f32 * other).round() as i32;
+        self.metal = (self.metal as f32 * other).round() as i32;
+    }
+}
+
+impl DivAssign<i32> for Currencies {
+    
+    fn div_assign(&mut self, other: i32) {
+        self.keys /= other;
+        self.metal /= other;
+    }
+}
+
+impl DivAssign<f32> for Currencies {
+    
+    fn div_assign(&mut self, other: f32) {
+        self.keys = (self.keys as f32 / other).round() as i32;
+        self.metal = (self.metal as f32 / other).round() as i32;
     }
 }
 
@@ -391,6 +423,66 @@ mod tests {
         } * 2.5, Currencies {
             keys: 25,
             metal: refined!(25),
+        });
+    }
+    
+    #[test]
+    fn currencies_mul_assign_i32() {
+        let mut currencies = Currencies {
+            keys: 10,
+            metal: refined!(10),
+        };
+        
+        currencies *= 2;
+        
+        assert_eq!(currencies, Currencies {
+            keys: 20,
+            metal: refined!(20),
+        });
+    }
+    
+    #[test]
+    fn currencies_mul_assign_f32() {
+        let mut currencies = Currencies {
+            keys: 10,
+            metal: refined!(10),
+        };
+        
+        currencies *= 2.5;
+        
+        assert_eq!(currencies, Currencies {
+            keys: 25,
+            metal: refined!(25),
+        });
+    }
+    
+    #[test]
+    fn currencies_div_assign_i32() {
+        let mut currencies = Currencies {
+            keys: 10,
+            metal: refined!(10),
+        };
+        
+        currencies /= 2;
+        
+        assert_eq!(currencies, Currencies {
+            keys: 5,
+            metal: refined!(5),
+        });
+    }
+    
+    #[test]
+    fn currencies_div_assign_f32() {
+        let mut currencies = Currencies {
+            keys: 10,
+            metal: refined!(10),
+        };
+        
+        currencies /= 2.5;
+        
+        assert_eq!(currencies, Currencies {
+            keys: 4,
+            metal: refined!(4),
         });
     }
     

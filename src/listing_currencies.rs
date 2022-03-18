@@ -8,7 +8,7 @@ use crate::{
         METAL_SYMBOL,
     },
 };
-use std::{fmt, ops::{self, AddAssign, SubAssign}};
+use std::{fmt, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
 
 /// Currencies for listings.
@@ -203,6 +203,38 @@ impl SubAssign<&Currencies> for ListingCurrencies {
     fn sub_assign(&mut self, other: &Currencies) {
         self.keys -= other.keys as f32;
         self.metal -= other.metal;
+    }
+}
+
+impl MulAssign<i32> for ListingCurrencies {
+    
+    fn mul_assign(&mut self, other: i32) {
+        self.keys *= other as f32;
+        self.metal *= other;
+    }
+}
+
+impl MulAssign<f32> for ListingCurrencies {
+    
+    fn mul_assign(&mut self, other: f32) {
+        self.keys *= other;
+        self.metal = (self.metal as f32 * other).round() as i32;
+    }
+}
+
+impl DivAssign<i32> for ListingCurrencies {
+    
+    fn div_assign(&mut self, other: i32) {
+        self.keys /= other as f32;
+        self.metal /= other;
+    }
+}
+
+impl DivAssign<f32> for ListingCurrencies {
+    
+    fn div_assign(&mut self, other: f32) {
+        self.keys /= other;
+        self.metal = (self.metal as f32 / other).round() as i32;
     }
 }
 
