@@ -6,17 +6,17 @@ use crate::{
         KEYS_SYMBOL,
         KEY_SYMBOL,
         METAL_SYMBOL,
+        EMPTY_SYMBOL,
     },
 };
 use std::{fmt, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
 
-/// Currencies.
+/// For storing item currencies values.
 /// 
-/// The keys and metal values for `Currencies` are defined as an i32. Metal values 
-/// are stored as their lowest denomination, 1 weapon. A metal value of 6 would be 
-/// equivalent to 3 scrap. You may use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, 
-/// and `ONE_WEAPON` constants to perform arithmatic.
+/// Metal values are stored as their lowest denomination, 1 weapon. A metal value of 6 would 
+/// be equivalent to 3 scrap. You may use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and `ONE_WEAPON`
+/// constants to perform arithmatic.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(remote = "Self")]
 pub struct Currencies {
@@ -250,7 +250,7 @@ impl TryFrom<&ListingCurrencies> for Currencies {
 impl fmt::Display for Currencies {
     
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.keys > 0 && self.metal > 0 {
+        if self.keys != 0 && self.metal != 0 {
             write!(
                 f,
                 "{} {}, {} {}",
@@ -259,14 +259,14 @@ impl fmt::Display for Currencies {
                 helpers::get_metal_float(self.metal),
                 METAL_SYMBOL,
             )
-        } else if self.keys > 0 {
+        } else if self.keys != 0 {
             write!(
                 f,
                 "{} {}",
                 self.keys,
                 helpers::pluralize(self.keys, KEY_SYMBOL, KEYS_SYMBOL),
             )
-        } else if self.metal > 0 {
+        } else if self.metal != 0 {
             write!(
                 f,
                 "{} {}",
@@ -274,7 +274,7 @@ impl fmt::Display for Currencies {
                 METAL_SYMBOL,
             )
         } else {
-            write!(f, "")
+            write!(f, "{}", EMPTY_SYMBOL)
         }
     }
 }

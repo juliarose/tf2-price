@@ -69,3 +69,11 @@
 - `std::ops::MulAssign<f32>` implementation for `ListingCurrencies`.
 - `std::ops::DivAssign<i32>` implementation for `ListingCurrencies`.
 - `std::ops::DivAssign<f32>` implementation for `ListingCurrencies`.
+
+## 0.5.3 (2022-03-18)
+
+### Fixed
+- `fmt::Display` for `Currencies` and `ListingCurrencies` implementations not recognizing negative numbers.
+
+### Changed
+- `fmt::Display` for `Currencies` and `ListingCurrencies` now displays `"nothing"` when currencies are empty. 

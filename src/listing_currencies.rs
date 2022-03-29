@@ -6,15 +6,14 @@ use crate::{
         KEYS_SYMBOL,
         KEY_SYMBOL,
         METAL_SYMBOL,
+        EMPTY_SYMBOL,
     },
 };
 use std::{fmt, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
 
-/// Currencies for listings.
-/// 
-/// The `keys` field for `ListingCurrencies` is defined as an f32. Use this anywhere you
-/// may need key values which include decimal places.
+/// The `keys` field for `ListingCurrencies` is defined as an f32. Use this anywhere you may
+/// need key values which include decimal places.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(remote = "Self")]
 pub struct ListingCurrencies {
@@ -274,7 +273,7 @@ impl From<&Currencies> for ListingCurrencies {
 impl fmt::Display for ListingCurrencies {
     
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.keys > 0.0 && self.metal > 0 {
+        if self.keys != 0.0 && self.metal != 0 {
             write!(
                 f,
                 "{} {}, {} {}",
@@ -283,14 +282,14 @@ impl fmt::Display for ListingCurrencies {
                 helpers::get_metal_float(self.metal),
                 METAL_SYMBOL,
             )
-        } else if self.keys > 0.0 {
+        } else if self.keys != 0.0 {
             write!(
                 f,
                 "{} {}",
                 helpers::print_float(self.keys),
                 helpers::pluralize_float(self.keys, KEY_SYMBOL, KEYS_SYMBOL),
             )
-        } else if self.metal > 0 {
+        } else if self.metal != 0 {
             write!(
                 f,
                 "{} {}",
@@ -298,7 +297,7 @@ impl fmt::Display for ListingCurrencies {
                 METAL_SYMBOL,
             )
         } else {
-            write!(f, "")
+            write!(f, "{}", EMPTY_SYMBOL)
         }
     }
 }
