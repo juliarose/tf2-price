@@ -61,14 +61,13 @@ fn main() {
         ListingCurrencies { keys: 0.5, metal: 0 }
     );
     
-    // Conversions to Currencies are supported but will fail if the key value holds a fractional number
-    assert!(
-        Currencies::try_from(&currencies).is_err()
-    );
-    
-    // Works fine
+    // Conversions to Currencies are supported
     assert!(
         Currencies::try_from(ListingCurrencies { keys: 1.0, metal: 0 }).is_ok()
+    );
+    // Fails if the key value holds a fractional number
+    assert!(
+        Currencies::try_from(ListingCurrencies { keys: 1.5, metal: 0 }).is_err()
     );
 }
 ```
