@@ -11,13 +11,13 @@ fn main() {
         metal: refined!(2) + scrap!(3),
     };
     
-    // 2.33 refined - metal values are counted in weapons
+    // 2.33 refined - metal values are counted in weapons.
     assert_eq!(
         currencies.metal,
         42
     );
     
-    // String conversions
+    // String conversions.
     assert_eq!(
         currencies.to_string(),
         "5 keys, 2.33 ref"
@@ -27,7 +27,7 @@ fn main() {
         *&currencies
     );
     
-    // Serde deserialization
+    // Serde deserialization.
     assert_eq!(
         serde_json::from_str::<Currencies>(r#"{"keys":5,"metal":2.33}"#).unwrap(),
         *&currencies
@@ -35,7 +35,7 @@ fn main() {
     
     let golden_frying_pan = Currencies { keys: 3000, metal: 0 };
     
-    // Arithmetic
+    // Arithmetic.
     assert_eq!(
         &golden_frying_pan * 2,
         Currencies { keys: 6000, metal: 0 }
@@ -49,23 +49,25 @@ fn main() {
         Currencies { keys: 3000, metal: 2 }
     );
     
-    // For currencies which require floating point key values, use ListingCurrencies
+    // For currencies which require floating point key values, use ListingCurrencies.
     let currencies = ListingCurrencies {
         keys: 1.5,
         metal: 0,
     };
     
-    // Arithmetic with standard Currencies objects still works
+    // Arithmetic with standard Currencies objects still works.
     assert_eq!(
-        &currencies - Currencies { keys: 1, metal: 0 },
+        ListingCurrencies { keys: 1.5, metal: 0 } - Currencies { keys: 1, metal: 0 },
         ListingCurrencies { keys: 0.5, metal: 0 }
     );
+    // Due to the lossy nature of converting floats to integers, arithmatic in an inverse
+    // manner (Currencies - ListingCurrencies) is not supported.
     
-    // Conversions to Currencies are supported
+    // Conversions to Currencies are supported.
     assert!(
         Currencies::try_from(ListingCurrencies { keys: 1.0, metal: 0 }).is_ok()
     );
-    // Fails if the key value holds a fractional number
+    // Fails if the key value holds a fractional number.
     assert!(
         Currencies::try_from(ListingCurrencies { keys: 1.5, metal: 0 }).is_err()
     );
