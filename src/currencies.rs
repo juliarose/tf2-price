@@ -2,6 +2,7 @@ use crate::{
     Rounding,
     ListingCurrencies,
     helpers,
+    traits::SerializeCurrencies,
     constants::{
         KEYS_SYMBOL,
         KEY_SYMBOL,
@@ -9,7 +10,7 @@ use crate::{
         EMPTY_SYMBOL,
     },
 };
-use std::{fmt, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
+use std::{fmt, cmp::{Ord, Ordering}, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
 
 /// For storing item currencies values.
@@ -17,7 +18,7 @@ use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::Se
 /// Metal values are stored as their lowest denomination, 1 weapon. A metal value of 6 would 
 /// be equivalent to 3 scrap. You may use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and `ONE_WEAPON`
 /// constants to perform arithmatic.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, PartialOrd)]
 #[serde(remote = "Self")]
 pub struct Currencies {
     #[serde(default)]
@@ -25,6 +26,25 @@ pub struct Currencies {
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
     pub metal: i32,
 }
+
+impl Ord for Currencies {
+    
+    fn cmp(&self, other:&Self) -> Ordering {
+        if self.keys > other.keys {
+            Ordering::Greater
+        } else if self.keys < other.keys {
+            Ordering::Less
+        } else if self.metal > other.metal {
+            Ordering::Greater
+        } else if self.metal < other.metal {
+            Ordering::Less
+        } else {
+            Ordering::Equal
+        }
+    }
+}
+
+impl SerializeCurrencies for Currencies {}
 
 impl Default for Currencies {
     
@@ -847,5 +867,42 @@ mod tests {
             actual,
             expected,
         );
+    }
+    
+    #[test]
+    fn accepts_trait_currencies() {
+        fn get_keys<T>(currencies: &T) -> String
+        where T: SerializeCurrencies {
+            serde_json::to_string(currencies).unwrap()
+        }
+        
+        let currencies = Currencies { keys: 1, metal: 1 };
+        let serialized = get_keys(&currencies);
+        
+        assert_eq!(serialized, r#"{"keys":1,"metal":0.05}"#);
+    }
+    
+    #[test]
+    fn greater_than() {
+        assert!(Currencies { keys: 1, metal: 5 } > Currencies { keys: 0, metal: 10});
+    }
+    
+    #[test]
+    fn less_than() {
+        assert!(Currencies { keys: 0, metal: 1 } < Currencies { keys: 0, metal: 4});
+    }
+    
+    #[test]
+    fn sorts() {
+        let mut currencies = vec![
+            Currencies { keys: 2, metal: 4},
+            Currencies { keys: 0, metal: 2},
+            Currencies { keys: 10, metal: 4},
+        ];
+        
+        // lowest to highest
+        currencies.sort();
+        
+        assert_eq!(*currencies.iter().rev().next().unwrap(), Currencies { keys: 10, metal: 4});
     }
 }

@@ -6,6 +6,8 @@ mod listing_currencies;
 mod rounding;
 mod constants;
 
+pub mod traits;
+
 pub use currencies::Currencies;
 pub use listing_currencies::ListingCurrencies;
 pub use rounding::Rounding;

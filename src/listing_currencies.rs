@@ -2,6 +2,7 @@ use crate::{
     Rounding,
     Currencies,
     helpers,
+    traits::SerializeCurrencies,
     constants::{
         KEYS_SYMBOL,
         KEY_SYMBOL,
@@ -9,12 +10,12 @@ use crate::{
         EMPTY_SYMBOL,
     },
 };
-use std::{fmt, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
+use std::{fmt, cmp::{Ord, Ordering}, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
 
 /// The `keys` field for `ListingCurrencies` is defined as an f32. Use this anywhere you may
 /// need key values which include decimal places.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, PartialOrd)]
 #[serde(remote = "Self")]
 pub struct ListingCurrencies {
     #[serde(default)]
@@ -22,6 +23,10 @@ pub struct ListingCurrencies {
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
     pub metal: i32,
 }
+
+impl Eq for ListingCurrencies {}
+
+impl SerializeCurrencies for ListingCurrencies {}
 
 impl Default for ListingCurrencies {
     
@@ -247,6 +252,23 @@ impl<'a> TryFrom<&'a str> for ListingCurrencies {
             keys,
             metal,
         })
+    }
+}
+
+impl Ord for ListingCurrencies {
+    
+    fn cmp(&self, other:&Self) -> Ordering {
+        if self.keys > other.keys {
+            Ordering::Greater
+        } else if self.keys < other.keys {
+            Ordering::Less
+        } else if self.metal > other.metal {
+            Ordering::Greater
+        } else if self.metal < other.metal {
+            Ordering::Less
+        } else {
+            Ordering::Equal
+        }
     }
 }
 
@@ -588,5 +610,29 @@ mod tests {
             actual,
             expected,
         );
+    }
+    
+    #[test]
+    fn greater_than() {
+        assert!(ListingCurrencies { keys: 1.0, metal: 5 } > ListingCurrencies { keys: 0.0, metal: 10});
+    }
+    
+    #[test]
+    fn less_than() {
+        assert!(ListingCurrencies { keys: 0.0, metal: 1 } < ListingCurrencies { keys: 0.0, metal: 4});
+    }
+    
+    #[test]
+    fn sorts() {
+        let mut currencies = vec![
+            ListingCurrencies { keys: 2.0, metal: 4},
+            ListingCurrencies { keys: 0.0, metal: 2},
+            ListingCurrencies { keys: 10.0, metal: 4},
+        ];
+        
+        // lowest to highest
+        currencies.sort();
+        
+        assert_eq!(*currencies.iter().rev().next().unwrap(), ListingCurrencies { keys: 10.0, metal: 4});
     }
 }

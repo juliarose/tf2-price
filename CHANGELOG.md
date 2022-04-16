@@ -73,7 +73,13 @@
 ## 0.5.3 (2022-03-18)
 
 ### Fixed
-- `fmt::Display` for `Currencies` and `ListingCurrencies` implementations not recognizing negative numbers.
+- `fmt::Display` implementation for `Currencies` and `ListingCurrencies` not recognizing negative numbers.
 
 ### Changed
-- `fmt::Display` for `Currencies` and `ListingCurrencies` now displays `"nothing"` when currencies are empty. 
+- `fmt::Display` implementation for `Currencies` and `ListingCurrencies` now displays `"nothing"` when currencies are empty. 
+
+## 0.6.0 (2022-03-18)
+
+### Added
+- `SerializeCurrencies` implementation for `Currencies` and `ListingCurrencies`.
+- `Ord` implementation for `Currencies` and `ListingCurrencies`.
