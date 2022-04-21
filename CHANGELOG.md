@@ -78,7 +78,7 @@
 ### Changed
 - `fmt::Display` implementation for `Currencies` and `ListingCurrencies` now displays `"nothing"` when currencies are empty. 
 
-## 0.6.0 (2022-03-18)
+## 0.6.0 (2022-04-21)
 
 ### Added
 - `SerializeCurrencies` implementation for `Currencies` and `ListingCurrencies`.
