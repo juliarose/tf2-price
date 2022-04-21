@@ -15,13 +15,36 @@ use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::Se
 
 /// The `keys` field for `ListingCurrencies` is defined as an f32. Use this anywhere you may
 /// need key values which include decimal places.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, PartialOrd)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(remote = "Self")]
 pub struct ListingCurrencies {
     #[serde(default)]
     pub keys: f32,
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
     pub metal: i32,
+}
+
+impl PartialOrd for ListingCurrencies {
+    fn partial_cmp(&self, other: &ListingCurrencies) -> Option<Ordering> {
+       Some(self.cmp(other))
+    }
+}
+
+impl Ord for ListingCurrencies {
+    
+    fn cmp(&self, other:&Self) -> Ordering {
+        if self.keys > other.keys {
+            Ordering::Greater
+        } else if self.keys < other.keys {
+            Ordering::Less
+        } else if self.metal > other.metal {
+            Ordering::Greater
+        } else if self.metal < other.metal {
+            Ordering::Less
+        } else {
+            Ordering::Equal
+        }
+    }
 }
 
 impl Eq for ListingCurrencies {}
@@ -252,23 +275,6 @@ impl<'a> TryFrom<&'a str> for ListingCurrencies {
             keys,
             metal,
         })
-    }
-}
-
-impl Ord for ListingCurrencies {
-    
-    fn cmp(&self, other:&Self) -> Ordering {
-        if self.keys > other.keys {
-            Ordering::Greater
-        } else if self.keys < other.keys {
-            Ordering::Less
-        } else if self.metal > other.metal {
-            Ordering::Greater
-        } else if self.metal < other.metal {
-            Ordering::Less
-        } else {
-            Ordering::Equal
-        }
     }
 }
 

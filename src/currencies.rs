@@ -18,13 +18,19 @@ use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::Se
 /// Metal values are stored as their lowest denomination, 1 weapon. A metal value of 6 would 
 /// be equivalent to 3 scrap. You may use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and `ONE_WEAPON`
 /// constants to perform arithmatic.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, PartialOrd)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(remote = "Self")]
 pub struct Currencies {
     #[serde(default)]
     pub keys: i32,
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
     pub metal: i32,
+}
+
+impl PartialOrd for Currencies {
+    fn partial_cmp(&self, other: &Currencies) -> Option<Ordering> {
+       Some(self.cmp(other))
+    }
 }
 
 impl Ord for Currencies {
