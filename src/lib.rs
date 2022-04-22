@@ -5,9 +5,12 @@ mod currencies;
 mod listing_currencies;
 mod rounding;
 mod constants;
+mod usd_currencies;
 
 pub mod traits;
+pub mod error;
 
+pub use usd_currencies::USDCurrencies;
 pub use currencies::Currencies;
 pub use listing_currencies::ListingCurrencies;
 pub use rounding::Rounding;

@@ -7,4 +7,3 @@ pub const KEY_SYMBOL: &str = "key";
 pub const KEYS_SYMBOL: &str = "keys";
 pub const METAL_SYMBOL: &str = "ref";
 pub const EMPTY_SYMBOL: &str = "nothing";
-pub const INVALID_CURRENCIES_FORMAT: &str = "Invalid currencies format";

@@ -1,8 +1,8 @@
-use std::str::FromStr;
+use std::{fmt, str::FromStr};
 use crate::{
+    error::ParseError,
     Rounding,
     constants::{
-        INVALID_CURRENCIES_FORMAT,
         KEYS_SYMBOL,
         KEY_SYMBOL,
         METAL_SYMBOL,
@@ -19,6 +19,32 @@ where
     let metal = (float * (ONE_REF as f32)).round() as i32;
     
     Ok(metal)
+}
+
+pub mod cents {
+    use serde::{Serializer, Deserialize, Deserializer};
+    use super::cents_to_dollars;
+    
+    pub fn serialize<S>(value: &i32, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer
+    {
+        serializer.serialize_f32(cents_to_dollars(*value))
+    }
+    
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<i32, D::Error>
+    where
+        D: Deserializer<'de>
+    {
+        let usd = f32::deserialize(deserializer)?;
+        let cents = (usd * 100.0).round() as i32;
+        
+        Ok(cents)
+    }
+}
+
+pub fn cents_to_dollars(cents: i32) -> f32 {
+    (cents as f32) / 100.0
 }
 
 pub fn pluralize<'a>(amount: i32, singular: &'a str, plural: &'a str) -> &'a str {
@@ -67,9 +93,10 @@ pub fn get_metal_from_float(value: f32) -> i32 {
     (value * (ONE_REF as f32)).round() as i32
 }
 
-pub fn parse_from_string<T>(string: &str) -> Result<(T, i32), &'static str>
+pub fn parse_from_string<T>(string: &str) -> Result<(T, i32), ParseError>
 where
-    T: Default + FromStr + PartialEq
+    T: Default + FromStr + PartialEq,
+    <T as FromStr>::Err: fmt::Display,
 {
     let mut keys = T::default();
     let mut metal = 0;
@@ -85,7 +112,7 @@ where
         );
         
         if count_str.is_none() || currency_name.is_none() || element_split.next().is_some() {
-            return Err(INVALID_CURRENCIES_FORMAT);
+            return Err(ParseError::Invalid);
         }
         
         let (
@@ -98,27 +125,20 @@ where
         
         match currency_name {
             KEY_SYMBOL | KEYS_SYMBOL => {
-                if let Ok(count) = count_str.parse::<T>() {
-                    keys = count;
-                } else {
-                    return Err("Error parsing key count");
-                }
+                keys = count_str.parse::<T>()
+                    .map_err(|e| ParseError::ParseNumeric(e.to_string()))?;
             },
             METAL_SYMBOL => {
-                if let Ok(count) = count_str.parse::<f32>() {
-                    metal = get_metal_from_float(count);
-                } else {
-                    return Err("Error parsing metal count");
-                }
+                metal = get_metal_from_float(count_str.parse::<f32>()?);
             },
             _ => {
-                return Err(INVALID_CURRENCIES_FORMAT);
+                return Err(ParseError::Invalid);
             },
         }
     }
     
     if keys == T::default() && metal == 0 {
-        return Err("No currencies could be parsed from string");
+        return Err(ParseError::NoCurrencies);
     }
     
     Ok((keys, metal))

@@ -2,6 +2,7 @@ use crate::{
     Rounding,
     ListingCurrencies,
     helpers,
+    error::{TryFromListingCurrenciesError, ParseError},
     traits::SerializeCurrencies,
     constants::{
         KEYS_SYMBOL,
@@ -14,16 +15,16 @@ use std::{fmt, cmp::{Ord, Ordering}, ops::{self, AddAssign, SubAssign, MulAssign
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
 
 /// For storing item currencies values.
-/// 
-/// Metal values are stored as their lowest denomination, 1 weapon. A metal value of 6 would 
-/// be equivalent to 3 scrap. You may use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and `ONE_WEAPON`
-/// constants to perform arithmatic.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 #[serde(remote = "Self")]
 pub struct Currencies {
     #[serde(default)]
+    /// Amount of keys.
     pub keys: i32,
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
+    /// Amount of metal expressed as weapons. A metal value of 6 would 
+    /// be equivalent to 3 scrap. You may use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and `ONE_WEAPON`
+    /// constants to perform arithmatic.
     pub metal: i32,
 }
 
@@ -96,7 +97,7 @@ impl Currencies {
         }
     }
     
-    /// Converts `Currencies` into a metal value using the given key price.
+    /// Converts currencies to a metal value using the given key price.
     pub fn to_metal(&self, key_price: i32) -> i32 {
         self.metal + (self.keys * key_price)
     }
@@ -229,7 +230,7 @@ impl DivAssign<f32> for Currencies {
 }
 
 impl<'a> TryFrom<&'a str> for Currencies {
-    type Error = &'static str;
+    type Error = ParseError;
     
     fn try_from(string: &'a str) -> Result<Self, Self::Error>  {
         let (keys, metal) = helpers::parse_from_string::<i32>(string)?;
@@ -243,11 +244,11 @@ impl<'a> TryFrom<&'a str> for Currencies {
 
 /// Results in error if `ListingCurrencies` contains a fractional key value.
 impl TryFrom<ListingCurrencies> for Currencies {
-    type Error = &'static str;
+    type Error = TryFromListingCurrenciesError;
     
     fn try_from(currencies: ListingCurrencies) -> Result<Self, Self::Error> {
         if currencies.is_fract() {
-            return Err("Currencies contain fractional key value");
+            return Err(TryFromListingCurrenciesError { fract: currencies.keys.fract() });
         }
         
         Ok(Currencies {

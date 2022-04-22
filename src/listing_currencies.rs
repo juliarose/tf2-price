@@ -2,6 +2,7 @@ use crate::{
     Rounding,
     Currencies,
     helpers,
+    error::ParseError,
     traits::SerializeCurrencies,
     constants::{
         KEYS_SYMBOL,
@@ -72,7 +73,7 @@ impl ListingCurrencies {
         self.keys.fract() != 0.0
     }
     
-    /// Creates currencies from a metal value using the given key price.
+    /// Converts currencies to a metal value using the given key price.
     pub fn to_metal(&self, key_price: i32) -> i32 {
         self.metal + (self.keys * key_price as f32) as i32
     }
@@ -266,7 +267,7 @@ impl DivAssign<f32> for ListingCurrencies {
 }
 
 impl<'a> TryFrom<&'a str> for ListingCurrencies {
-    type Error = &'static str;
+    type Error = ParseError;
     
     fn try_from(string: &'a str) -> Result<Self, Self::Error>  {
         let (keys, metal) = helpers::parse_from_string::<f32>(string)?;
