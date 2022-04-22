@@ -225,6 +225,15 @@ mod tests {
     }
     
     #[test]
+    fn currencies_not_equal() {
+        assert_ne!(USDCurrencies {
+            usd: 10,
+        }, USDCurrencies {
+            usd: 2,
+        });
+    }
+    
+    #[test]
     fn currencies_added() {
         assert_eq!(USDCurrencies {
             usd: 10,
