@@ -1,5 +1,7 @@
 //! # tf2-price
 //! 
+//! Utilities for Team Fortress 2 item pricing.
+//! 
 //! ## Usage
 //!
 //! ```

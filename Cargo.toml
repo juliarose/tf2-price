@@ -1,6 +1,6 @@
 [package]
 name = "tf2-price"
-description = "Price formatting for Team Fortress 2 items."
+description = "Utilities for Team Fortress 2 item pricing."
 version = "0.7.0"
 edition = "2021"
 authors = ["Julia"]

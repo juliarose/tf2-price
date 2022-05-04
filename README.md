@@ -1,6 +1,6 @@
 # tf2-price
 
-Price formatting for Team Fortress 2 items.
+Utilities for Team Fortress 2 item pricing.
 
 ```rs
 use tf2_price::{Currencies, ListingCurrencies, refined, scrap};
