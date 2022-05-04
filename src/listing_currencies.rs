@@ -73,7 +73,7 @@ impl ListingCurrencies {
         self.keys.fract() != 0.0
     }
     
-    /// Converts currencies to a metal value using the given key price.
+    /// Converts currencies to a metal value using the given key price (represented as weapons).
     pub fn to_metal(&self, key_price: i32) -> i32 {
         self.metal + (self.keys * key_price as f32) as i32
     }

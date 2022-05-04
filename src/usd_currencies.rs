@@ -10,14 +10,14 @@ pub struct USDCurrencies {
 }
 
 impl PartialOrd for USDCurrencies {
-    fn partial_cmp(&self, other: &USDCurrencies) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
        Some(self.cmp(other))
     }
 }
 
 impl Ord for USDCurrencies {
     
-    fn cmp(&self, other:&Self) -> Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         if self.usd > other.usd {
             Ordering::Greater
         } else if self.usd < other.usd {
@@ -45,7 +45,7 @@ impl USDCurrencies {
         }
     }
     
-    /// Converts currencies to a key value using the given key price.
+    /// Converts currencies to a key value using the given key price (represented as weapons).
     pub fn to_keys(&self, usd_key_price: i32) -> f32 {
         self.usd as f32 / usd_key_price as f32
     }

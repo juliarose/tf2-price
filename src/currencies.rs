@@ -23,8 +23,8 @@ pub struct Currencies {
     pub keys: i32,
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
     /// Amount of metal expressed as weapons. A metal value of 6 would 
-    /// be equivalent to 3 scrap. You may use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and `ONE_WEAPON`
-    /// constants to perform arithmatic.
+    /// be equivalent to 3 scrap. You may use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and 
+    /// `ONE_WEAPON`constants to perform arithmatic.
     pub metal: i32,
 }
 
@@ -69,7 +69,19 @@ impl Currencies {
         }
     }
     
-    /// Creates currencies from a metal value using the given key price.
+    /// Converts a metal value into the appropriate number of keys using the given key price 
+    /// (represented as weapons).
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// use tf2_price::{Currencies, refined, scrap};
+    /// 
+    /// assert_eq!(
+    ///     Currencies::from_metal(refined!(80), refined!(60)),
+    ///     Currencies { keys: 1, metal: refined!(20) },
+    /// );
+    /// ```
     pub fn from_metal(metal: i32, key_price: i32) -> Self {
         Self {
             // Will be 0 if metal is 30 and key price is 32 (rounds down)
@@ -78,7 +90,7 @@ impl Currencies {
         }
     }
     
-    /// Converts from `ListingCurrencies` using the given key price.
+    /// Converts from `ListingCurrencies` using the given key price (represented as weapons).
     pub fn from_listing_currencies(currencies: ListingCurrencies, key_price: i32) -> Self {
         let keys = currencies.keys;
         let metal = currencies.metal;
@@ -89,7 +101,8 @@ impl Currencies {
         }
     }
     
-    /// Converts an f32 key value into `Currencies` using the given key price.
+    /// Converts an f32 key value into `Currencies` using the given key price represented as 
+    /// weapons.
     pub fn from_keys_f32(keys: f32, key_price: i32) -> Self {
         Self {
             keys: keys as i32,
@@ -97,7 +110,7 @@ impl Currencies {
         }
     }
     
-    /// Converts currencies to a metal value using the given key price.
+    /// Converts currencies to a metal value using the given key price (represented as weapons).
     pub fn to_metal(&self, key_price: i32) -> i32 {
         self.metal + (self.keys * key_price)
     }

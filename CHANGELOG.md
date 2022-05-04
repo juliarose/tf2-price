@@ -83,3 +83,8 @@
 ### Added
 - `SerializeCurrencies` implementation for `Currencies` and `ListingCurrencies`.
 - `Ord` implementation for `Currencies` and `ListingCurrencies`.
+
+## 0.7.0 (2022-05-04)
+
+### Added
+- `USDCurrencies` for currencies which hold a cash value.
