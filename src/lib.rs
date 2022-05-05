@@ -32,7 +32,7 @@
 //! 
 //! All `metal` values are represented as the number of weapons. For 1 refined, this would be 18. 
 //! The macros and constant values should be used to avoid any errors in accounting. For example: 
-//! if adding one scrap, add `ONE_SCRAP` to the metal field. `scrap!(1)` will also create the same  
+//! if adding one scrap, add `ONE_SCRAP` to the `metal` field. `scrap!(1)` will also create the same 
 //! value.
 //! 
 //! In addition, all key values in methods are represented as values in weapons. If you need to 

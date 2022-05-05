@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 use crate::helpers;
 use std::{fmt, cmp::{Ord, Ordering}, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
 
+/// For storing cash values.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct USDCurrencies {
     /// Cash value in cents.
