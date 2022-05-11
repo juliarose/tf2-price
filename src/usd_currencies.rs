@@ -17,7 +17,6 @@ impl PartialOrd for USDCurrencies {
 }
 
 impl Ord for USDCurrencies {
-    
     fn cmp(&self, other: &Self) -> Ordering {
         if self.usd > other.usd {
             Ordering::Greater
@@ -32,14 +31,12 @@ impl Ord for USDCurrencies {
 impl Eq for USDCurrencies {}
 
 impl Default for USDCurrencies {
-    
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl USDCurrencies {
-    
     pub fn new() -> Self {
         Self {
             usd: 0,
@@ -112,7 +109,6 @@ fn thousands(string: String) -> String {
 }
 
 impl fmt::Display for USDCurrencies {
-    
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "${}", thousands(format!("{:.2}", self.to_dollars())))
     }
@@ -155,56 +151,48 @@ impl_op_ex!(/ |currencies: &USDCurrencies, num: f32| -> USDCurrencies {
 });
 
 impl AddAssign<USDCurrencies> for USDCurrencies {
-    
     fn add_assign(&mut self, other: Self) {
         self.usd += other.usd;
     }
 }
 
 impl AddAssign<&USDCurrencies> for USDCurrencies {
-    
     fn add_assign(&mut self, other: &Self) {
         self.usd += other.usd;
     }
 }
 
 impl SubAssign<USDCurrencies> for USDCurrencies {
-    
     fn sub_assign(&mut self, other: Self) {
         self.usd -= other.usd;
     }
 }
 
 impl SubAssign<&USDCurrencies> for USDCurrencies {
-    
     fn sub_assign(&mut self, other: &Self) {
         self.usd -= other.usd;
     }
 }
 
 impl MulAssign<i32> for USDCurrencies {
-    
     fn mul_assign(&mut self, other: i32) {
         self.usd *= other;
     }
 }
 
 impl MulAssign<f32> for USDCurrencies {
-    
     fn mul_assign(&mut self, other: f32) {
         self.usd = (self.usd as f32 * other).round() as i32;
     }
 }
 
 impl DivAssign<i32> for USDCurrencies {
-    
     fn div_assign(&mut self, other: i32) {
         self.usd /= other;
     }
 }
 
 impl DivAssign<f32> for USDCurrencies {
-    
     fn div_assign(&mut self, other: f32) {
         self.usd = (self.usd as f32 / other).round() as i32;
     }

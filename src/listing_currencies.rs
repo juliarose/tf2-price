@@ -32,7 +32,6 @@ impl PartialOrd for ListingCurrencies {
 }
 
 impl Ord for ListingCurrencies {
-    
     fn cmp(&self, other:&Self) -> Ordering {
         if self.keys > other.keys {
             Ordering::Greater
@@ -53,14 +52,12 @@ impl Eq for ListingCurrencies {}
 impl SerializeCurrencies for ListingCurrencies {}
 
 impl Default for ListingCurrencies {
-    
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl ListingCurrencies {
-    
     pub fn new() -> Self {
         Self {
             keys: 0.0,
@@ -74,8 +71,9 @@ impl ListingCurrencies {
     }
     
     /// Converts currencies to a metal value using the given key price (represented as weapons).
+    /// This method will round the number.
     pub fn to_metal(&self, key_price: i32) -> i32 {
-        self.metal + (self.keys * key_price as f32) as i32
+        self.metal + (self.keys * key_price as f32).round() as i32
     }
     
     /// Checks if the currencies contain any value.
@@ -90,7 +88,6 @@ impl ListingCurrencies {
 }
 
 impl PartialEq<Currencies> for ListingCurrencies {
-    
     fn eq(&self, other: &Currencies) -> bool {
         self.keys.fract() == 0.0 &&
         self.keys == other.keys as f32 &&
@@ -169,7 +166,6 @@ impl_op_ex!(/ |currencies: &ListingCurrencies, num: f32| -> ListingCurrencies {
 });
 
 impl AddAssign<ListingCurrencies> for ListingCurrencies {
-    
     fn add_assign(&mut self, other: Self) {
         self.keys += other.keys;
         self.metal += other.metal;
@@ -177,7 +173,6 @@ impl AddAssign<ListingCurrencies> for ListingCurrencies {
 }
 
 impl AddAssign<&ListingCurrencies> for ListingCurrencies {
-    
     fn add_assign(&mut self, other: &Self) {
         self.keys += other.keys;
         self.metal += other.metal;
@@ -185,7 +180,6 @@ impl AddAssign<&ListingCurrencies> for ListingCurrencies {
 }
 
 impl SubAssign<ListingCurrencies> for ListingCurrencies {
-    
     fn sub_assign(&mut self, other: Self) {
         self.keys -= other.keys;
         self.metal -= other.metal;
@@ -193,7 +187,6 @@ impl SubAssign<ListingCurrencies> for ListingCurrencies {
 }
 
 impl SubAssign<&ListingCurrencies> for ListingCurrencies {
-    
     fn sub_assign(&mut self, other: &Self) {
         self.keys -= other.keys;
         self.metal -= other.metal;
@@ -203,7 +196,6 @@ impl SubAssign<&ListingCurrencies> for ListingCurrencies {
 // Operations for non-float currencies
 
 impl AddAssign<Currencies> for ListingCurrencies {
-    
     fn add_assign(&mut self, other: Currencies) {
         self.keys += other.keys as f32;
         self.metal += other.metal;
@@ -211,7 +203,6 @@ impl AddAssign<Currencies> for ListingCurrencies {
 }
 
 impl AddAssign<&Currencies> for ListingCurrencies {
-    
     fn add_assign(&mut self, other: &Currencies) {
         self.keys += other.keys as f32;
         self.metal += other.metal;
@@ -219,7 +210,6 @@ impl AddAssign<&Currencies> for ListingCurrencies {
 }
 
 impl SubAssign<Currencies> for ListingCurrencies {
-    
     fn sub_assign(&mut self, other: Currencies) {
         self.keys -= other.keys as f32;
         self.metal -= other.metal;
@@ -227,7 +217,6 @@ impl SubAssign<Currencies> for ListingCurrencies {
 }
 
 impl SubAssign<&Currencies> for ListingCurrencies {
-    
     fn sub_assign(&mut self, other: &Currencies) {
         self.keys -= other.keys as f32;
         self.metal -= other.metal;
@@ -235,7 +224,6 @@ impl SubAssign<&Currencies> for ListingCurrencies {
 }
 
 impl MulAssign<i32> for ListingCurrencies {
-    
     fn mul_assign(&mut self, other: i32) {
         self.keys *= other as f32;
         self.metal *= other;
@@ -243,7 +231,6 @@ impl MulAssign<i32> for ListingCurrencies {
 }
 
 impl MulAssign<f32> for ListingCurrencies {
-    
     fn mul_assign(&mut self, other: f32) {
         self.keys *= other;
         self.metal = (self.metal as f32 * other).round() as i32;
@@ -251,7 +238,6 @@ impl MulAssign<f32> for ListingCurrencies {
 }
 
 impl DivAssign<i32> for ListingCurrencies {
-    
     fn div_assign(&mut self, other: i32) {
         self.keys /= other as f32;
         self.metal /= other;
@@ -259,7 +245,6 @@ impl DivAssign<i32> for ListingCurrencies {
 }
 
 impl DivAssign<f32> for ListingCurrencies {
-    
     fn div_assign(&mut self, other: f32) {
         self.keys /= other;
         self.metal = (self.metal as f32 / other).round() as i32;
@@ -280,7 +265,6 @@ impl<'a> TryFrom<&'a str> for ListingCurrencies {
 }
 
 impl From<Currencies> for ListingCurrencies {
-    
     fn from(currencies: Currencies) -> ListingCurrencies {
         ListingCurrencies {
             keys: currencies.keys as f32,
@@ -290,7 +274,6 @@ impl From<Currencies> for ListingCurrencies {
 }
 
 impl From<&Currencies> for ListingCurrencies {
-    
     fn from(currencies: &Currencies) -> ListingCurrencies {
         ListingCurrencies {
             keys: currencies.keys as f32,
@@ -300,7 +283,6 @@ impl From<&Currencies> for ListingCurrencies {
 }
 
 impl fmt::Display for ListingCurrencies {
-    
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.keys != 0.0 && self.metal != 0 {
             write!(
@@ -332,7 +314,6 @@ impl fmt::Display for ListingCurrencies {
 }
 
 impl<'de> Deserialize<'de> for ListingCurrencies {
-    
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -348,7 +329,6 @@ impl<'de> Deserialize<'de> for ListingCurrencies {
 }
 
 impl Serialize for ListingCurrencies {
-    
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -395,6 +375,16 @@ mod tests {
             keys: 2.0,
             metal: refined!(23) + scrap!(4),
         });
+    }
+    
+    #[test]
+    fn to_metal_correct() {
+        let key_price = 10;
+        
+        assert_eq!(ListingCurrencies {
+            keys: 0.19,
+            metal: 0,
+        }.to_metal(key_price), 2);
     }
     
     #[test]

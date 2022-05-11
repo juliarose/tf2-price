@@ -88,3 +88,8 @@
 
 ### Added
 - `USDCurrencies` for currencies which hold a cash value.
+
+## 0.7.1 (2022-05-11)
+
+### Fixed
+- `to_metal` in `ListingCurrencies` method not rounding values.

@@ -9,7 +9,6 @@ pub struct TryFromListingCurrenciesError {
 impl std::error::Error for TryFromListingCurrenciesError {}
 
 impl fmt::Display for TryFromListingCurrenciesError {
- 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Currencies contains fractional value: {}", self.fract)
     }
@@ -25,14 +24,12 @@ pub enum ParseError {
 }
 
 impl From<ParseIntError> for ParseError {
-    
     fn from(error: ParseIntError) -> Self {
         Self::ParseInt(error)
     }
 }
 
 impl From<ParseFloatError> for ParseError {
-    
     fn from(error: ParseFloatError) -> Self {
         Self::ParseFloat(error)
     }
@@ -41,7 +38,6 @@ impl From<ParseFloatError> for ParseError {
 impl std::error::Error for ParseError {}
 
 impl fmt::Display for ParseError {
- 
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ParseError::NoCurrencies => write!(f, "No currencies could be parsed from string"),

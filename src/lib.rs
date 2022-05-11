@@ -38,7 +38,6 @@
 //! In addition, all key values in methods are represented as values in weapons. If you need to 
 //! use a floating point key price e.g. 70.22, you may use [`helpers::get_metal_from_float`] which 
 //! will convert it into the closest appropriate value e.g. `(70.22 * 18 as f32).round() as i32`.
-
 #[macro_use] extern crate impl_ops;
 
 mod helpers;
