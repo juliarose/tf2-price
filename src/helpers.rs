@@ -11,6 +11,35 @@ use crate::{
 };
 use serde::{Deserialize, Deserializer};
 
+/// Determines if two integers have the same sign (both positive or both negative).
+fn same_sign_i32(a: i32, b:i32) -> bool {
+    (
+        a >= 0 &&
+        b >= 0
+    ) ||
+    (
+        a < 0 &&
+        b < 0
+    )
+}
+
+/// Converts currencies to a metal value using the given key price (represented as weapons).
+/// In cases where the result overflows or underflows beyond the limit for i32, the max or 
+/// min i32 will be returned. In most cases values this high are not useful.
+pub fn to_metal(metal: i32, keys: i32, key_price: i32) -> i32 {
+    match keys.checked_mul(key_price) {
+        // saturating_add will limit the addition to the lower or upper bounds
+        Some(result) => metal.saturating_add(result),
+        // two positives always equal a positive
+        // and two negatives always equal a positive
+        // return the maximum i32
+        None if same_sign_i32(keys, key_price) => i32::MAX,
+        // otherwise this number will be negative
+        // return the minimum i32
+        None => i32::MIN,
+    }
+}
+
 pub fn metal_deserializer<'de, D>(deserializer: D) -> Result<i32, D::Error>
 where
     D: Deserializer<'de>

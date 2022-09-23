@@ -93,3 +93,8 @@
 
 ### Fixed
 - `to_metal` in `ListingCurrencies` method not rounding values.
+
+## 0.7.2 (2022-09-22)
+
+### Fixed
+- `to_metal` in `Currencies` method overflowing or underflowing with addition or multiplication when working with larger values.

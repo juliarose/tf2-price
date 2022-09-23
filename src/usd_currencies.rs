@@ -3,7 +3,7 @@ use crate::helpers;
 use std::{fmt, cmp::{Ord, Ordering}, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
 
 /// For storing cash values.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
 pub struct USDCurrencies {
     /// Cash value in cents.
     #[serde(with = "helpers::cents", default)]

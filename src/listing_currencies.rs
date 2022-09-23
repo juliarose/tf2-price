@@ -16,7 +16,7 @@ use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::Se
 
 /// The `keys` field for `ListingCurrencies` is defined as an f32. Use this anywhere you may
 /// need key values which include decimal places.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
 #[serde(remote = "Self")]
 pub struct ListingCurrencies {
     #[serde(default)]

@@ -15,7 +15,7 @@ use std::{fmt, cmp::{Ord, Ordering}, ops::{self, AddAssign, SubAssign, MulAssign
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
 
 /// For storing item currencies values.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
 #[serde(remote = "Self")]
 pub struct Currencies {
     #[serde(default)]
@@ -109,8 +109,10 @@ impl Currencies {
     }
     
     /// Converts currencies to a metal value using the given key price (represented as weapons).
+    /// In cases where the result overflows or underflows beyond the limit for i32, the max or 
+    /// min i32 will be returned. In most cases values this high are not useful.
     pub fn to_metal(&self, key_price: i32) -> i32 {
-        self.metal + (self.keys * key_price)
+        helpers::to_metal(self.metal, self.keys, key_price)
     }
     
     /// Checks if the currencies contain any value.
@@ -910,5 +912,16 @@ mod tests {
         currencies.sort();
         
         assert_eq!(*currencies.iter().rev().next().unwrap(), Currencies { keys: 10, metal: 4});
+    }
+    
+    #[test]
+    fn to_metal_saturating_integer_bounds() {
+        let key_price = refined!(50);
+        
+        assert_eq!(Currencies { keys: i32::MAX - 100, metal: 0 }.to_metal(key_price), i32::MAX);
+        assert_eq!(Currencies { keys: i32::MAX - 100, metal: 0 }.to_metal(key_price * -1), i32::MIN);
+        assert_eq!(Currencies { keys: 1, metal: i32::MAX }.to_metal(key_price), i32::MAX);
+        assert_eq!(Currencies { keys: -1, metal: i32::MIN }.to_metal(key_price), i32::MIN);
+        assert_eq!(Currencies { keys: 1, metal: i32::MIN }.to_metal(key_price), i32::MIN + key_price);
     }
 }
