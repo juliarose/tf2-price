@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
 use crate::helpers;
 use std::{fmt, cmp::{Ord, Ordering}, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
+use num_traits::ops::checked::{CheckedAdd, CheckedSub};
 
 /// For storing cash values.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
@@ -73,6 +74,30 @@ impl USDCurrencies {
     /// ```
     pub fn to_dollars(&self) -> f32 {
         helpers::cents_to_dollars(self.usd)
+    }
+    
+    /// Checked integer multiplication. Computes self * rhs for each field, returning None if 
+    /// overflow occurred
+    pub fn checked_mul(&self, rhs: i32) -> Option<Self> {
+        Some(Self { usd: self.usd.checked_mul(rhs)? })
+    }
+    
+    /// Checked integer division. Computes self / rhs, returning None if rhs == 0 or the division 
+    /// results in overflow.
+    pub fn checked_div(&self, rhs: i32) -> Option<Self> {
+        Some(Self { usd: self.usd.checked_div(rhs)? })
+    }
+}
+
+impl CheckedAdd for USDCurrencies {
+    fn checked_add(&self, other: &Self) -> Option<Self> {
+        Some(Self { usd: self.usd.checked_add(other.usd)? })
+    }
+}
+
+impl CheckedSub for USDCurrencies {
+    fn checked_sub(&self, other: &Self) -> Option<Self> {
+        Some(Self { usd: self.usd.checked_sub(other.usd)? })
     }
 }
 

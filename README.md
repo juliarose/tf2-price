@@ -38,16 +38,23 @@ fn main() {
     // Arithmetic.
     assert_eq!(
         &golden_frying_pan * 2,
-        Currencies { keys: 6000, metal: 0 }
+        Currencies { keys: 6000, metal: 0 },
     );
     assert_eq!(
         &golden_frying_pan * 2.5,
-        Currencies { keys: 7500, metal: 0 }
+        Currencies { keys: 7500, metal: 0 },
     );
     assert_eq!(
         &golden_frying_pan + Currencies { keys: 0, metal: 2 },
-        Currencies { keys: 3000, metal: 2 }
+        Currencies { keys: 3000, metal: 2 },
     );
+    
+    // There are also some helper methods for checking for integer overflow/underflow.
+    assert_eq!(
+        Currencies { keys: 2, metal: 0 }.checked_add(&Currencies { keys: i32::MAX, metal: 0 }),
+        None,
+    );
+    assert_eq!(Currencies { keys: 2, metal: 0 }.checked_mul(i32::MAX), None);
     
     // For currencies which require floating point key values, use ListingCurrencies.
     let currencies = ListingCurrencies {
@@ -58,7 +65,7 @@ fn main() {
     // Arithmetic with standard Currencies objects still works.
     assert_eq!(
         ListingCurrencies { keys: 1.5, metal: 0 } - Currencies { keys: 1, metal: 0 },
-        ListingCurrencies { keys: 0.5, metal: 0 }
+        ListingCurrencies { keys: 0.5, metal: 0 },
     );
     // Due to the lossy nature of converting floats to integers, arithmatic in an inverse
     // manner (Currencies - ListingCurrencies) is not supported.

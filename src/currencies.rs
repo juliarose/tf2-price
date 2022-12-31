@@ -13,6 +13,7 @@ use crate::{
 };
 use std::{fmt, cmp::{Ord, Ordering}, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
+use num_traits::ops::checked::{CheckedAdd, CheckedSub};
 
 /// For storing item currencies values.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
@@ -124,6 +125,24 @@ impl Currencies {
     pub fn round(&mut self, rounding: &Rounding) {
         self.metal = helpers::round_metal(self.metal, rounding);
     }
+    
+    /// Checked integer multiplication. Computes self * rhs for each field, returning None if 
+    /// overflow occurred
+    pub fn checked_mul(&self, rhs: i32) -> Option<Self> {
+        let keys = self.keys.checked_mul(rhs)?;
+        let metal = self.metal.checked_mul(rhs)?;
+        
+        Some(Self { keys, metal })
+    }
+    
+    /// Checked integer division. Computes self / rhs, returning None if rhs == 0 or the division 
+    /// results in overflow.
+    pub fn checked_div(&self, rhs: i32) -> Option<Self> {
+        let keys = self.keys.checked_div(rhs)?;
+        let metal = self.metal.checked_div(rhs)?;
+        
+        Some(Self { keys, metal })
+    }
 }
 
 /// Comparison with `ListingCurrencies` will fail if `ListingCurrencies` has a fractional key value.
@@ -135,10 +154,28 @@ impl PartialEq<ListingCurrencies> for Currencies {
     }
 }
 
+impl CheckedAdd for Currencies {
+    fn checked_add(&self, other: &Self) -> Option<Self> {
+        let keys = self.keys.checked_add(other.keys)?;
+        let metal = self.metal.checked_add(other.metal)?;
+        
+        Some(Self { keys, metal })
+    }
+}
+
+impl CheckedSub for Currencies {
+    fn checked_sub(&self, other: &Self) -> Option<Self> {
+        let keys = self.keys.checked_sub(other.keys)?;
+        let metal = self.metal.checked_sub(other.metal)?;
+        
+        Some(Self { keys, metal })
+    }
+}
+
 impl_op_ex!(+ |a: &Currencies, b: &Currencies| -> Currencies { 
     Currencies {
         keys: a.keys + b.keys,
-        metal: a.metal + b.metal
+        metal: a.metal + b.metal,
     } 
 });
 
@@ -923,5 +960,17 @@ mod tests {
         assert_eq!(Currencies { keys: 1, metal: i32::MAX }.to_metal(key_price), i32::MAX);
         assert_eq!(Currencies { keys: -1, metal: i32::MIN }.to_metal(key_price), i32::MIN);
         assert_eq!(Currencies { keys: 1, metal: i32::MIN }.to_metal(key_price), i32::MIN + key_price);
+    }
+    
+    #[test]
+    fn checked_mul() {
+        assert_eq!(Currencies { keys: 2, metal: 0 }.checked_mul(i32::MAX), None);
+    }
+    #[test]
+    fn checked_add() {
+        assert_eq!(
+            Currencies { keys: 2, metal: 0 }.checked_add(&Currencies { keys: i32::MAX, metal: 0 }),
+            None,
+        );
     }
 }
