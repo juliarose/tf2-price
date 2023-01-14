@@ -110,3 +110,9 @@
 - `check_sub` to `USDCurrencies`.
 - `check_mul` to `USDCurrencies`.
 - `check_div` to `USDCurrencies`.
+
+## 0.8.1 (2023-01-14)
+
+### Added
+- `checked_to_metal` to `Currencies`.
+- `checked_to_metal` to `ListingCurrencies`.

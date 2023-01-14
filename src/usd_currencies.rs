@@ -38,6 +38,7 @@ impl Default for USDCurrencies {
 }
 
 impl USDCurrencies {
+    /// Creates a new [`USDCurrencies`] with 0 usd.
     pub fn new() -> Self {
         Self {
             usd: 0,

@@ -40,6 +40,13 @@ pub fn to_metal(metal: i32, keys: i32, key_price: i32) -> i32 {
     }
 }
 
+/// Converts currencies to a metal value using the given key price (represented as weapons).
+/// In cases where the result overflows or underflows beyond the limit for i32, `None` is 
+/// returned.
+pub fn checked_to_metal(metal: i32, keys: i32, key_price: i32) -> Option<i32> {
+    metal.checked_add(keys.checked_mul(key_price)?)
+}
+
 pub fn metal_deserializer<'de, D>(deserializer: D) -> Result<i32, D::Error>
 where
     D: Deserializer<'de>

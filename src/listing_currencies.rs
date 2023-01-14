@@ -58,6 +58,7 @@ impl Default for ListingCurrencies {
 }
 
 impl ListingCurrencies {
+    /// Creates a new [`ListingCurrencies`] with 0 keys and 0 metal.
     pub fn new() -> Self {
         Self {
             keys: 0.0,
@@ -71,9 +72,24 @@ impl ListingCurrencies {
     }
     
     /// Converts currencies to a metal value using the given key price (represented as weapons).
-    /// This method will round the number.
+    /// Rounds float conversions and saturates at integer bounds.
     pub fn to_metal(&self, key_price: i32) -> i32 {
-        self.metal + (self.keys * key_price as f32).round() as i32
+        self.metal.saturating_add((self.keys * key_price as f32).round() as i32)
+    }
+    
+    /// Converts currencies to a metal value using the given key price (represented as weapons).
+    /// In cases where the result overflows or underflows beyond the limit for i32, `None` is 
+    /// returned.
+    pub fn checked_to_metal(&self, key_price: i32) -> Option<i32> {
+        let result = (self.keys * key_price as f32).round();
+        let result_i32 = result as i32;
+        
+        // Check for overflow by seeing if conversions produce unequal results
+        if result != result_i32 as f32 {
+            return None;
+        }
+        
+        self.metal.checked_add(result_i32)
     }
     
     /// Checks if the currencies contain any value.
@@ -622,14 +638,22 @@ mod tests {
     #[test]
     fn sorts() {
         let mut currencies = vec![
-            ListingCurrencies { keys: 2.0, metal: 4},
-            ListingCurrencies { keys: 0.0, metal: 2},
-            ListingCurrencies { keys: 10.0, metal: 4},
+            ListingCurrencies { keys: 2.0, metal: 4 },
+            ListingCurrencies { keys: 0.0, metal: 2 },
+            ListingCurrencies { keys: 10.0, metal: 4 },
         ];
         
         // lowest to highest
         currencies.sort();
         
         assert_eq!(*currencies.iter().rev().next().unwrap(), ListingCurrencies { keys: 10.0, metal: 4});
+    }
+    
+    #[test]
+    fn checked_to_metal() {
+        assert_eq!(
+            ListingCurrencies { keys: i32::MAX as f32, metal: 4 }.checked_to_metal(i32::MAX),
+            None,
+        );
     }
 }

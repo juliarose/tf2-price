@@ -116,6 +116,13 @@ impl Currencies {
         helpers::to_metal(self.metal, self.keys, key_price)
     }
     
+    /// Converts currencies to a metal value using the given key price (represented as weapons).
+    /// In cases where the result overflows or underflows beyond the limit for i32, `None` will
+    /// be returned.
+    pub fn checked_to_metal(&self, key_price: i32) -> Option<i32> {
+        helpers::checked_to_metal(self.metal, self.keys, key_price)
+    }
+    
     /// Checks if the currencies contain any value.
     pub fn is_empty(&self) -> bool {
         self.keys == 0 && self.metal == 0
@@ -966,10 +973,19 @@ mod tests {
     fn checked_mul() {
         assert_eq!(Currencies { keys: 2, metal: 0 }.checked_mul(i32::MAX), None);
     }
+    
     #[test]
     fn checked_add() {
         assert_eq!(
             Currencies { keys: 2, metal: 0 }.checked_add(&Currencies { keys: i32::MAX, metal: 0 }),
+            None,
+        );
+    }
+    
+    #[test]
+    fn checked_to_metal() {
+        assert_eq!(
+            Currencies { keys: i32::MAX, metal: 0 }.checked_to_metal(i32::MAX),
             None,
         );
     }
