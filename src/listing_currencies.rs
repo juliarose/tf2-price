@@ -656,4 +656,12 @@ mod tests {
             None,
         );
     }
+    
+    #[test]
+    fn checked_to_metal_correct_value() {
+        assert_eq!(
+            ListingCurrencies { keys: 10.0, metal: 5 }.checked_to_metal(10),
+            Some(105),
+        );
+    }
 }

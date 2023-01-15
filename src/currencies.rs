@@ -989,4 +989,12 @@ mod tests {
             None,
         );
     }
+    
+    #[test]
+    fn checked_to_metal_correct_value() {
+        assert_eq!(
+            Currencies { keys: 10, metal: 5 }.checked_to_metal(10),
+            Some(105),
+        );
+    }
 }
