@@ -38,6 +38,9 @@
 //! In addition, all key values in methods are represented as values in weapons. If you need to 
 //! use a floating point key price e.g. 70.22, you may use [`helpers::get_metal_from_float`] which 
 //! will convert it into the closest appropriate value e.g. `(70.22 * 18 as f32).round() as i32`.
+//! 
+//! Arithmatic uses saturating operations. Adding two currencies that both contain values of  
+//! `i32::MAX`will result in `i32::MAX` rather than rolling over. If you need to check 
 #[macro_use] extern crate impl_ops;
 
 mod helpers;
@@ -57,7 +60,7 @@ pub use rounding::Rounding;
 pub use helpers::{get_metal_from_float, get_metal_float};
 pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
 
-/// Generates value for refined metal
+/// Generates value for refined metal.
 #[macro_export]
 macro_rules! refined {
     ($a:expr) => {
@@ -67,7 +70,7 @@ macro_rules! refined {
     }
 }
 
-/// Generates value for reclaimed metal
+/// Generates value for reclaimed metal.
 #[macro_export]
 macro_rules! reclaimed {
     ($a:expr) => {
@@ -77,7 +80,7 @@ macro_rules! reclaimed {
     }
 }
 
-/// Generates value for scrap metal
+/// Generates value for scrap metal.
 #[macro_export]
 macro_rules! scrap {
     ($a:expr) => {

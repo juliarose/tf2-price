@@ -2,14 +2,9 @@ use crate::{
     Rounding,
     ListingCurrencies,
     helpers,
-    error::{TryFromListingCurrenciesError, ParseError},
     traits::SerializeCurrencies,
-    constants::{
-        KEYS_SYMBOL,
-        KEY_SYMBOL,
-        METAL_SYMBOL,
-        EMPTY_SYMBOL,
-    },
+    error::{TryFromListingCurrenciesError, ParseError},
+    constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, EMPTY_SYMBOL},
 };
 use std::{fmt, cmp::{Ord, Ordering}, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
 use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
@@ -19,13 +14,13 @@ use num_traits::ops::checked::{CheckedAdd, CheckedSub};
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
 #[serde(remote = "Self")]
 pub struct Currencies {
-    #[serde(default)]
     /// Amount of keys.
+    #[serde(default)]
     pub keys: i32,
-    #[serde(deserialize_with = "helpers::metal_deserializer", default)]
     /// Amount of metal expressed as weapons. A metal value of 6 would 
     /// be equivalent to 3 scrap. You may use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and 
     /// `ONE_WEAPON`constants to perform arithmatic.
+    #[serde(deserialize_with = "helpers::metal_deserializer", default)]
     pub metal: i32,
 }
 
@@ -61,6 +56,7 @@ impl Default for Currencies {
 
 impl Currencies {
     
+    /// Creates a new [`Currencies`] with `0` keys and `0` metal.
     pub fn new() -> Self {
         Self {
             keys: 0,
@@ -93,10 +89,11 @@ impl Currencies {
     pub fn from_listing_currencies(currencies: ListingCurrencies, key_price: i32) -> Self {
         let keys = currencies.keys;
         let metal = currencies.metal;
+        let keys_metal = ((keys % 1.0) * key_price as f32).round() as i32;
         
         Self {
             keys: keys as i32,
-            metal: ((keys % 1.0) * key_price as f32).round() as i32 + metal
+            metal: keys_metal.saturating_add(metal),
         }
     }
     
@@ -150,9 +147,29 @@ impl Currencies {
         
         Some(Self { keys, metal })
     }
+    
+    /// Checks whether the currencies have enough keys and metal to afford the `other` currencies.
+    /// This is simply `self.keys >= other.keys && self.metal >= other.metal`.
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// use tf2_price::Currencies;
+    /// 
+    /// let currencies = Currencies { keys: 100, metal: 30 };
+    /// 
+    /// // We have at least 50 keys and 30 metal.
+    /// assert!(currencies.can_afford(&Currencies { keys: 50, metal: 30 }));
+    /// // Not enough metal - we can't afford this.
+    /// assert!(!currencies.can_afford(&Currencies { keys: 50, metal: 100 }));
+    /// ```
+    pub fn can_afford(&self, other: &Self) -> bool {
+        self.keys >= other.keys && self.metal >= other.metal
+    }
 }
 
-/// Comparison with `ListingCurrencies` will fail if `ListingCurrencies` has a fractional key value.
+/// Comparison with `ListingCurrencies` will fail if `ListingCurrencies` has a fractional key 
+/// value.
 impl PartialEq<ListingCurrencies> for Currencies {
     fn eq(&self, other: &ListingCurrencies) -> bool {
         !other.is_fract() &&
@@ -181,29 +198,29 @@ impl CheckedSub for Currencies {
 
 impl_op_ex!(+ |a: &Currencies, b: &Currencies| -> Currencies { 
     Currencies {
-        keys: a.keys + b.keys,
-        metal: a.metal + b.metal,
+        keys: a.keys.saturating_add(b.keys),
+        metal: a.metal.saturating_add(b.metal),
     } 
 });
 
 impl_op_ex!(- |a: &Currencies, b: &Currencies| -> Currencies { 
     Currencies {
-        keys: a.keys - b.keys,
-        metal: a.metal - b.metal,
+        keys: a.keys.saturating_sub(b.keys),
+        metal: a.metal.saturating_sub(b.metal),
     }
 });
 
 impl_op_ex!(* |currencies: &Currencies, num: i32| -> Currencies {
     Currencies {
-        keys: currencies.keys * num,
-        metal: currencies.metal * num,
+        keys: currencies.keys.saturating_mul(num),
+        metal: currencies.metal.saturating_mul(num),
     }
 });
 
 impl_op_ex!(/ |currencies: &Currencies, num: i32| -> Currencies {
     Currencies {
-        keys: currencies.keys / num,
-        metal: currencies.metal / num,
+        keys: currencies.keys.saturating_div(num),
+        metal: currencies.metal.saturating_div(num),
     }
 });
 
@@ -223,36 +240,36 @@ impl_op_ex!(/ |currencies: &Currencies, num: f32| -> Currencies {
 
 impl AddAssign<Currencies> for Currencies {
     fn add_assign(&mut self, other: Self) {
-        self.keys += other.keys;
-        self.metal += other.metal;
+        self.keys = self.keys.saturating_add(other.keys);
+        self.metal = self.metal.saturating_add(other.metal);
     }
 }
 
 impl AddAssign<&Currencies> for Currencies {
     fn add_assign(&mut self, other: &Self) {
-        self.keys += other.keys;
-        self.metal += other.metal;
+        self.keys = self.keys.saturating_add(other.keys);
+        self.metal = self.metal.saturating_add(other.metal);
     }
 }
 
 impl SubAssign<Currencies> for Currencies {
     fn sub_assign(&mut self, other: Self) {
-        self.keys -= other.keys;
-        self.metal -= other.metal;
+        self.keys = self.keys.saturating_sub(other.keys);
+        self.metal = self.metal.saturating_sub(other.metal);
     }
 }
 
 impl SubAssign<&Currencies> for Currencies {
     fn sub_assign(&mut self, other: &Self) {
-        self.keys -= other.keys;
-        self.metal -= other.metal;
+        self.keys = self.keys.saturating_sub(other.keys);
+        self.metal = self.metal.saturating_sub(other.metal);
     }
 }
 
 impl MulAssign<i32> for Currencies {
     fn mul_assign(&mut self, other: i32) {
-        self.keys *= other;
-        self.metal *= other;
+        self.keys = self.keys.saturating_mul(other);
+        self.metal = self.metal.saturating_mul(other);
     }
 }
 
@@ -265,8 +282,8 @@ impl MulAssign<f32> for Currencies {
 
 impl DivAssign<i32> for Currencies {
     fn div_assign(&mut self, other: i32) {
-        self.keys /= other;
-        self.metal /= other;
+        self.keys = self.keys.saturating_div(other);
+        self.metal = self.metal.saturating_div(other);
     }
 }
 

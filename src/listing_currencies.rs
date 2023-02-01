@@ -19,8 +19,12 @@ use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::Se
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
 #[serde(remote = "Self")]
 pub struct ListingCurrencies {
+    /// Amount of keys.
     #[serde(default)]
     pub keys: f32,
+    /// Amount of metal expressed as weapons. A metal value of 6 would 
+    /// be equivalent to 3 scrap. You may use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and 
+    /// `ONE_WEAPON`constants to perform arithmatic.
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
     pub metal: i32,
 }
@@ -58,7 +62,7 @@ impl Default for ListingCurrencies {
 }
 
 impl ListingCurrencies {
-    /// Creates a new [`ListingCurrencies`] with 0 keys and 0 metal.
+    /// Creates a new [`ListingCurrencies`] with `0` keys and `0` metal.
     pub fn new() -> Self {
         Self {
             keys: 0.0,
@@ -66,7 +70,7 @@ impl ListingCurrencies {
         }
     }
     
-    /// Checks if the `keys` value has a fractional value.
+    /// Checks if the `keys` value is a fractional value.
     pub fn is_fract(&self) -> bool {
         self.keys.fract() != 0.0
     }
@@ -101,6 +105,25 @@ impl ListingCurrencies {
     pub fn round(&mut self, rounding: &Rounding) {
         self.metal = helpers::round_metal(self.metal, rounding);
     }
+    
+    /// Checks whether the currencies have enough keys and metal to afford the `other` currencies.
+    /// This is simply `self.keys >= other.keys && self.metal >= other.metal`.
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// use tf2_price::Currencies;
+    /// 
+    /// let currencies = Currencies { keys: 100, metal: 30 };
+    /// 
+    /// // We have at least 50 keys and 30 metal.
+    /// assert!(currencies.can_afford(&Currencies { keys: 50, metal: 30 }));
+    /// // Not enough metal - we can't afford this.
+    /// assert!(!currencies.can_afford(&Currencies { keys: 50, metal: 100 }));
+    /// ```
+    pub fn can_afford(&self, other: &Self) -> bool {
+        self.keys >= other.keys && self.metal >= other.metal
+    }
 }
 
 impl PartialEq<Currencies> for ListingCurrencies {
@@ -114,56 +137,56 @@ impl PartialEq<Currencies> for ListingCurrencies {
 impl_op_ex!(+ |a: &ListingCurrencies, b: &ListingCurrencies| -> ListingCurrencies { 
     ListingCurrencies {
         keys: a.keys + b.keys,
-        metal: a.metal + b.metal
+        metal: a.metal.saturating_add(b.metal),
     } 
 });
 
 impl_op_ex!(+ |a: &ListingCurrencies, b: &Currencies| -> ListingCurrencies { 
     ListingCurrencies {
         keys: a.keys + b.keys as f32,
-        metal: a.metal + b.metal
+        metal: a.metal.saturating_add(b.metal),
     } 
 });
 
 impl_op_ex!(+ |a: &Currencies, b: &ListingCurrencies| -> ListingCurrencies { 
     ListingCurrencies {
         keys: a.keys as f32 + b.keys,
-        metal: a.metal + b.metal
+        metal: a.metal.saturating_add(b.metal),
     } 
 });
 
 impl_op_ex!(- |a: &ListingCurrencies, b: &ListingCurrencies| -> ListingCurrencies { 
     ListingCurrencies {
         keys: a.keys - b.keys,
-        metal: a.metal - b.metal,
+        metal: a.metal.saturating_sub(b.metal),
     }
 });
 
 impl_op_ex!(- |a: &ListingCurrencies, b: &Currencies| -> ListingCurrencies { 
     ListingCurrencies {
         keys: a.keys - b.keys as f32,
-        metal: a.metal - b.metal
+        metal: a.metal.saturating_sub(b.metal),
     } 
 });
 
 impl_op_ex!(- |a: &Currencies, b: &ListingCurrencies| -> ListingCurrencies { 
     ListingCurrencies {
         keys: a.keys as f32 - b.keys,
-        metal: a.metal - b.metal
+        metal: a.metal.saturating_sub(b.metal),
     } 
 });
 
 impl_op_ex!(* |currencies: &ListingCurrencies, num: i32| -> ListingCurrencies {
     ListingCurrencies {
         keys: currencies.keys * num as f32,
-        metal: currencies.metal * num,
+        metal: currencies.metal.saturating_mul(num),
     }
 });
 
 impl_op_ex!(/ |currencies: &ListingCurrencies, num: i32| -> ListingCurrencies {
     ListingCurrencies {
         keys: currencies.keys / num as f32,
-        metal: currencies.metal / num,
+        metal: currencies.metal.saturating_div(num),
     }
 });
 
@@ -184,28 +207,28 @@ impl_op_ex!(/ |currencies: &ListingCurrencies, num: f32| -> ListingCurrencies {
 impl AddAssign<ListingCurrencies> for ListingCurrencies {
     fn add_assign(&mut self, other: Self) {
         self.keys += other.keys;
-        self.metal += other.metal;
+        self.metal = self.metal.saturating_add(other.metal);
     }
 }
 
 impl AddAssign<&ListingCurrencies> for ListingCurrencies {
     fn add_assign(&mut self, other: &Self) {
         self.keys += other.keys;
-        self.metal += other.metal;
+        self.metal = self.metal.saturating_add(other.metal);
     }
 }
 
 impl SubAssign<ListingCurrencies> for ListingCurrencies {
     fn sub_assign(&mut self, other: Self) {
         self.keys -= other.keys;
-        self.metal -= other.metal;
+        self.metal = self.metal.saturating_sub(other.metal);
     }
 }
 
 impl SubAssign<&ListingCurrencies> for ListingCurrencies {
     fn sub_assign(&mut self, other: &Self) {
         self.keys -= other.keys;
-        self.metal -= other.metal;
+        self.metal = self.metal.saturating_sub(other.metal);
     }
 }
 
@@ -214,35 +237,35 @@ impl SubAssign<&ListingCurrencies> for ListingCurrencies {
 impl AddAssign<Currencies> for ListingCurrencies {
     fn add_assign(&mut self, other: Currencies) {
         self.keys += other.keys as f32;
-        self.metal += other.metal;
+        self.metal = self.metal.saturating_add(other.metal);
     }
 }
 
 impl AddAssign<&Currencies> for ListingCurrencies {
     fn add_assign(&mut self, other: &Currencies) {
         self.keys += other.keys as f32;
-        self.metal += other.metal;
+        self.metal = self.metal.saturating_add(other.metal);
     }
 }
 
 impl SubAssign<Currencies> for ListingCurrencies {
     fn sub_assign(&mut self, other: Currencies) {
         self.keys -= other.keys as f32;
-        self.metal -= other.metal;
+        self.metal = self.metal.saturating_sub(other.metal);
     }
 }
 
 impl SubAssign<&Currencies> for ListingCurrencies {
     fn sub_assign(&mut self, other: &Currencies) {
         self.keys -= other.keys as f32;
-        self.metal -= other.metal;
+        self.metal = self.metal.saturating_sub(other.metal);
     }
 }
 
 impl MulAssign<i32> for ListingCurrencies {
     fn mul_assign(&mut self, other: i32) {
         self.keys *= other as f32;
-        self.metal *= other;
+        self.metal = self.metal.saturating_mul(other);
     }
 }
 
@@ -256,7 +279,7 @@ impl MulAssign<f32> for ListingCurrencies {
 impl DivAssign<i32> for ListingCurrencies {
     fn div_assign(&mut self, other: i32) {
         self.keys /= other as f32;
-        self.metal /= other;
+        self.metal = self.metal.saturating_div(other);
     }
 }
 

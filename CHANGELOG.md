@@ -115,4 +115,13 @@
 
 ### Added
 - `checked_to_metal` to `Currencies`.
-- `checked_to_metal` to `ListingCurrencies`.
+- `checked_to_metal` to ``ListingCurrencies``.
+
+## 0.9.0 (2023-02-01)
+
+### Added
+- `can_afford` to `Currencies`.
+- `can_afford` to ``ListingCurrencies``.
+
+### Changed
+- Aside from the macros, all arithmatic operations are now saturating.

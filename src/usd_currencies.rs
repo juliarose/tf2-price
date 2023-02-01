@@ -38,7 +38,7 @@ impl Default for USDCurrencies {
 }
 
 impl USDCurrencies {
-    /// Creates a new [`USDCurrencies`] with 0 usd.
+    /// Creates a new [`USDCurrencies`] with `0` usd.
     pub fn new() -> Self {
         Self {
             usd: 0,
@@ -142,25 +142,25 @@ impl fmt::Display for USDCurrencies {
 
 impl_op_ex!(+ |a: &USDCurrencies, b: &USDCurrencies| -> USDCurrencies { 
     USDCurrencies {
-        usd: a.usd + b.usd,
+        usd: a.usd.saturating_add(b.usd),
     } 
 });
 
 impl_op_ex!(- |a: &USDCurrencies, b: &USDCurrencies| -> USDCurrencies { 
     USDCurrencies {
-        usd: a.usd - b.usd,
+        usd: a.usd.saturating_sub(b.usd),
     }
 });
 
 impl_op_ex!(* |currencies: &USDCurrencies, num: i32| -> USDCurrencies {
     USDCurrencies {
-        usd: currencies.usd * num,
+        usd: currencies.usd.saturating_mul(num),
     }
 });
 
 impl_op_ex!(/ |currencies: &USDCurrencies, num: i32| -> USDCurrencies {
     USDCurrencies {
-        usd: currencies.usd / num,
+        usd: currencies.usd.saturating_div(num),
     }
 });
 
@@ -178,31 +178,31 @@ impl_op_ex!(/ |currencies: &USDCurrencies, num: f32| -> USDCurrencies {
 
 impl AddAssign<USDCurrencies> for USDCurrencies {
     fn add_assign(&mut self, other: Self) {
-        self.usd += other.usd;
+        self.usd = self.usd.saturating_add(other.usd);
     }
 }
 
 impl AddAssign<&USDCurrencies> for USDCurrencies {
     fn add_assign(&mut self, other: &Self) {
-        self.usd += other.usd;
+        self.usd = self.usd.saturating_add(other.usd);
     }
 }
 
 impl SubAssign<USDCurrencies> for USDCurrencies {
     fn sub_assign(&mut self, other: Self) {
-        self.usd -= other.usd;
+        self.usd = self.usd.saturating_sub(other.usd);
     }
 }
 
 impl SubAssign<&USDCurrencies> for USDCurrencies {
     fn sub_assign(&mut self, other: &Self) {
-        self.usd -= other.usd;
+        self.usd = self.usd.saturating_sub(other.usd);
     }
 }
 
 impl MulAssign<i32> for USDCurrencies {
     fn mul_assign(&mut self, other: i32) {
-        self.usd *= other;
+        self.usd = self.usd.saturating_mul(other);
     }
 }
 
@@ -214,7 +214,7 @@ impl MulAssign<f32> for USDCurrencies {
 
 impl DivAssign<i32> for USDCurrencies {
     fn div_assign(&mut self, other: i32) {
-        self.usd /= other;
+        self.usd = self.usd.saturating_div(other);
     }
 }
 
