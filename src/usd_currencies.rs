@@ -113,9 +113,9 @@ fn thousands(string: String) -> String {
     let int_part = &string[..idx];
     let fract_part = &string[idx..];
     let mut output = String::new();
-    let magnitude = if int_part.starts_with('-') {
+    let magnitude = if let Some(stripped) = int_part.strip_prefix('-') {
         output.push('-');
-        int_part[1..].to_owned()
+        stripped.to_owned()
     } else {
         int_part.to_owned()
     };

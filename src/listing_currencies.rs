@@ -527,7 +527,7 @@ mod tests {
     
     #[test]
     fn subtracts_non_float_currencies() {
-        assert_eq!(&ListingCurrencies {
+        assert_eq!(ListingCurrencies {
             keys: 1.5,
             metal: 0,
         } - Currencies { keys: 1, metal: 0 }, ListingCurrencies { keys: 0.5, metal: 0 });
@@ -574,7 +574,7 @@ mod tests {
             metal: refined!(10),
         });
         
-        assert_eq!(currencies.is_err(), true);
+        assert!(currencies.is_err());
     }
     
     #[test]

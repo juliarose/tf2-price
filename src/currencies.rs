@@ -652,12 +652,12 @@ mod tests {
     
     #[test]
     fn parses_currencies_from_string_invalid_currencies() {
-        assert_eq!(Currencies::try_from("what").is_err(), true);
+        assert!(Currencies::try_from("what").is_err());
     }
     
     #[test]
     fn parses_currencies_from_string_invalid_currencies_extra() {
-        assert_eq!(Currencies::try_from("2 keys, 3 what").is_err(), true);
+        assert!(Currencies::try_from("2 keys, 3 what").is_err());
     }
     
     #[test]
