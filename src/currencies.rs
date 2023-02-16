@@ -1012,7 +1012,7 @@ mod tests {
         let key_price = refined!(50);
         
         assert_eq!(Currencies { keys: i32::MAX - 100, metal: 0 }.to_metal(key_price), i32::MAX);
-        assert_eq!(Currencies { keys: i32::MAX - 100, metal: 0 }.to_metal(key_price * -1), i32::MIN);
+        assert_eq!(Currencies { keys: i32::MAX - 100, metal: 0 }.to_metal(-key_price), i32::MIN);
         assert_eq!(Currencies { keys: 1, metal: i32::MAX }.to_metal(key_price), i32::MAX);
         assert_eq!(Currencies { keys: -1, metal: i32::MIN }.to_metal(key_price), i32::MIN);
         assert_eq!(Currencies { keys: 1, metal: i32::MIN }.to_metal(key_price), i32::MIN + key_price);
