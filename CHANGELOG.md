@@ -125,3 +125,11 @@
 
 ### Changed
 - Aside from the macros, all arithmatic operations are now saturating.
+
+## 0.10.0 (2023-02-16)
+
+### Added
+- `neaten` to `Currencies`.
+
+### Fixed
+- An issue with overflowing values resulting in `i32::MIN` in the `to_metal` method.

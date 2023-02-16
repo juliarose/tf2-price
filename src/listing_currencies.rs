@@ -1,20 +1,16 @@
-use crate::{
-    Rounding,
-    Currencies,
-    helpers,
-    error::ParseError,
-    traits::SerializeCurrencies,
-    constants::{
-        KEYS_SYMBOL,
-        KEY_SYMBOL,
-        METAL_SYMBOL,
-        EMPTY_SYMBOL,
-    },
-};
-use std::{fmt, cmp::{Ord, Ordering}, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
-use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
+use crate::helpers;
+use crate::traits::SerializeCurrencies;
+use crate::error::ParseError;
+use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, EMPTY_SYMBOL};
+use crate::{Currencies, Rounding};
+use std::fmt;
+use std::cmp::{Ord, Ordering};
+use std::ops::{self, AddAssign, SubAssign, MulAssign, DivAssign};
+use serde::{Serialize, Deserialize, Serializer, Deserializer};
+use serde::de::Error;
+use serde::ser::SerializeStruct;
 
-/// The `keys` field for `ListingCurrencies` is defined as an f32. Use this anywhere you may
+/// The `keys` field for [`ListingCurrencies`] is defined as an [`f32`]. Use this anywhere you may
 /// need key values which include decimal places.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
 #[serde(remote = "Self")]
@@ -22,9 +18,9 @@ pub struct ListingCurrencies {
     /// Amount of keys.
     #[serde(default)]
     pub keys: f32,
-    /// Amount of metal expressed as weapons. A metal value of 6 would 
-    /// be equivalent to 3 scrap. You may use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and 
-    /// `ONE_WEAPON`constants to perform arithmatic.
+    /// Amount of metal expressed as weapons. A metal value of 6 would be equivalent to 3 scrap. 
+    /// It's recommended to use the [`ONE_REF`], [`ONE_REC`], [`ONE_SCRAP`], and [`ONE_WEAPON`] 
+    /// constants to perform arithmatic.
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
     pub metal: i32,
 }
@@ -102,8 +98,9 @@ impl ListingCurrencies {
     }
     
     /// Rounds the metal value using the given rounding method.
-    pub fn round(&mut self, rounding: &Rounding) {
+    pub fn round(mut self, rounding: &Rounding) -> Self {
         self.metal = helpers::round_metal(self.metal, rounding);
+        self
     }
     
     /// Checks whether the currencies have enough keys and metal to afford the `other` currencies.
@@ -117,9 +114,15 @@ impl ListingCurrencies {
     /// let currencies = Currencies { keys: 100, metal: 30 };
     /// 
     /// // We have at least 50 keys and 30 metal.
-    /// assert!(currencies.can_afford(&Currencies { keys: 50, metal: 30 }));
+    /// assert!(currencies.can_afford(&Currencies {
+    ///     keys: 50,
+    ///     metal: 30,
+    /// }));
     /// // Not enough metal - we can't afford this.
-    /// assert!(!currencies.can_afford(&Currencies { keys: 50, metal: 100 }));
+    /// assert!(!currencies.can_afford(&Currencies {
+    ///     keys: 50,
+    ///     metal: 100,
+    /// }));
     /// ```
     pub fn can_afford(&self, other: &Self) -> bool {
         self.keys >= other.keys && self.metal >= other.metal

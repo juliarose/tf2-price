@@ -1,6 +1,8 @@
-use serde::{Serialize, Deserialize};
 use crate::helpers;
-use std::{fmt, cmp::{Ord, Ordering}, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
+use std::fmt;
+use std::cmp::{Ord, Ordering};
+use std::ops::{self, AddAssign, SubAssign, MulAssign, DivAssign};
+use serde::{Serialize, Deserialize};
 use num_traits::ops::checked::{CheckedAdd, CheckedSub};
 
 /// For storing cash values.

@@ -1,13 +1,14 @@
-use crate::{
-    Rounding,
-    ListingCurrencies,
-    helpers,
-    traits::SerializeCurrencies,
-    error::{TryFromListingCurrenciesError, ParseError},
-    constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, EMPTY_SYMBOL},
-};
-use std::{fmt, cmp::{Ord, Ordering}, ops::{self, AddAssign, SubAssign, MulAssign, DivAssign}};
-use serde::{Serialize, Deserialize, Serializer, Deserializer, de::Error, ser::SerializeStruct};
+use crate::helpers;
+use crate::traits::SerializeCurrencies;
+use crate::error::{TryFromListingCurrenciesError, ParseError};
+use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, EMPTY_SYMBOL};
+use crate::{ListingCurrencies, Rounding};
+use std::fmt;
+use std::cmp::{Ord, Ordering};
+use std::ops::{self, AddAssign, SubAssign, MulAssign, DivAssign};
+use serde::{Serialize, Deserialize, Serializer, Deserializer};
+use serde::de::Error;
+use serde::ser::SerializeStruct;
 use num_traits::ops::checked::{CheckedAdd, CheckedSub};
 
 /// For storing item currencies values.
@@ -17,9 +18,9 @@ pub struct Currencies {
     /// Amount of keys.
     #[serde(default)]
     pub keys: i32,
-    /// Amount of metal expressed as weapons. A metal value of 6 would 
-    /// be equivalent to 3 scrap. You may use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and 
-    /// `ONE_WEAPON`constants to perform arithmatic.
+    /// Amount of metal expressed as weapons. A metal value of 6 would be equivalent to 3 scrap. 
+    /// It's recommended to use the [`ONE_REF`], [`ONE_REC`], [`ONE_SCRAP`], and [`ONE_WEAPON`] 
+    /// constants to perform arithmatic.
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
     pub metal: i32,
 }
@@ -55,7 +56,6 @@ impl Default for Currencies {
 }
 
 impl Currencies {
-    
     /// Creates a new [`Currencies`] with `0` keys and `0` metal.
     pub fn new() -> Self {
         Self {
@@ -70,11 +70,16 @@ impl Currencies {
     /// # Examples
     ///
     /// ```
-    /// use tf2_price::{Currencies, refined, scrap};
+    /// use tf2_price::{Currencies, refined};
+    /// 
+    /// let key_price = refined!(60);
     /// 
     /// assert_eq!(
-    ///     Currencies::from_metal(refined!(80), refined!(60)),
-    ///     Currencies { keys: 1, metal: refined!(20) },
+    ///     Currencies::from_metal(refined!(80), key_price),
+    ///     Currencies {
+    ///         keys: 1,
+    ///         metal: refined!(20),
+    ///     },
     /// );
     /// ```
     pub fn from_metal(metal: i32, key_price: i32) -> Self {
@@ -87,13 +92,11 @@ impl Currencies {
     
     /// Converts from `ListingCurrencies` using the given key price (represented as weapons).
     pub fn from_listing_currencies(currencies: ListingCurrencies, key_price: i32) -> Self {
-        let keys = currencies.keys;
-        let metal = currencies.metal;
-        let keys_metal = ((keys % 1.0) * key_price as f32).round() as i32;
+        let keys_metal = ((currencies.keys % 1.0) * key_price as f32).round() as i32;
         
         Self {
-            keys: keys as i32,
-            metal: keys_metal.saturating_add(metal),
+            keys: currencies.keys as i32,
+            metal: keys_metal.saturating_add(currencies.metal),
         }
     }
     
@@ -126,8 +129,47 @@ impl Currencies {
     }
     
     /// Rounds the metal value using the given rounding method.
-    pub fn round(&mut self, rounding: &Rounding) {
+    pub fn round(mut self, rounding: &Rounding) -> Self {
         self.metal = helpers::round_metal(self.metal, rounding);
+        self
+    }
+    
+    /// Neatens currencies. If the `metal` value is over `key_price` the metal will be converted to
+    /// `keys`, with the remainder remaining as `metal`. This method is saturating.
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// use tf2_price::{Currencies, refined};
+    /// 
+    /// let key_price = refined!(50);
+    /// 
+    /// assert_eq!(
+    ///     Currencies {
+    ///         keys: 1,
+    ///         // The amount of metal is 10 refined over the key price.
+    ///         metal: refined!(60),
+    ///     }.neaten(key_price),
+    ///     Currencies {
+    ///         keys: 2,
+    ///         metal: refined!(10),
+    ///     },
+    /// );
+    /// 
+    /// assert_eq!(
+    ///     Currencies {
+    ///         keys: 2,
+    ///         // Naturally, a negative metal value will take away from the keys.
+    ///         metal: -refined!(60),
+    ///     }.neaten(key_price),
+    ///     Currencies {
+    ///         keys: 0,
+    ///         metal: refined!(40),
+    ///     },
+    /// );
+    /// ```
+    pub fn neaten(&self, key_price: i32) -> Self {
+        Self::from_metal(self.to_metal(key_price), key_price)
     }
     
     /// Checked integer multiplication. Computes self * rhs for each field, returning None if 
@@ -154,14 +196,23 @@ impl Currencies {
     /// # Examples
     ///
     /// ```
-    /// use tf2_price::Currencies;
+    /// use tf2_price::{Currencies, refined};
     /// 
-    /// let currencies = Currencies { keys: 100, metal: 30 };
+    /// let currencies = Currencies {
+    ///     keys: 100,
+    ///     metal: refined!(30),
+    /// };
     /// 
-    /// // We have at least 50 keys and 30 metal.
-    /// assert!(currencies.can_afford(&Currencies { keys: 50, metal: 30 }));
+    /// // We have at least 50 keys and 30 refined.
+    /// assert!(currencies.can_afford(&Currencies { 
+    ///     keys: 50,
+    ///     metal: refined!(30),
+    /// }));
     /// // Not enough metal - we can't afford this.
-    /// assert!(!currencies.can_afford(&Currencies { keys: 50, metal: 100 }));
+    /// assert!(!currencies.can_afford(&Currencies {
+    ///     keys: 50,
+    ///     metal: refined!(100),
+    /// }));
     /// ```
     pub fn can_afford(&self, other: &Self) -> bool {
         self.keys >= other.keys && self.metal >= other.metal
@@ -687,158 +738,139 @@ mod tests {
     
     #[test]
     fn rounds_metal_down() {
-        let mut currencies = Currencies {
+        assert_eq!(Currencies {
             keys: 1,
             metal: refined!(23) + scrap!(4) + 1,
-        };
-        
-        currencies.round(&Rounding::DownScrap);
-        
-        assert_eq!(currencies.metal, 422);
+        }.round(&Rounding::DownScrap).metal, 422);
     }
     
     #[test]
     fn rounds_metal_down_refined() {
-        let mut currencies = Currencies {
+        assert_eq!(Currencies {
             keys: 1,
             metal: refined!(23) + scrap!(4),
-        };
-        
-        currencies.round(&Rounding::DownRefined);
-        
-        assert_eq!(currencies.metal, refined!(23));
+        }.round(&Rounding::DownRefined).metal, refined!(23));
     }
     
     #[test]
     fn rounds_metal_up_refined_negative() {
-        let mut currencies = Currencies {
+        assert_eq!(Currencies {
             keys: 1,
             metal: -refined!(23) + scrap!(1),
-        };
-        
-        currencies.round(&Rounding::UpRefined);
-        
-        assert_eq!(currencies.metal, -refined!(22));
+        }.round(&Rounding::UpRefined).metal, -refined!(22));
     }
     
     #[test]
     fn rounds_metal_up_refined_negative_whole_value() {
-        let mut currencies = Currencies {
+        assert_eq!(Currencies {
             keys: 1,
             metal: -refined!(23),
-        };
-        
-        currencies.round(&Rounding::UpRefined);
-        
-        assert_eq!(currencies.metal, -refined!(23));
+        }.round(&Rounding::UpRefined).metal, -refined!(23));
     }
     
     #[test]
     fn rounds_metal_down_refined_negative() {
-        let mut currencies = Currencies {
+        assert_eq!(Currencies {
             keys: 1,
             metal: -refined!(23) + scrap!(8),
-        };
-        
-        currencies.round(&Rounding::DownRefined);
-        
-        assert_eq!(currencies.metal, -refined!(23));
+        }.round(&Rounding::DownRefined).metal, -refined!(23));
     }
     
     #[test]
     fn rounds_metal_down_refined_negative_whole_value() {
-        let mut currencies = Currencies {
+        assert_eq!(Currencies {
             keys: 1,
             metal: -refined!(23),
-        };
-        
-        currencies.round(&Rounding::DownRefined);
-        
-        assert_eq!(currencies.metal, -refined!(23));
+        }.round(&Rounding::DownRefined).metal, -refined!(23));
     }
     
     #[test]
     fn rounds_metal_down_refined_whole_value() {
-        let mut currencies = Currencies {
+        assert_eq!(Currencies {
             keys: 1,
             metal: refined!(23),
-        };
-        
-        currencies.round(&Rounding::DownRefined);
-        
-        assert_eq!(currencies.metal, refined!(23));
+        }.round(&Rounding::DownRefined).metal, refined!(23));
     }
     
     #[test]
     fn rounds_metal_up_refined() {
-        let mut currencies = Currencies {
+        assert_eq!(Currencies {
             keys: 1,
             metal: refined!(23) + scrap!(4),
-        };
-        
-        currencies.round(&Rounding::UpRefined);
-        
-        assert_eq!(currencies.metal, refined!(24));
+        }.round(&Rounding::UpRefined).metal, refined!(24));
     }
     
     #[test]
     fn rounds_metal_up_refined_whole_value() {
-        let mut currencies = Currencies {
+        assert_eq!(Currencies {
             keys: 1,
             metal: refined!(23),
-        };
-        
-        currencies.round(&Rounding::UpRefined);
-        
-        assert_eq!(currencies.metal, refined!(23));
+        }.round(&Rounding::UpRefined).metal, refined!(23));
     }
     
     #[test]
     fn rounds_metal_refined_down_correctly() {
-        let mut currencies = Currencies {
+        assert_eq!(Currencies {
             keys: 1,
             metal: refined!(23) + scrap!(3),
-        };
-        
-        currencies.round(&Rounding::Refined);
-        
-        assert_eq!(currencies.metal, refined!(23));
+        }.round(&Rounding::Refined).metal, refined!(23));
     }
     
     #[test]
     fn rounds_metal_refined_down_correctly_whole_value() {
-        let mut currencies = Currencies {
+        assert_eq!(Currencies {
             keys: 1,
             metal: refined!(23),
-        };
-        
-        currencies.round(&Rounding::Refined);
-        
-        assert_eq!(currencies.metal, refined!(23));
+        }.round(&Rounding::Refined).metal, refined!(23));
     }
     
     #[test]
     fn rounds_metal_refined_up_correctly() {
-        let mut currencies = Currencies {
+        assert_eq!(Currencies {
             keys: 1,
             metal: refined!(23) + scrap!(5),
-        };
-        
-        currencies.round(&Rounding::Refined);
-        
-        assert_eq!(currencies.metal, refined!(24));
+        }.round(&Rounding::Refined).metal, refined!(24));
     }
     
     #[test]
     fn rounds_metal_up() {
-        let mut currencies = Currencies {
+        assert_eq!(Currencies {
             keys: 1,
             metal: refined!(23) + scrap!(4) + 1,
-        };
-        
-        currencies.round(&Rounding::UpScrap);
-        
-        assert_eq!(currencies.metal, 424);
+        }.round(&Rounding::UpScrap).metal, 424);
+    }
+    
+    #[test]
+    fn neatens() {
+        assert_eq!(Currencies {
+            keys: 1,
+            metal: refined!(110),
+        }.neaten(refined!(50)), Currencies {
+            keys: 3,
+            metal: refined!(10),
+        });
+    }
+    
+    #[test]
+    fn neatens_negative() {
+        assert_eq!(Currencies {
+            keys: 1,
+            metal: -refined!(110),
+        }.neaten(refined!(50)), Currencies {
+            keys: -1,
+            metal: -refined!(10),
+        });
+    }
+    
+    #[test]
+    fn neatens_negative_result_should_be_positive() {
+        assert_eq!(Currencies {
+            keys: 2,
+            metal: -refined!(60),
+        }.neaten(refined!(50)), Currencies {
+            keys: 0,
+            metal: refined!(40),
+        });
     }
     
     #[test]
