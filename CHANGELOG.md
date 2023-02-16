@@ -102,14 +102,14 @@
 ## 0.8.0 (2022-12-31)
 
 ### Added
-- `check_add` to `Currencies`.
-- `check_sub` to `Currencies`.
-- `check_mul` to `Currencies`.
-- `check_div` to `Currencies`.
-- `check_add` to `USDCurrencies`.
-- `check_sub` to `USDCurrencies`.
-- `check_mul` to `USDCurrencies`.
-- `check_div` to `USDCurrencies`.
+- `checked_add` to `Currencies`.
+- `checked_sub` to `Currencies`.
+- `checked_mul` to `Currencies`.
+- `checked_div` to `Currencies`.
+- `checked_add` to `USDCurrencies`.
+- `checked_sub` to `USDCurrencies`.
+- `checked_mul` to `USDCurrencies`.
+- `checked_div` to `USDCurrencies`.
 
 ## 0.8.1 (2023-01-14)
 
