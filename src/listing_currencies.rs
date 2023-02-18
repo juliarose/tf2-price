@@ -20,8 +20,8 @@ pub struct ListingCurrencies {
     #[serde(default)]
     pub keys: f32,
     /// Amount of metal expressed as weapons. A metal value of 6 would be equivalent to 3 scrap. 
-    /// It's recommended to use the [`ONE_REF`], [`ONE_REC`], [`ONE_SCRAP`], and [`ONE_WEAPON`] 
-    /// constants to perform arithmatic.
+    /// It's recommended to use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and `ONE_WEAPON` constants 
+    /// to perform arithmatic.
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
     pub metal: Currency,
 }
@@ -93,7 +93,7 @@ impl ListingCurrencies {
         self.metal.checked_add(result_metal)
     }
     
-    /// Checks if the currencies contain any value.
+    /// Checks if the currencies do contain any value.
     pub fn is_empty(&self) -> bool {
         self.keys == 0.0 && self.metal == 0
     }

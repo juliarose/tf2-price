@@ -19,8 +19,8 @@ pub struct Currencies {
     #[serde(default)]
     pub keys: Currency,
     /// Amount of metal expressed as weapons. A metal value of 6 would be equivalent to 3 scrap. 
-    /// It's recommended to use the [`ONE_REF`], [`ONE_REC`], [`ONE_SCRAP`], and [`ONE_WEAPON`] 
-    /// constants to perform arithmatic.
+    /// It's recommended to use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and `ONE_WEAPON` constants 
+    /// to perform arithmatic.
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
     pub metal: Currency,
 }
@@ -107,6 +107,18 @@ impl Currencies {
     /// Converts currencies to a metal value using the given key price (represented as weapons).
     /// In cases where the result overflows or underflows beyond the limit for [`i64`], the max or 
     /// min i64 will be returned. In most cases values this high are not useful.
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// use tf2_price::{Currencies, refined};
+    /// 
+    /// let key_price = refined!(50);
+    /// // The amount of metal is 10 refined over the key price.
+    /// let currencies = Currencies { keys: 1, metal: refined!(10) };
+    /// 
+    /// assert_eq!(currencies.to_metal(key_price), refined!(60));
+    /// ```
     pub fn to_metal(&self, key_price: Currency) -> Currency {
         helpers::to_metal(self.metal, self.keys, key_price)
     }
@@ -114,16 +126,47 @@ impl Currencies {
     /// Converts currencies to a metal value using the given key price (represented as weapons).
     /// In cases where the result overflows or underflows beyond the limit for [`i64`], `None` will
     /// be returned.
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// use tf2_price::{Currencies, refined};
+    /// 
+    /// let key_price = refined!(50);
+    /// // The amount of metal is 10 refined over the key price.
+    /// let currencies = Currencies { keys: i64::MAX, metal: refined!(10) };
+    /// 
+    /// assert!(currencies.checked_to_metal(key_price).is_none());
+    /// ```
     pub fn checked_to_metal(&self, key_price: Currency) -> Option<Currency> {
         helpers::checked_to_metal(self.metal, self.keys, key_price)
     }
     
-    /// Checks if the currencies contain any value.
+    /// Checks if the currencies do contain any value.
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// use tf2_price::Currencies;
+    /// 
+    /// assert!(Currencies { keys: 0, metal: 0 }.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.keys == 0 && self.metal == 0
     }
     
     /// Rounds the metal value using the given rounding method.
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// use tf2_price::{Currencies, Rounding, refined, scrap};
+    /// 
+    /// let currencies = Currencies { keys: 0, metal: refined!(1) + scrap!(3) };
+    /// 
+    /// assert_eq!(currencies.round(&Rounding::Refined).metal, refined!(1));
+    /// assert_eq!(currencies.round(&Rounding::UpRefined).metal, refined!(2));
+    /// ```
     pub fn round(mut self, rounding: &Rounding) -> Self {
         self.metal = helpers::round_metal(self.metal, rounding);
         self

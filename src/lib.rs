@@ -7,16 +7,10 @@
 //! ```
 //! use tf2_price::{Currencies, ONE_REF, scrap};
 //! 
-//! let mut currencies = Currencies {
-//!     keys: 5,
-//!     metal: scrap!(5),
-//! };
+//! let mut currencies = Currencies { keys: 5, metal: scrap!(5) };
 //! 
 //! // add another currencies
-//! currencies += Currencies {
-//!     keys: 2,
-//!     metal: 0,
-//! };
+//! currencies += Currencies { keys: 2, metal: 0 };
 //! assert_eq!(currencies, Currencies { keys: 7, metal: 10 });
 //! 
 //! // add keys
