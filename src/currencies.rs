@@ -207,7 +207,6 @@ impl Currencies {
     /// use tf2_price::{Currencies, refined};
     /// 
     /// let key_price = refined!(50);
-    /// // The amount of metal is 10 refined over the key price.
     /// let currencies = Currencies { keys: 1, metal: refined!(60) }.neaten(key_price);
     /// 
     /// assert_eq!(currencies, Currencies { keys: 2,  metal: refined!(10) });
