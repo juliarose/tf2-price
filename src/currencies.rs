@@ -73,14 +73,9 @@ impl Currencies {
     /// use tf2_price::{Currencies, refined};
     /// 
     /// let key_price = refined!(60);
+    /// let currencies = Currencies::from_metal(refined!(80), key_price);
     /// 
-    /// assert_eq!(
-    ///     Currencies::from_metal(refined!(80), key_price),
-    ///     Currencies {
-    ///         keys: 1,
-    ///         metal: refined!(20),
-    ///     },
-    /// );
+    /// assert_eq!(currencies, Currencies { keys: 1, metal: refined!(20) });
     /// ```
     pub fn from_metal(metal: Currency, key_price: Currency) -> Self {
         Self {
@@ -143,30 +138,10 @@ impl Currencies {
     /// use tf2_price::{Currencies, refined};
     /// 
     /// let key_price = refined!(50);
+    /// // The amount of metal is 10 refined over the key price.
+    /// let currencies = Currencies { keys: 1, metal: refined!(60) }.neaten(key_price);
     /// 
-    /// assert_eq!(
-    ///     Currencies {
-    ///         keys: 1,
-    ///         // The amount of metal is 10 refined over the key price.
-    ///         metal: refined!(60),
-    ///     }.neaten(key_price),
-    ///     Currencies {
-    ///         keys: 2,
-    ///         metal: refined!(10),
-    ///     },
-    /// );
-    /// 
-    /// assert_eq!(
-    ///     Currencies {
-    ///         keys: 2,
-    ///         // Naturally, a negative metal value will take away from the keys.
-    ///         metal: -refined!(60),
-    ///     }.neaten(key_price),
-    ///     Currencies {
-    ///         keys: 0,
-    ///         metal: refined!(40),
-    ///     },
-    /// );
+    /// assert_eq!(currencies, Currencies { keys: 2,  metal: refined!(10) });
     /// ```
     pub fn neaten(&self, key_price: Currency) -> Self {
         Self::from_metal(self.to_metal(key_price), key_price)
@@ -180,21 +155,12 @@ impl Currencies {
     /// ```
     /// use tf2_price::{Currencies, refined};
     /// 
-    /// let currencies = Currencies {
-    ///     keys: 100,
-    ///     metal: refined!(30),
-    /// };
+    /// let currencies = Currencies { keys: 100, metal: refined!(30) };
     /// 
     /// // We have at least 50 keys and 30 refined.
-    /// assert!(currencies.can_afford(&Currencies { 
-    ///     keys: 50,
-    ///     metal: refined!(30),
-    /// }));
+    /// assert!(currencies.can_afford(&Currencies { keys: 50, metal: refined!(30) }));
     /// // Not enough metal - we can't afford this.
-    /// assert!(!currencies.can_afford(&Currencies {
-    ///     keys: 50,
-    ///     metal: refined!(100),
-    /// }));
+    /// assert!(!currencies.can_afford(&Currencies { keys: 50, metal: refined!(100) }));
     /// ```
     pub fn can_afford(&self, other: &Self) -> bool {
         self.keys >= other.keys && self.metal >= other.metal

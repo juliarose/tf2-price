@@ -115,15 +115,9 @@ impl ListingCurrencies {
     /// let currencies = Currencies { keys: 100, metal: 30 };
     /// 
     /// // We have at least 50 keys and 30 metal.
-    /// assert!(currencies.can_afford(&Currencies {
-    ///     keys: 50,
-    ///     metal: 30,
-    /// }));
+    /// assert!(currencies.can_afford(&Currencies { keys: 50, metal: 30 }));
     /// // Not enough metal - we can't afford this.
-    /// assert!(!currencies.can_afford(&Currencies {
-    ///     keys: 50,
-    ///     metal: 100,
-    /// }));
+    /// assert!(!currencies.can_afford(&Currencies { keys: 50, metal: 100 }));
     /// ```
     pub fn can_afford(&self, other: &Self) -> bool {
         self.keys >= other.keys && self.metal >= other.metal
