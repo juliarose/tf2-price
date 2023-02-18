@@ -142,7 +142,6 @@ impl Currencies {
     /// use tf2_price::{Currencies, refined};
     /// 
     /// let key_price = refined!(50);
-    /// // The amount of metal is 10 refined over the key price.
     /// let currencies = Currencies { keys: 1, metal: refined!(10) };
     /// 
     /// assert_eq!(currencies.to_metal(key_price), refined!(60));
@@ -161,7 +160,6 @@ impl Currencies {
     /// use tf2_price::{Currencies, refined};
     /// 
     /// let key_price = refined!(50);
-    /// // The amount of metal is 10 refined over the key price.
     /// let currencies = Currencies { keys: i64::MAX, metal: refined!(10) };
     /// 
     /// assert!(currencies.checked_to_metal(key_price).is_none());
