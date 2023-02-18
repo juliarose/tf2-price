@@ -85,8 +85,24 @@ impl Currencies {
         }
     }
     
-    /// Converts from `ListingCurrencies` using the given key price (represented as weapons).
-    pub fn from_listing_currencies(currencies: ListingCurrencies, key_price: Currency) -> Self {
+    /// Converts from [`ListingCurrencies`] using the given key price (represented as weapons).
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// use tf2_price::{Currencies, ListingCurrencies, refined};
+    /// 
+    /// let key_price = refined!(60);
+    /// let listing_currencies = ListingCurrencies { keys: 1.5, metal: 0 };
+    /// let currencies = Currencies::from_listing_currencies(listing_currencies, key_price);
+    /// 
+    /// assert_eq!(currencies.keys, 1);
+    /// assert_eq!(currencies.metal, refined!(30));
+    /// ```
+    pub fn from_listing_currencies(
+        currencies: ListingCurrencies,
+        key_price: Currency,
+    ) -> Self {
         let keys_metal = ((currencies.keys % 1.0) * key_price as f32).round() as Currency;
         
         Self {
@@ -97,6 +113,18 @@ impl Currencies {
     
     /// Converts an f32 key value into `Currencies` using the given key price represented as 
     /// weapons.
+    /// 
+    /// # Examples
+    ///
+    /// ```
+    /// use tf2_price::{Currencies, ListingCurrencies, refined};
+    /// 
+    /// let key_price = refined!(60);
+    /// let currencies = Currencies::from_keys_f32(1.5, key_price);
+    /// 
+    /// assert_eq!(currencies.keys, 1);
+    /// assert_eq!(currencies.metal, refined!(30));
+    /// ```
     pub fn from_keys_f32(keys: f32, key_price: Currency) -> Self {
         Self {
             keys: keys as Currency,
