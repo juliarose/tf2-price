@@ -16,7 +16,8 @@ fn main() {
     assert_eq!(Currencies::try_from("5 keys, 2.33 ref").unwrap(), urrencies);
     
     // Serde deserialization.
-    let currencies: Currencies = serde_json::from_str(r#"{"keys":5,"metal":2.33}"#).unwrap();
+    let json = r#"{"keys":5,"metal":2.33}"#;
+    let currencies: Currencies = serde_json::from_str(json).unwrap();
     
     assert_eq!(currencies, Currencies { keys: 5, metal: refined!(2) + scrap!(3), });
     
