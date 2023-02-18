@@ -32,15 +32,17 @@
 //! 
 //! All `metal` values are represented as the number of weapons. For 1 refined, this would be 18. 
 //! The macros and constant values should be used to avoid any errors in accounting. For example: 
-//! if adding one scrap, add `ONE_SCRAP` to the `metal` field. `scrap!(1)` will also create the same 
-//! value.
+//! if adding one scrap, add `ONE_SCRAP` to the `metal` field. `scrap!(1)` will also create the 
+//! same value.
 //! 
 //! In addition, all key values in methods are represented as values in weapons. If you need to 
 //! use a floating point key price e.g. 70.22, you may use [`helpers::get_metal_from_float`] which 
-//! will convert it into the closest appropriate value e.g. `(70.22 * 18 as f32).round() as i32`.
+//! will convert it into the closest appropriate value e.g. `(70.22 * 18 as f32).round() as i64`.
 //! 
-//! Arithmatic uses saturating operations. Adding two currencies that both contain values of  
-//! `i32::MAX`will result in `i32::MAX` rather than rolling over. If you need to check 
+//! Arithmatic uses saturating operations. Adding two currencies that both contain values of 
+//! [`i64::MAX`] will result in [`i64::MAX`] rather than rolling over. While values are stored as 
+//! 64-bit integers and usually won't overflow if you're using reasonable numbers, if you need to 
+//! check for overflows some checked methods are included.
 #[macro_use] extern crate impl_ops;
 
 mod helpers;
@@ -52,6 +54,7 @@ mod usd_currencies;
 
 pub mod traits;
 pub mod error;
+pub mod types;
 
 pub use usd_currencies::USDCurrencies;
 pub use currencies::Currencies;
@@ -63,9 +66,9 @@ pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
 /// Generates value for refined metal.
 #[macro_export]
 macro_rules! refined {
-    ($a:expr) => {
+    ( $a:expr ) => {
         {
-            $a * 18
+            $a * 18 as i64
         }
     }
 }
@@ -73,9 +76,9 @@ macro_rules! refined {
 /// Generates value for reclaimed metal.
 #[macro_export]
 macro_rules! reclaimed {
-    ($a:expr) => {
+    ( $a:expr ) => {
         {
-            $a * 6
+            $a * 6 as i64
         }
     }
 }
@@ -83,9 +86,9 @@ macro_rules! reclaimed {
 /// Generates value for scrap metal.
 #[macro_export]
 macro_rules! scrap {
-    ($a:expr) => {
+    ( $a:expr ) => {
         {
-            $a * 2
+            $a * 2 as i64
         }
     }
 }

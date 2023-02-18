@@ -1,4 +1,5 @@
 use crate::helpers;
+use crate::types::Currency;
 use crate::traits::SerializeCurrencies;
 use crate::error::ParseError;
 use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, EMPTY_SYMBOL};
@@ -22,7 +23,7 @@ pub struct ListingCurrencies {
     /// It's recommended to use the [`ONE_REF`], [`ONE_REC`], [`ONE_SCRAP`], and [`ONE_WEAPON`] 
     /// constants to perform arithmatic.
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
-    pub metal: i32,
+    pub metal: Currency,
 }
 
 impl PartialOrd for ListingCurrencies {
@@ -73,23 +74,23 @@ impl ListingCurrencies {
     
     /// Converts currencies to a metal value using the given key price (represented as weapons).
     /// Rounds float conversions and saturates at integer bounds.
-    pub fn to_metal(&self, key_price: i32) -> i32 {
-        self.metal.saturating_add((self.keys * key_price as f32).round() as i32)
+    pub fn to_metal(&self, key_price: Currency) -> Currency {
+        self.metal.saturating_add((self.keys * key_price as f32).round() as Currency)
     }
     
     /// Converts currencies to a metal value using the given key price (represented as weapons).
-    /// In cases where the result overflows or underflows beyond the limit for i32, `None` is 
+    /// In cases where the result overflows or underflows beyond the limit for [`i64`], `None` is 
     /// returned.
-    pub fn checked_to_metal(&self, key_price: i32) -> Option<i32> {
+    pub fn checked_to_metal(&self, key_price: Currency) -> Option<Currency> {
         let result = (self.keys * key_price as f32).round();
-        let result_i32 = result as i32;
+        let result_metal = result as Currency;
         
         // Check for overflow by seeing if conversions produce unequal results
-        if result != result_i32 as f32 {
+        if result != result_metal as f32 {
             return None;
         }
         
-        self.metal.checked_add(result_i32)
+        self.metal.checked_add(result_metal)
     }
     
     /// Checks if the currencies contain any value.
@@ -179,14 +180,14 @@ impl_op_ex!(- |a: &Currencies, b: &ListingCurrencies| -> ListingCurrencies {
     } 
 });
 
-impl_op_ex!(* |currencies: &ListingCurrencies, num: i32| -> ListingCurrencies {
+impl_op_ex!(* |currencies: &ListingCurrencies, num: Currency| -> ListingCurrencies {
     ListingCurrencies {
         keys: currencies.keys * num as f32,
         metal: currencies.metal.saturating_mul(num),
     }
 });
 
-impl_op_ex!(/ |currencies: &ListingCurrencies, num: i32| -> ListingCurrencies {
+impl_op_ex!(/ |currencies: &ListingCurrencies, num: Currency| -> ListingCurrencies {
     ListingCurrencies {
         keys: currencies.keys / num as f32,
         metal: currencies.metal.saturating_div(num),
@@ -196,14 +197,14 @@ impl_op_ex!(/ |currencies: &ListingCurrencies, num: i32| -> ListingCurrencies {
 impl_op_ex!(* |currencies: &ListingCurrencies, num: f32| -> ListingCurrencies {
     ListingCurrencies { 
         keys: currencies.keys * num,
-        metal: (currencies.metal as f32 * num).round() as i32,
+        metal: (currencies.metal as f32 * num).round() as Currency,
     }
 });
 
 impl_op_ex!(/ |currencies: &ListingCurrencies, num: f32| -> ListingCurrencies {
     ListingCurrencies {
         keys: currencies.keys / num,
-        metal: (currencies.metal as f32 / num).round() as i32,
+        metal: (currencies.metal as f32 / num).round() as Currency,
     }
 });
 
@@ -265,8 +266,8 @@ impl SubAssign<&Currencies> for ListingCurrencies {
     }
 }
 
-impl MulAssign<i32> for ListingCurrencies {
-    fn mul_assign(&mut self, other: i32) {
+impl MulAssign<Currency> for ListingCurrencies {
+    fn mul_assign(&mut self, other: Currency) {
         self.keys *= other as f32;
         self.metal = self.metal.saturating_mul(other);
     }
@@ -275,12 +276,12 @@ impl MulAssign<i32> for ListingCurrencies {
 impl MulAssign<f32> for ListingCurrencies {
     fn mul_assign(&mut self, other: f32) {
         self.keys *= other;
-        self.metal = (self.metal as f32 * other).round() as i32;
+        self.metal = (self.metal as f32 * other).round() as Currency;
     }
 }
 
-impl DivAssign<i32> for ListingCurrencies {
-    fn div_assign(&mut self, other: i32) {
+impl DivAssign<Currency> for ListingCurrencies {
+    fn div_assign(&mut self, other: Currency) {
         self.keys /= other as f32;
         self.metal = self.metal.saturating_div(other);
     }
@@ -289,7 +290,7 @@ impl DivAssign<i32> for ListingCurrencies {
 impl DivAssign<f32> for ListingCurrencies {
     fn div_assign(&mut self, other: f32) {
         self.keys /= other;
-        self.metal = (self.metal as f32 / other).round() as i32;
+        self.metal = (self.metal as f32 / other).round() as Currency;
     }
 }
 
@@ -380,7 +381,7 @@ impl Serialize for ListingCurrencies {
         if self.keys == 0.0 {
             currencies.skip_field("keys")?;
         } else if self.keys.fract() == 0.0 {
-            currencies.serialize_field("keys", &(self.keys as i32))?;
+            currencies.serialize_field("keys", &(self.keys as Currency))?;
         } else {
             currencies.serialize_field("keys", &self.keys)?;
         }
@@ -391,7 +392,7 @@ impl Serialize for ListingCurrencies {
             let float = helpers::get_metal_float(self.metal);
             
             if float.fract() == 0.0 {
-                currencies.serialize_field("metal", &(float as i32))?;
+                currencies.serialize_field("metal", &(float as Currency))?;
             } else {
                 currencies.serialize_field("metal", &float)?;
             }
@@ -469,7 +470,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_multiplied_by_i32() {
+    fn currencies_multiplied_by_metal() {
         assert_eq!(ListingCurrencies {
             keys: 10.0,
             metal: refined!(10),
@@ -480,7 +481,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_divided_by_i32() {
+    fn currencies_divided_by_metal() {
         assert_eq!(ListingCurrencies {
             keys: 10.0,
             metal: refined!(10),
@@ -678,7 +679,7 @@ mod tests {
     #[test]
     fn checked_to_metal() {
         assert_eq!(
-            ListingCurrencies { keys: i32::MAX as f32, metal: 4 }.checked_to_metal(i32::MAX),
+            ListingCurrencies { keys: Currency::MAX as f32, metal: 4 }.checked_to_metal(Currency::MAX),
             None,
         );
     }

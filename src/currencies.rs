@@ -1,4 +1,5 @@
 use crate::helpers;
+use crate::types::Currency;
 use crate::traits::SerializeCurrencies;
 use crate::error::{TryFromListingCurrenciesError, ParseError};
 use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, EMPTY_SYMBOL};
@@ -9,7 +10,6 @@ use std::ops::{self, AddAssign, SubAssign, MulAssign, DivAssign};
 use serde::{Serialize, Deserialize, Serializer, Deserializer};
 use serde::de::Error;
 use serde::ser::SerializeStruct;
-use num_traits::ops::checked::{CheckedAdd, CheckedSub};
 
 /// For storing item currencies values.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
@@ -17,12 +17,12 @@ use num_traits::ops::checked::{CheckedAdd, CheckedSub};
 pub struct Currencies {
     /// Amount of keys.
     #[serde(default)]
-    pub keys: i32,
+    pub keys: Currency,
     /// Amount of metal expressed as weapons. A metal value of 6 would be equivalent to 3 scrap. 
     /// It's recommended to use the [`ONE_REF`], [`ONE_REC`], [`ONE_SCRAP`], and [`ONE_WEAPON`] 
     /// constants to perform arithmatic.
     #[serde(deserialize_with = "helpers::metal_deserializer", default)]
-    pub metal: i32,
+    pub metal: Currency,
 }
 
 impl PartialOrd for Currencies {
@@ -82,7 +82,7 @@ impl Currencies {
     ///     },
     /// );
     /// ```
-    pub fn from_metal(metal: i32, key_price: i32) -> Self {
+    pub fn from_metal(metal: Currency, key_price: Currency) -> Self {
         Self {
             // Will be 0 if metal is 30 and key price is 32 (rounds down)
             keys: metal / key_price,
@@ -91,35 +91,35 @@ impl Currencies {
     }
     
     /// Converts from `ListingCurrencies` using the given key price (represented as weapons).
-    pub fn from_listing_currencies(currencies: ListingCurrencies, key_price: i32) -> Self {
-        let keys_metal = ((currencies.keys % 1.0) * key_price as f32).round() as i32;
+    pub fn from_listing_currencies(currencies: ListingCurrencies, key_price: Currency) -> Self {
+        let keys_metal = ((currencies.keys % 1.0) * key_price as f32).round() as Currency;
         
         Self {
-            keys: currencies.keys as i32,
+            keys: currencies.keys as Currency,
             metal: keys_metal.saturating_add(currencies.metal),
         }
     }
     
     /// Converts an f32 key value into `Currencies` using the given key price represented as 
     /// weapons.
-    pub fn from_keys_f32(keys: f32, key_price: i32) -> Self {
+    pub fn from_keys_f32(keys: f32, key_price: Currency) -> Self {
         Self {
-            keys: keys as i32,
-            metal: ((keys % 1.0) * key_price as f32) as i32
+            keys: keys as Currency,
+            metal: ((keys % 1.0) * key_price as f32) as Currency
         }
     }
     
     /// Converts currencies to a metal value using the given key price (represented as weapons).
-    /// In cases where the result overflows or underflows beyond the limit for i32, the max or 
-    /// min i32 will be returned. In most cases values this high are not useful.
-    pub fn to_metal(&self, key_price: i32) -> i32 {
+    /// In cases where the result overflows or underflows beyond the limit for [`i64`], the max or 
+    /// min i64 will be returned. In most cases values this high are not useful.
+    pub fn to_metal(&self, key_price: Currency) -> Currency {
         helpers::to_metal(self.metal, self.keys, key_price)
     }
     
     /// Converts currencies to a metal value using the given key price (represented as weapons).
-    /// In cases where the result overflows or underflows beyond the limit for i32, `None` will
+    /// In cases where the result overflows or underflows beyond the limit for [`i64`], `None` will
     /// be returned.
-    pub fn checked_to_metal(&self, key_price: i32) -> Option<i32> {
+    pub fn checked_to_metal(&self, key_price: Currency) -> Option<Currency> {
         helpers::checked_to_metal(self.metal, self.keys, key_price)
     }
     
@@ -134,8 +134,8 @@ impl Currencies {
         self
     }
     
-    /// Neatens currencies. If the `metal` value is over `key_price` the metal will be converted to
-    /// `keys`, with the remainder remaining as `metal`. This method is saturating.
+    /// Neatens currencies. If the `metal` value is over `key_price`, the `metal` value will be 
+    /// converted to `keys`, with the remainder remaining as `metal`. This method is saturating.
     /// 
     /// # Examples
     ///
@@ -168,26 +168,8 @@ impl Currencies {
     ///     },
     /// );
     /// ```
-    pub fn neaten(&self, key_price: i32) -> Self {
+    pub fn neaten(&self, key_price: Currency) -> Self {
         Self::from_metal(self.to_metal(key_price), key_price)
-    }
-    
-    /// Checked integer multiplication. Computes self * rhs for each field, returning None if 
-    /// overflow occurred
-    pub fn checked_mul(&self, rhs: i32) -> Option<Self> {
-        let keys = self.keys.checked_mul(rhs)?;
-        let metal = self.metal.checked_mul(rhs)?;
-        
-        Some(Self { keys, metal })
-    }
-    
-    /// Checked integer division. Computes self / rhs, returning None if rhs == 0 or the division 
-    /// results in overflow.
-    pub fn checked_div(&self, rhs: i32) -> Option<Self> {
-        let keys = self.keys.checked_div(rhs)?;
-        let metal = self.metal.checked_div(rhs)?;
-        
-        Some(Self { keys, metal })
     }
     
     /// Checks whether the currencies have enough keys and metal to afford the `other` currencies.
@@ -217,33 +199,49 @@ impl Currencies {
     pub fn can_afford(&self, other: &Self) -> bool {
         self.keys >= other.keys && self.metal >= other.metal
     }
-}
-
-/// Comparison with `ListingCurrencies` will fail if `ListingCurrencies` has a fractional key 
-/// value.
-impl PartialEq<ListingCurrencies> for Currencies {
-    fn eq(&self, other: &ListingCurrencies) -> bool {
-        !other.is_fract() &&
-        self.keys == other.keys as i32 &&
-        self.metal == other.metal
+    
+    /// Checked integer multiplication. Computes `self * rhs` for each field, returning `None` if 
+    /// overflow occurred
+    pub fn checked_mul(&self, rhs: Currency) -> Option<Self> {
+        let keys = self.keys.checked_mul(rhs)?;
+        let metal = self.metal.checked_mul(rhs)?;
+        
+        Some(Self { keys, metal })
     }
-}
-
-impl CheckedAdd for Currencies {
-    fn checked_add(&self, other: &Self) -> Option<Self> {
+    
+    /// Checked integer division. Computes `self / rhs`, returning `None` if `rhs == 0` or the 
+    /// division results in overflow.
+    pub fn checked_div(&self, rhs: Currency) -> Option<Self> {
+        let keys = self.keys.checked_div(rhs)?;
+        let metal = self.metal.checked_div(rhs)?;
+        
+        Some(Self { keys, metal })
+    }
+    
+    /// Adds currencies. `None` if the result overflows integer bounds.
+    pub fn checked_add(&self, other: &Self) -> Option<Self> {
         let keys = self.keys.checked_add(other.keys)?;
         let metal = self.metal.checked_add(other.metal)?;
         
         Some(Self { keys, metal })
     }
-}
-
-impl CheckedSub for Currencies {
-    fn checked_sub(&self, other: &Self) -> Option<Self> {
+    
+    /// Subtracts currencies. `None` if the result overflows integer bounds.
+    pub fn checked_sub(&self, other: &Self) -> Option<Self> {
         let keys = self.keys.checked_sub(other.keys)?;
         let metal = self.metal.checked_sub(other.metal)?;
         
         Some(Self { keys, metal })
+    }
+}
+
+/// Comparison with [`ListingCurrencies`] will fail if [`ListingCurrencies`] has a fractional key 
+/// value.
+impl PartialEq<ListingCurrencies> for Currencies {
+    fn eq(&self, other: &ListingCurrencies) -> bool {
+        !other.is_fract() &&
+        self.keys == other.keys as Currency &&
+        self.metal == other.metal
     }
 }
 
@@ -261,14 +259,14 @@ impl_op_ex!(- |a: &Currencies, b: &Currencies| -> Currencies {
     }
 });
 
-impl_op_ex!(* |currencies: &Currencies, num: i32| -> Currencies {
+impl_op_ex!(* |currencies: &Currencies, num: Currency| -> Currencies {
     Currencies {
         keys: currencies.keys.saturating_mul(num),
         metal: currencies.metal.saturating_mul(num),
     }
 });
 
-impl_op_ex!(/ |currencies: &Currencies, num: i32| -> Currencies {
+impl_op_ex!(/ |currencies: &Currencies, num: Currency| -> Currencies {
     Currencies {
         keys: currencies.keys.saturating_div(num),
         metal: currencies.metal.saturating_div(num),
@@ -277,15 +275,15 @@ impl_op_ex!(/ |currencies: &Currencies, num: i32| -> Currencies {
 
 impl_op_ex!(* |currencies: &Currencies, num: f32| -> Currencies {
     Currencies { 
-        keys: (currencies.keys as f32 * num).round() as i32,
-        metal: (currencies.metal as f32 * num).round() as i32,
+        keys: (currencies.keys as f32 * num).round() as Currency,
+        metal: (currencies.metal as f32 * num).round() as Currency,
     }
 });
 
 impl_op_ex!(/ |currencies: &Currencies, num: f32| -> Currencies {
     Currencies {
-        keys: (currencies.keys as f32 / num).round() as i32,
-        metal: (currencies.metal as f32 / num).round() as i32,
+        keys: (currencies.keys as f32 / num).round() as Currency,
+        metal: (currencies.metal as f32 / num).round() as Currency,
     }
 });
 
@@ -317,8 +315,8 @@ impl SubAssign<&Currencies> for Currencies {
     }
 }
 
-impl MulAssign<i32> for Currencies {
-    fn mul_assign(&mut self, other: i32) {
+impl MulAssign<Currency> for Currencies {
+    fn mul_assign(&mut self, other: Currency) {
         self.keys = self.keys.saturating_mul(other);
         self.metal = self.metal.saturating_mul(other);
     }
@@ -326,13 +324,13 @@ impl MulAssign<i32> for Currencies {
 
 impl MulAssign<f32> for Currencies {
     fn mul_assign(&mut self, other: f32) {
-        self.keys = (self.keys as f32 * other).round() as i32;
-        self.metal = (self.metal as f32 * other).round() as i32;
+        self.keys = (self.keys as f32 * other).round() as Currency;
+        self.metal = (self.metal as f32 * other).round() as Currency;
     }
 }
 
-impl DivAssign<i32> for Currencies {
-    fn div_assign(&mut self, other: i32) {
+impl DivAssign<Currency> for Currencies {
+    fn div_assign(&mut self, other: Currency) {
         self.keys = self.keys.saturating_div(other);
         self.metal = self.metal.saturating_div(other);
     }
@@ -340,8 +338,8 @@ impl DivAssign<i32> for Currencies {
 
 impl DivAssign<f32> for Currencies {
     fn div_assign(&mut self, other: f32) {
-        self.keys = (self.keys as f32 / other).round() as i32;
-        self.metal = (self.metal as f32 / other).round() as i32;
+        self.keys = (self.keys as f32 / other).round() as Currency;
+        self.metal = (self.metal as f32 / other).round() as Currency;
     }
 }
 
@@ -349,7 +347,7 @@ impl<'a> TryFrom<&'a str> for Currencies {
     type Error = ParseError;
     
     fn try_from(string: &'a str) -> Result<Self, Self::Error>  {
-        let (keys, metal) = helpers::parse_from_string::<i32>(string)?;
+        let (keys, metal) = helpers::parse_from_string::<Currency>(string)?;
         
         Ok(Currencies {
             keys,
@@ -358,7 +356,7 @@ impl<'a> TryFrom<&'a str> for Currencies {
     }
 }
 
-/// Results in error if `ListingCurrencies` contains a fractional key value.
+/// Results in error if [`ListingCurrencies`] contains a fractional key value.
 impl TryFrom<ListingCurrencies> for Currencies {
     type Error = TryFromListingCurrenciesError;
     
@@ -368,13 +366,13 @@ impl TryFrom<ListingCurrencies> for Currencies {
         }
         
         Ok(Currencies {
-            keys: currencies.keys as i32,
+            keys: currencies.keys as Currency,
             metal: currencies.metal,
         })
     }
 }
 
-/// Results in error if `ListingCurrencies` contains a fractional key value.
+/// Results in error if [`ListingCurrencies`] contains a fractional key value.
 impl TryFrom<&ListingCurrencies> for Currencies {
     type Error = &'static str;
     
@@ -384,7 +382,7 @@ impl TryFrom<&ListingCurrencies> for Currencies {
         }
         
         Ok(Currencies {
-            keys: currencies.keys as i32,
+            keys: currencies.keys as Currency,
             metal: currencies.metal,
         })
     }
@@ -455,7 +453,7 @@ impl Serialize for Currencies {
             let float = helpers::get_metal_float(self.metal);
             
             if float.fract() == 0.0 {
-                currencies.serialize_field("metal", &(float as i32))?;
+                currencies.serialize_field("metal", &(float as Currency))?;
             } else {
                 currencies.serialize_field("metal", &float)?;
             }
@@ -523,7 +521,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_multiplied_by_i32() {
+    fn currencies_multiplied_by_metal() {
         assert_eq!(Currencies {
             keys: 10,
             metal: refined!(10),
@@ -545,7 +543,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_divided_by_i32() {
+    fn currencies_divided_by_metal() {
         assert_eq!(Currencies {
             keys: 10,
             metal: refined!(10),
@@ -567,7 +565,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_mul_assign_i32() {
+    fn currencies_mul_assign_metal() {
         let mut currencies = Currencies {
             keys: 10,
             metal: refined!(10),
@@ -597,7 +595,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_div_assign_i32() {
+    fn currencies_div_assign_metal() {
         let mut currencies = Currencies {
             keys: 10,
             metal: refined!(10),
@@ -1011,22 +1009,22 @@ mod tests {
     fn to_metal_saturating_integer_bounds() {
         let key_price = refined!(50);
         
-        assert_eq!(Currencies { keys: i32::MAX - 100, metal: 0 }.to_metal(key_price), i32::MAX);
-        assert_eq!(Currencies { keys: i32::MAX - 100, metal: 0 }.to_metal(-key_price), i32::MIN);
-        assert_eq!(Currencies { keys: 1, metal: i32::MAX }.to_metal(key_price), i32::MAX);
-        assert_eq!(Currencies { keys: -1, metal: i32::MIN }.to_metal(key_price), i32::MIN);
-        assert_eq!(Currencies { keys: 1, metal: i32::MIN }.to_metal(key_price), i32::MIN + key_price);
+        assert_eq!(Currencies { keys: Currency::MAX - 100, metal: 0 }.to_metal(key_price), Currency::MAX);
+        assert_eq!(Currencies { keys: Currency::MAX - 100, metal: 0 }.to_metal(-key_price), Currency::MIN);
+        assert_eq!(Currencies { keys: 1, metal: Currency::MAX }.to_metal(key_price), Currency::MAX);
+        assert_eq!(Currencies { keys: -1, metal: Currency::MIN }.to_metal(key_price), Currency::MIN);
+        assert_eq!(Currencies { keys: 1, metal: Currency::MIN }.to_metal(key_price), Currency::MIN + key_price);
     }
     
     #[test]
     fn checked_mul() {
-        assert_eq!(Currencies { keys: 2, metal: 0 }.checked_mul(i32::MAX), None);
+        assert_eq!(Currencies { keys: 2, metal: 0 }.checked_mul(Currency::MAX), None);
     }
     
     #[test]
     fn checked_add() {
         assert_eq!(
-            Currencies { keys: 2, metal: 0 }.checked_add(&Currencies { keys: i32::MAX, metal: 0 }),
+            Currencies { keys: 2, metal: 0 }.checked_add(&Currencies { keys: Currency::MAX, metal: 0 }),
             None,
         );
     }
@@ -1034,7 +1032,7 @@ mod tests {
     #[test]
     fn checked_to_metal() {
         assert_eq!(
-            Currencies { keys: i32::MAX, metal: 0 }.checked_to_metal(i32::MAX),
+            Currencies { keys: Currency::MAX, metal: 0 }.checked_to_metal(Currency::MAX),
             None,
         );
     }

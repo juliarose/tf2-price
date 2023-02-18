@@ -51,10 +51,10 @@ fn main() {
     
     // There are also some helper methods for checking for integer overflow/underflow.
     assert_eq!(
-        Currencies { keys: 2, metal: 0 }.checked_add(&Currencies { keys: i32::MAX, metal: 0 }),
+        Currencies { keys: 2, metal: 0 }.checked_add(&Currencies { keys: i64::MAX, metal: 0 }),
         None,
     );
-    assert_eq!(Currencies { keys: 2, metal: 0 }.checked_mul(i32::MAX), None);
+    assert_eq!(Currencies { keys: 2, metal: 0 }.checked_mul(i64::MAX), None);
     
     // For currencies which require floating point key values, use ListingCurrencies.
     let currencies = ListingCurrencies {

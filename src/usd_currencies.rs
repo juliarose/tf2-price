@@ -1,16 +1,16 @@
 use crate::helpers;
+use crate::types::Currency;
 use std::fmt;
 use std::cmp::{Ord, Ordering};
 use std::ops::{self, AddAssign, SubAssign, MulAssign, DivAssign};
 use serde::{Serialize, Deserialize};
-use num_traits::ops::checked::{CheckedAdd, CheckedSub};
 
 /// For storing cash values.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
 pub struct USDCurrencies {
     /// Cash value in cents.
     #[serde(with = "helpers::cents", default)]
-    pub usd: i32,
+    pub usd: Currency,
 }
 
 impl PartialOrd for USDCurrencies {
@@ -21,13 +21,7 @@ impl PartialOrd for USDCurrencies {
 
 impl Ord for USDCurrencies {
     fn cmp(&self, other: &Self) -> Ordering {
-        if self.usd > other.usd {
-            Ordering::Greater
-        } else if self.usd < other.usd {
-            Ordering::Less
-        } else {
-            Ordering::Equal
-        }
+        self.usd.cmp(&other.usd)
     }
 }
 
@@ -48,7 +42,7 @@ impl USDCurrencies {
     }
     
     /// Converts currencies to a key value using the given key price (represented as weapons).
-    pub fn to_keys(&self, usd_key_price: i32) -> f32 {
+    pub fn to_keys(&self, usd_key_price: Currency) -> f32 {
         self.usd as f32 / usd_key_price as f32
     }
     
@@ -59,8 +53,12 @@ impl USDCurrencies {
     /// ```
     /// assert_eq!(tf2_price::USDCurrencies { usd: 100 }.to_metal(100, 10), 10);
     /// ```
-    pub fn to_metal(&self, usd_key_price: i32, metal_key_price: i32) -> i32 {
-        ((self.usd as f32 / usd_key_price as f32) * metal_key_price as f32).round() as i32
+    pub fn to_metal(
+        &self,
+        usd_key_price: Currency,
+        metal_key_price: Currency,
+    ) -> Currency {
+        ((self.usd as f32 / usd_key_price as f32) * metal_key_price as f32).round() as Currency
     }
     
     /// Checks if the currencies contain any value.
@@ -79,66 +77,32 @@ impl USDCurrencies {
         helpers::cents_to_dollars(self.usd)
     }
     
-    /// Checked integer multiplication. Computes self * rhs for each field, returning None if 
+    /// Checked integer multiplication. Computes `self * rhs` for each field, returning `None` if 
     /// overflow occurred
-    pub fn checked_mul(&self, rhs: i32) -> Option<Self> {
+    pub fn checked_mul(&self, rhs: Currency) -> Option<Self> {
         Some(Self { usd: self.usd.checked_mul(rhs)? })
     }
     
-    /// Checked integer division. Computes self / rhs, returning None if rhs == 0 or the division 
-    /// results in overflow.
-    pub fn checked_div(&self, rhs: i32) -> Option<Self> {
+    /// Checked integer division. Computes `self / rhs`, returning `None` if `rhs == 0` or the 
+    /// division results in overflow.
+    pub fn checked_div(&self, rhs: Currency) -> Option<Self> {
         Some(Self { usd: self.usd.checked_div(rhs)? })
     }
-}
-
-impl CheckedAdd for USDCurrencies {
-    fn checked_add(&self, other: &Self) -> Option<Self> {
+    
+    /// Adds currencies. `None` if the result overflows integer bounds.
+    pub fn checked_add(&self, other: &Self) -> Option<Self> {
         Some(Self { usd: self.usd.checked_add(other.usd)? })
     }
-}
-
-impl CheckedSub for USDCurrencies {
-    fn checked_sub(&self, other: &Self) -> Option<Self> {
+    
+    /// Subtracts currencies. `None` if the result overflows integer bounds.
+    pub fn checked_sub(&self, other: &Self) -> Option<Self> {
         Some(Self { usd: self.usd.checked_sub(other.usd)? })
     }
 }
 
-// from https://crates.io/crates/separator
-fn thousands(string: String) -> String {
-    let idx = match string.find('.') {
-        Some(i) => i,
-        None => string.len()
-    };
-    let int_part = &string[..idx];
-    let fract_part = &string[idx..];
-    let mut output = String::new();
-    let magnitude = if let Some(stripped) = int_part.strip_prefix('-') {
-        output.push('-');
-        stripped.to_owned()
-    } else {
-        int_part.to_owned()
-    };
-    let mut place = magnitude.len();
-    let mut later_loop = false;
-
-    for ch in magnitude.chars() {
-        if later_loop && place % 3 == 0 {
-            output.push(',');
-        }
-
-        output.push(ch);
-        later_loop = true;
-        place -= 1;
-    };
-
-    output.push_str(fract_part);
-    output
-}
-
 impl fmt::Display for USDCurrencies {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "${}", thousands(format!("{:.2}", self.to_dollars())))
+        write!(f, "${}", helpers::thousands(format!("{:.2}", self.to_dollars())))
     }
 }
 
@@ -154,13 +118,13 @@ impl_op_ex!(- |a: &USDCurrencies, b: &USDCurrencies| -> USDCurrencies {
     }
 });
 
-impl_op_ex!(* |currencies: &USDCurrencies, num: i32| -> USDCurrencies {
+impl_op_ex!(* |currencies: &USDCurrencies, num: Currency| -> USDCurrencies {
     USDCurrencies {
         usd: currencies.usd.saturating_mul(num),
     }
 });
 
-impl_op_ex!(/ |currencies: &USDCurrencies, num: i32| -> USDCurrencies {
+impl_op_ex!(/ |currencies: &USDCurrencies, num: Currency| -> USDCurrencies {
     USDCurrencies {
         usd: currencies.usd.saturating_div(num),
     }
@@ -168,13 +132,13 @@ impl_op_ex!(/ |currencies: &USDCurrencies, num: i32| -> USDCurrencies {
 
 impl_op_ex!(* |currencies: &USDCurrencies, num: f32| -> USDCurrencies {
     USDCurrencies { 
-        usd: (currencies.usd as f32 * num).round() as i32,
+        usd: (currencies.usd as f32 * num).round() as Currency,
     }
 });
 
 impl_op_ex!(/ |currencies: &USDCurrencies, num: f32| -> USDCurrencies {
     USDCurrencies {
-        usd: (currencies.usd as f32 / num).round() as i32,
+        usd: (currencies.usd as f32 / num).round() as Currency,
     }
 });
 
@@ -202,27 +166,27 @@ impl SubAssign<&USDCurrencies> for USDCurrencies {
     }
 }
 
-impl MulAssign<i32> for USDCurrencies {
-    fn mul_assign(&mut self, other: i32) {
+impl MulAssign<Currency> for USDCurrencies {
+    fn mul_assign(&mut self, other: Currency) {
         self.usd = self.usd.saturating_mul(other);
     }
 }
 
 impl MulAssign<f32> for USDCurrencies {
     fn mul_assign(&mut self, other: f32) {
-        self.usd = (self.usd as f32 * other).round() as i32;
+        self.usd = (self.usd as f32 * other).round() as Currency;
     }
 }
 
-impl DivAssign<i32> for USDCurrencies {
-    fn div_assign(&mut self, other: i32) {
+impl DivAssign<Currency> for USDCurrencies {
+    fn div_assign(&mut self, other: Currency) {
         self.usd = self.usd.saturating_div(other);
     }
 }
 
 impl DivAssign<f32> for USDCurrencies {
     fn div_assign(&mut self, other: f32) {
-        self.usd = (self.usd as f32 / other).round() as i32;
+        self.usd = (self.usd as f32 / other).round() as Currency;
     }
 }
 
@@ -273,7 +237,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_multiplied_by_i32() {
+    fn currencies_multiplied_by_metal() {
         assert_eq!(USDCurrencies {
             usd: 10,
         } * 5, USDCurrencies {
@@ -291,7 +255,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_divided_by_i32() {
+    fn currencies_divided_by_metal() {
         assert_eq!(USDCurrencies {
             usd: 10,
         } / 5, USDCurrencies {
@@ -309,7 +273,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_mul_assign_i32() {
+    fn currencies_mul_assign_metal() {
         let mut currencies = USDCurrencies {
             usd: 10,
         };
@@ -335,7 +299,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_div_assign_i32() {
+    fn currencies_div_assign_metal() {
         let mut currencies = USDCurrencies {
             usd: 10,
         };

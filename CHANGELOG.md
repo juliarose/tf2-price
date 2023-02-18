@@ -131,5 +131,22 @@
 ### Added
 - `neaten` to `Currencies`.
 
+### Changed
+- `round` on `Currencies` returns `self`.
+- `round` on `ListingCurrencies` returns `self`.
+
 ### Fixed
 - An issue with overflowing values resulting in `i32::MIN` in the `to_metal` method.
+
+## 0.11.0 (2023-02-17)
+
+### Changed
+- **MAJOR CHANGE:** All integer types are now `i64`. `i32` may not be big enough for some use-cases. For example: expressing the value of all Golden Pans in existence as number of weapons reaches close to the bounds. Given a key price of 80 refined and a Golden Pan price of 3400 keys, `i32` can only hold value for 438, while of course `i64` is exponontially larger and can hold value for 1883858667658 allowing more flexibility.
+- `checked_add` on `Currencies` is now under `impl` rather than a trait.
+- `checked_add` on `ListingCurrencies` is now under `impl` rather than a trait.
+
+### Added
+- `Currency` type to represent the primitive used for integers.
+
+### Removed
+- `ParseError::NoCurrencies`.
