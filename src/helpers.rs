@@ -133,7 +133,6 @@ pub fn thousands(string: String) -> String {
 /// Converts a metal value into its float value.
 ///
 /// # Examples
-///
 /// ```
 /// assert_eq!(tf2_price::get_metal_float(6), 0.33);
 /// ```
@@ -144,7 +143,6 @@ pub fn get_metal_float(value: Currency) -> f32 {
 /// Converts a float value into a metal value.
 ///
 /// # Examples
-///
 /// ```
 /// assert_eq!(tf2_price::get_metal_from_float(0.33), 6);
 /// ```

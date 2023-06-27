@@ -108,7 +108,6 @@ impl ListingCurrencies {
     /// This is simply `self.keys >= other.keys && self.metal >= other.metal`.
     /// 
     /// # Examples
-    ///
     /// ```
     /// use tf2_price::Currencies;
     /// 

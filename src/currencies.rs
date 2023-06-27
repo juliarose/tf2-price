@@ -68,7 +68,6 @@ impl Currencies {
     /// (represented as weapons).
     /// 
     /// # Examples
-    ///
     /// ```
     /// use tf2_price::{Currencies, refined};
     /// 
@@ -88,7 +87,6 @@ impl Currencies {
     /// Converts from [`ListingCurrencies`] using the given key price (represented as weapons).
     /// 
     /// # Examples
-    ///
     /// ```
     /// use tf2_price::{Currencies, ListingCurrencies, refined};
     /// 
@@ -115,7 +113,6 @@ impl Currencies {
     /// weapons.
     /// 
     /// # Examples
-    ///
     /// ```
     /// use tf2_price::{Currencies, ListingCurrencies, refined};
     /// 
@@ -137,7 +134,6 @@ impl Currencies {
     /// min i64 will be returned. In most cases values this high are not useful.
     /// 
     /// # Examples
-    ///
     /// ```
     /// use tf2_price::{Currencies, refined};
     /// 
@@ -155,7 +151,6 @@ impl Currencies {
     /// be returned.
     /// 
     /// # Examples
-    ///
     /// ```
     /// use tf2_price::{Currencies, refined};
     /// 
@@ -171,7 +166,6 @@ impl Currencies {
     /// Checks if the currencies do contain any value.
     /// 
     /// # Examples
-    ///
     /// ```
     /// use tf2_price::Currencies;
     /// 
@@ -184,7 +178,6 @@ impl Currencies {
     /// Rounds the metal value using the given rounding method.
     /// 
     /// # Examples
-    ///
     /// ```
     /// use tf2_price::{Currencies, Rounding, refined, scrap};
     /// 
@@ -202,7 +195,6 @@ impl Currencies {
     /// converted to `keys`, with the remainder remaining as `metal`. This method is saturating.
     /// 
     /// # Examples
-    ///
     /// ```
     /// use tf2_price::{Currencies, refined};
     /// 
@@ -219,7 +211,6 @@ impl Currencies {
     /// This is simply `self.keys >= other.keys && self.metal >= other.metal`.
     /// 
     /// # Examples
-    ///
     /// ```
     /// use tf2_price::{Currencies, refined};
     /// 
@@ -903,6 +894,17 @@ mod tests {
             keys: 0,
             metal: refined!(40),
         });
+    }
+    
+    #[test]
+    fn to_metal_with_negative_keys() {
+        let key_price = refined!(10);
+        
+        assert_eq!(Currencies {
+            keys: -10,
+            // 2 keys of metal, so the total should be -8 keys
+            metal: key_price * 2,
+        }.to_metal(key_price), -(key_price * 8));
     }
     
     #[test]

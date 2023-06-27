@@ -49,7 +49,6 @@ impl USDCurrencies {
     /// Converts currencies to a metal value using the key prices.
     /// 
     /// # Examples
-    ///
     /// ```
     /// assert_eq!(tf2_price::USDCurrencies { usd: 100 }.to_metal(100, 10), 10);
     /// ```
@@ -69,7 +68,6 @@ impl USDCurrencies {
     /// Converts to dollars.
     /// 
     /// # Examples
-    ///
     /// ```
     /// assert_eq!(tf2_price::USDCurrencies { usd: 99 }.to_dollars(), 0.99);
     /// ```
