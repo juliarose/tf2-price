@@ -45,4 +45,4 @@ assert!(Currencies::try_from(ListingCurrencies { keys: 1.5, metal: 0 }).is_err()
 
 ## License
 
-MIT
+[MIT](https://github.com/juliarose/tf2-price/tree/main/LICENSE)
