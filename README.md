@@ -17,7 +17,7 @@ let currencies = Currencies {
 assert_eq!(currencies.metal, 42);
 
 // String conversions
-assert_eq!(format!("Selling for {currencies}.", "Selling for 5 keys, 2.33 ref.");
+assert_eq!(format!("Selling for {currencies}."), "Selling for 5 keys, 2.33 ref.");
 assert_eq!(Currencies::try_from("5 keys, 2.33 ref").unwrap(), currencies);
 ```
 
