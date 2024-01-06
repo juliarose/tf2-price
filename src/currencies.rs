@@ -12,7 +12,7 @@ use serde::de::Error;
 use serde::ser::SerializeStruct;
 
 /// For storing item currencies values.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
 #[serde(remote = "Self")]
 pub struct Currencies {
     /// Amount of keys.
@@ -49,19 +49,17 @@ impl Ord for Currencies {
 
 impl SerializeCurrencies for Currencies {}
 
-impl Default for Currencies {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Currencies {
-    /// Creates a new [`Currencies`] with `0` keys and `0` metal.
+    /// Creates a new [`Currencies`] with `0` keys and `0` metal. Same as `Currencies::default()`.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_price::Currencies;
+    /// 
+    /// let currencies = Currencies::new();
+    /// ```
     pub fn new() -> Self {
-        Self {
-            keys: 0,
-            metal: 0,
-        }
+        Self::default()
     }
     
     /// Converts a metal value into the appropriate number of keys using the given key price 
@@ -130,8 +128,8 @@ impl Currencies {
     }
     
     /// Converts currencies to a metal value using the given key price (represented as weapons).
-    /// In cases where the result overflows or underflows beyond the limit for [`i64`], the max or 
-    /// min i64 will be returned. In most cases values this high are not useful.
+    /// In cases where the result overflows or underflows beyond the limit for [`Currency`], the 
+    /// max or min [`Currency`]` will be returned. In most cases values this high are not useful.
     /// 
     /// # Examples
     /// ```
@@ -147,15 +145,16 @@ impl Currencies {
     }
     
     /// Converts currencies to a metal value using the given key price (represented as weapons).
-    /// In cases where the result overflows or underflows beyond the limit for [`i64`], `None` will
-    /// be returned.
+    /// In cases where the result overflows or underflows beyond the limit for [`Currency`], 
+    /// `None` will be returned.
     /// 
     /// # Examples
     /// ```
     /// use tf2_price::{Currencies, refined};
+    /// use tf2_price::types::Currency;
     /// 
     /// let key_price = refined!(50);
-    /// let currencies = Currencies { keys: i64::MAX, metal: refined!(10) };
+    /// let currencies = Currencies { keys: Currency::MAX, metal: refined!(10) };
     /// 
     /// assert!(currencies.checked_to_metal(key_price).is_none());
     /// ```
@@ -175,7 +174,8 @@ impl Currencies {
         self.keys == 0 && self.metal == 0
     }
     
-    /// Rounds the metal value using the given rounding method.
+    /// Rounds the metal value using the given rounding method. Returns a new `Currencies` 
+    /// rather than mutating the original in place.
     /// 
     /// # Examples
     /// ```
@@ -226,7 +226,18 @@ impl Currencies {
     }
     
     /// Checked integer multiplication. Computes `self * rhs` for each field, returning `None` if 
-    /// overflow occurred
+    /// overflow occurred.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_price::Currencies;
+    /// use tf2_price::types::Currency;
+    /// 
+    /// let currencies = Currencies { keys: Currency::MAX, metal: 0 };
+    /// 
+    /// // Overflows, returns None.
+    /// assert!(currencies.checked_mul(5).is_none());
+    /// ```
     pub fn checked_mul(&self, rhs: Currency) -> Option<Self> {
         let keys = self.keys.checked_mul(rhs)?;
         let metal = self.metal.checked_mul(rhs)?;

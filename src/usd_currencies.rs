@@ -6,7 +6,7 @@ use std::ops::{self, AddAssign, SubAssign, MulAssign, DivAssign};
 use serde::{Serialize, Deserialize};
 
 /// For storing cash values.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Copy)]
 pub struct USDCurrencies {
     /// Cash value in cents.
     #[serde(with = "helpers::cents", default)]
@@ -27,18 +27,17 @@ impl Ord for USDCurrencies {
 
 impl Eq for USDCurrencies {}
 
-impl Default for USDCurrencies {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl USDCurrencies {
-    /// Creates a new [`USDCurrencies`] with `0` usd.
+    /// Creates a new [`USDCurrencies`] with `0` `usd`. Same as `USDCurrencies::default()`.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_price::USDCurrencies;
+    /// 
+    /// let currencies = USDCurrencies::new();
+    /// ```
     pub fn new() -> Self {
-        Self {
-            usd: 0,
-        }
+        Self::default()
     }
     
     /// Converts currencies to a key value using the given key price (represented as weapons).

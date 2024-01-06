@@ -13,7 +13,7 @@ use serde::ser::SerializeStruct;
 
 /// The `keys` field for [`ListingCurrencies`] is defined as an [`f32`]. Use this anywhere you may
 /// need key values which include decimal places.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Copy)]
 #[serde(remote = "Self")]
 pub struct ListingCurrencies {
     /// Amount of keys.
@@ -52,35 +52,60 @@ impl Eq for ListingCurrencies {}
 
 impl SerializeCurrencies for ListingCurrencies {}
 
-impl Default for ListingCurrencies {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl ListingCurrencies {
-    /// Creates a new [`ListingCurrencies`] with `0` keys and `0` metal.
+    /// Creates a new [`ListingCurrencies`] with `0` keys and `0` metal. Same as 
+    /// `ListingCurrencies::default()`.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_price::ListingCurrencies;
+    /// 
+    /// let currencies = ListingCurrencies::new();
+    /// ```
     pub fn new() -> Self {
-        Self {
-            keys: 0.0,
-            metal: 0,
-        }
+        Self::default()
     }
     
     /// Checks if the `keys` value is a fractional value.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_price::ListingCurrencies;
+    /// 
+    /// let currencies = ListingCurrencies {
+    ///     keys: 1.5,
+    ///     metal: 0,
+    /// };
+    /// 
+    /// assert!(currencies.is_fract());
+    /// ```
     pub fn is_fract(&self) -> bool {
         self.keys.fract() != 0.0
     }
     
     /// Converts currencies to a metal value using the given key price (represented as weapons).
     /// Rounds float conversions and saturates at integer bounds.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_price::{ListingCurrencies, refined};
+    /// 
+    /// let key_price = refined!(50);
+    /// let currencies = ListingCurrencies {
+    ///     keys: 1.0,
+    ///     metal: refined!(5),
+    /// };
+    /// 
+    /// // 1.0 * 50 refined + 5 refined = 55 refined
+    /// assert_eq!(currencies.to_metal(key_price), refined!(55));
+    /// ```
     pub fn to_metal(&self, key_price: Currency) -> Currency {
         self.metal.saturating_add((self.keys * key_price as f32).round() as Currency)
     }
     
     /// Converts currencies to a metal value using the given key price (represented as weapons).
-    /// In cases where the result overflows or underflows beyond the limit for [`i64`], `None` is 
-    /// returned.
+    /// In cases where the result overflows or underflows beyond the limit for [`Currency`], `None` 
+    /// is returned.
     pub fn checked_to_metal(&self, key_price: Currency) -> Option<Currency> {
         let result = (self.keys * key_price as f32).round();
         let result_metal = result as Currency;
@@ -93,12 +118,37 @@ impl ListingCurrencies {
         self.metal.checked_add(result_metal)
     }
     
-    /// Checks if the currencies do contain any value.
+    /// Checks if the currencies do not contain any value.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_price::ListingCurrencies;
+    /// 
+    /// let mut currencies = ListingCurrencies { keys: 0.0, metal: 0 };
+    /// assert!(currencies.is_empty());
+    /// 
+    /// // Keys now has a value other than 0.0.
+    /// currencies.keys = 1.0;
+    /// assert!(!currencies.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.keys == 0.0 && self.metal == 0
     }
     
-    /// Rounds the metal value using the given rounding method.
+    /// Rounds the metal value using the given rounding method. Returns a new `ListingCurrencies` 
+    /// rather than mutating the original in place.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_price::{ListingCurrencies, Rounding, refined, scrap};
+    /// 
+    /// let currencies = ListingCurrencies { keys: 0.0, metal: refined!(1) + scrap!(3) };
+    /// 
+    /// // Round metal to the nearest refined.
+    /// assert_eq!(currencies.round(&Rounding::Refined).metal, refined!(1));
+    /// // Round metal up to the nearest refined.
+    /// assert_eq!(currencies.round(&Rounding::UpRefined).metal, refined!(2));
+    /// ```
     pub fn round(mut self, rounding: &Rounding) -> Self {
         self.metal = helpers::round_metal(self.metal, rounding);
         self

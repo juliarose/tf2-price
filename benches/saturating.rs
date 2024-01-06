@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use tf2_price::{Currencies, types::Currency};
+use tf2_price::{Currencies, Currency};
 
 fn criterion_benchmark(c: &mut Criterion) {
     let left: Currency = 100;

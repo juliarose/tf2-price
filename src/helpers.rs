@@ -17,8 +17,8 @@ pub fn to_metal(
 }
 
 /// Converts currencies to a metal value using the given key price (represented as weapons).
-/// In cases where the result overflows or underflows beyond the limit for [`i64`], `None` is 
-/// returned.
+/// In cases where the result overflows or underflows beyond the limit for [`Currency`], `None` 
+/// is returned.
 pub fn checked_to_metal(
     metal: Currency,
     keys: Currency,
@@ -209,13 +209,17 @@ pub fn round_metal(metal: Currency, rounding: &Rounding) -> Currency {
     }
     
     match *rounding {
-        // No rounding needed if the metal value is an even number.
-        Rounding::UpScrap if metal % 2 != 0 => {
+        Rounding::UpScrap => if metal % 2 != 0{
             metal + 1
+        } else {
+            // No rounding needed if the metal value is an even number.
+            metal
         },
-        // No rounding needed if the metal value is an even number.
-        Rounding::DownScrap if metal % 2 != 0 => {
+        Rounding::DownScrap => if metal % 2 != 0 {
             metal - 1
+        } else {
+            // No rounding needed if the metal value is an even number.
+            metal
         },
         Rounding::Refined => {
             let value = metal + ONE_REF / 2;
@@ -248,7 +252,7 @@ pub fn round_metal(metal: Currency, rounding: &Rounding) -> Currency {
                 metal
             }
         },
-        _ => {
+        Rounding::None => {
             metal
         },
     }

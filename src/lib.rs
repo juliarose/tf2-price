@@ -39,6 +39,10 @@
 //! check for overflows some checked methods are included.
 #[macro_use] extern crate impl_ops;
 
+pub mod traits;
+pub mod error;
+
+mod types;
 mod helpers;
 mod currencies;
 mod listing_currencies;
@@ -46,13 +50,10 @@ mod rounding;
 mod constants;
 mod usd_currencies;
 
-pub mod traits;
-pub mod error;
-pub mod types;
-
 pub use usd_currencies::USDCurrencies;
 pub use currencies::Currencies;
 pub use listing_currencies::ListingCurrencies;
+pub use types::Currency;
 pub use rounding::Rounding;
 pub use helpers::{get_metal_from_float, get_metal_float};
 pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
@@ -62,7 +63,7 @@ pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
 macro_rules! refined {
     ( $a:expr ) => {
         {
-            $a * 18 as i64
+            $a * 18
         }
     }
 }
@@ -72,7 +73,7 @@ macro_rules! refined {
 macro_rules! reclaimed {
     ( $a:expr ) => {
         {
-            $a * 6 as i64
+            $a * 6
         }
     }
 }
@@ -82,7 +83,7 @@ macro_rules! reclaimed {
 macro_rules! scrap {
     ( $a:expr ) => {
         {
-            $a * 2 as i64
+            $a * 2
         }
     }
 }

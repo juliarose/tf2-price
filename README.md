@@ -2,6 +2,8 @@
 
 Utilities for Team Fortress 2 item pricing.
 
+## Usage
+
 ```rs
 use tf2_price::{Currencies, ListingCurrencies, refined, scrap};
 
