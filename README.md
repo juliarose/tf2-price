@@ -21,23 +21,6 @@ assert_eq!(format!("Selling for {currencies}.", "Selling for 5 keys, 2.33 ref.")
 assert_eq!(Currencies::try_from("5 keys, 2.33 ref").unwrap(), currencies);
 ```
 
-### Serialization
-```rs
-use tf2_price::Currencies;
-
-// Serde deserialization.
-let json = r#"{"keys":5,"metal":2.33}"#;
-let currencies: Currencies = serde_json::from_str(json).unwrap();
-
-assert_eq!(
-    currencies,
-    Currencies {
-        keys: 5,
-        metal: refined!(2) + scrap!(3),
-    },
-);
-```
-
 ### Arithmetic
 ```rs
 use tf2_price::Currencies;
@@ -102,6 +85,23 @@ let currencies = ListingCurrencies {
 assert!(Currencies::try_from(ListingCurrencies { keys: 1.0, metal: 0 }).is_ok());
 // Fails if the key value holds a fractional number.
 assert!(Currencies::try_from(ListingCurrencies { keys: 1.5, metal: 0 }).is_err());
+```
+
+### Serialization
+```rs
+use tf2_price::Currencies;
+
+// Serde deserialization.
+let json = r#"{"keys":5,"metal":2.33}"#;
+let currencies: Currencies = serde_json::from_str(json).unwrap();
+
+assert_eq!(
+    currencies,
+    Currencies {
+        keys: 5,
+        metal: refined!(2) + scrap!(3),
+    },
+);
 ```
 
 ## License
