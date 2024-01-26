@@ -150,8 +150,7 @@ impl Currencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currencies, refined};
-    /// use tf2_price::types::Currency;
+    /// use tf2_price::{Currencies, Currency, refined};
     /// 
     /// let key_price = refined!(50);
     /// let currencies = Currencies { keys: Currency::MAX, metal: refined!(10) };
@@ -230,8 +229,7 @@ impl Currencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::Currencies;
-    /// use tf2_price::types::Currency;
+    /// use tf2_price::{Currencies, Currency};
     /// 
     /// let currencies = Currencies { keys: Currency::MAX, metal: 0 };
     /// 

@@ -1,10 +1,10 @@
 # Changelog
 
-## 0.12.0 (2024-01-06)
+## 0.12.0 (2024-01-26)
 
 ### Changed
 - Moved `types::Currency` to root.
-- Added feature `b32` to use currencies defined as i32 rather than i64.
+- Added feature `b32` to use currencies defined as i32 rather than i64 when enabled.
 
 ## 0.11.0 (2023-02-17)
 
