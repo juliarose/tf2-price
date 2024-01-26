@@ -1,3 +1,5 @@
+//! Error types.
+
 use std::num::{ParseFloatError, ParseIntError};
 
 /// Error converting listing currencies to currencies.
@@ -8,6 +10,7 @@ pub struct TryFromListingCurrenciesError {
     pub fract: f32,
 }
 
+/// An error occurred parsing a string into a currency.
 #[derive(Debug, thiserror::Error)]
 pub enum ParseError {
     /// String was invalid.
