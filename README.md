@@ -5,7 +5,7 @@ Utilities for Team Fortress 2 item pricing.
 ## Usage
 
 ### Basic usage
-```rs
+```rust
 use tf2_price::{Currencies, refined, scrap};
 
 let currencies = Currencies {
@@ -22,7 +22,7 @@ assert_eq!(Currencies::try_from("5 keys, 2.33 ref").unwrap(), currencies);
 ```
 
 ### Arithmetic
-```rs
+```rust
 use tf2_price::Currencies;
 
 let golden_frying_pan = Currencies {
@@ -72,7 +72,7 @@ assert_eq!(currencies.checked_mul(i64::MAX), None);
 ```
 
 ### Floating Point Key Values
-```rs
+```rust
 use tf2_price::{Currencies, ListingCurrencies};
 
 // To preserve floating point key values which appear in some cases, use ListingCurrencies.
@@ -88,7 +88,7 @@ assert!(Currencies::try_from(ListingCurrencies { keys: 1.5, metal: 0 }).is_err()
 ```
 
 ### Serialization
-```rs
+```rust
 use tf2_price::Currencies;
 
 // Serde deserialization.
