@@ -17,8 +17,14 @@ let currencies = Currencies {
 assert_eq!(currencies.metal, 42);
 
 // String conversions
-assert_eq!(format!("Selling for {currencies}."), "Selling for 5 keys, 2.33 ref.");
-assert_eq!(Currencies::try_from("5 keys, 2.33 ref").unwrap(), currencies);
+assert_eq!(
+    format!("Selling for {currencies}."),
+    "Selling for 5 keys, 2.33 ref.",
+);
+assert_eq!(
+    Currencies::try_from("5 keys, 2.33 ref").unwrap(),
+    currencies,
+);
 ```
 
 ### Arithmetic
@@ -61,7 +67,7 @@ assert_eq!(
     },
 );
 
-// There are also some helper methods for checking for integer overflow.
+// Helper methods for checking for integer overflow.
 let max_keys = Currencies {
     keys: i64::MAX,
     metal: 0,
@@ -75,16 +81,28 @@ assert_eq!(currencies.checked_mul(i64::MAX), None);
 ```rust
 use tf2_price::{Currencies, ListingCurrencies};
 
-// To preserve floating point key values which appear in some cases, use ListingCurrencies.
+// To preserve floating point key values, use ListingCurrencies.
 let currencies = ListingCurrencies {
     keys: 1.5,
     metal: 0,
 };
 
 // Conversions to Currencies are supported.
-assert!(Currencies::try_from(ListingCurrencies { keys: 1.0, metal: 0 }).is_ok());
+let listing_currencies = ListingCurrencies {
+    keys: 1.0,
+    metal: 0
+};
+assert!(
+    Currencies::try_from(listing_currencies).is_ok()
+);
 // Fails if the key value holds a fractional number.
-assert!(Currencies::try_from(ListingCurrencies { keys: 1.5, metal: 0 }).is_err());
+let listing_currencies = ListingCurrencies {
+    keys: 1.5,
+    metal: 0
+};
+assert!(
+    Currencies::try_from(listing_currencies).is_err()
+);
 ```
 
 ### Serialization
