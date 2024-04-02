@@ -300,7 +300,7 @@ impl MulAssign<Currency> for FloatCurrencies {
 impl MulAssign<f32> for FloatCurrencies {
     fn mul_assign(&mut self, other: f32) {
         self.keys *= other;
-        self.metal *= other as f32;
+        self.metal *= other;
     }
 }
 
