@@ -274,7 +274,7 @@ impl Currencies {
 /// value.
 impl PartialEq<FloatCurrencies> for Currencies {
     fn eq(&self, other: &FloatCurrencies) -> bool {
-        if let Some(metal) = helpers::get_metal_from_float_checked(other.metal) {
+        if let Some(metal) = helpers::checked_get_metal_from_float(other.metal) {
             !other.is_fract() &&
             self.keys == other.keys as Currency &&
             self.metal == metal
@@ -406,7 +406,7 @@ impl TryFrom<FloatCurrencies> for Currencies {
             });
         }
         
-        let metal = helpers::get_metal_from_float_checked(currencies.metal)
+        let metal = helpers::checked_get_metal_from_float(currencies.metal)
             .ok_or(TryFromFloatCurrenciesError::MetalOutOfBounds {
                 metal: currencies.metal,
             })?;

@@ -57,7 +57,7 @@ pub use currencies::Currencies;
 pub use float_currencies::FloatCurrencies;
 pub use types::Currency;
 pub use rounding::Rounding;
-pub use helpers::{get_metal_from_float, get_metal_from_float_checked, get_metal_float};
+pub use helpers::{get_metal_from_float, checked_get_metal_from_float, get_metal_float};
 pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
 
 /// Generates value for refined metal.

@@ -168,9 +168,9 @@ pub fn strict_f32_to_currency(value: f32) -> Option<Currency> {
 ///
 /// # Examples
 /// ```
-/// assert_eq!(tf2_price::get_metal_from_float_checked(0.33), Some(6));
+/// assert_eq!(tf2_price::checked_get_metal_from_float(0.33), Some(6));
 /// ```
-pub fn get_metal_from_float_checked(value: f32) -> Option<Currency> {
+pub fn checked_get_metal_from_float(value: f32) -> Option<Currency> {
     strict_f32_to_currency((value * (ONE_REF as f32)).round())
 }
 

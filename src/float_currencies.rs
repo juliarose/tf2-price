@@ -113,7 +113,7 @@ impl FloatCurrencies {
             return None;
         }
         
-        helpers::get_metal_from_float_checked(self.metal)?.checked_add(result_metal)
+        helpers::checked_get_metal_from_float(self.metal)?.checked_add(result_metal)
     }
     
     /// Checks if the currencies do not contain any value.
