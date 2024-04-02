@@ -405,12 +405,6 @@ impl TryFrom<FloatCurrencies> for Currencies {
                 fract: currencies.keys.fract(),
             });
         }
-
-        if currencies.metal.fract() != 0.0 {
-            return Err(TryFromFloatCurrenciesError::Fractional {
-                fract: currencies.metal.fract(),
-            });
-        }
         
         let metal = helpers::get_metal_from_float_checked(currencies.metal)
             .ok_or(TryFromFloatCurrenciesError::MetalOutOfBounds {

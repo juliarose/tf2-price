@@ -84,13 +84,13 @@ use tf2_price::{Currencies, FloatCurrencies};
 // To preserve floating point key values, use FloatCurrencies.
 let currencies = FloatCurrencies {
     keys: 1.5,
-    metal: 0,
+    metal: 0.0,
 };
 
 // Conversions to Currencies are supported.
 let float_currencies = FloatCurrencies {
     keys: 1.0,
-    metal: 0
+    metal: 0.0,
 };
 assert!(
     Currencies::try_from(float_currencies).is_ok()
@@ -98,7 +98,7 @@ assert!(
 // Fails if the key value holds a fractional number.
 let float_currencies = FloatCurrencies {
     keys: 1.5,
-    metal: 0
+    metal: 0.0,
 };
 assert!(
     Currencies::try_from(float_currencies).is_err()
