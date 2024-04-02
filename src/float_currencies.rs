@@ -106,14 +106,14 @@ impl FloatCurrencies {
     /// is returned.
     pub fn checked_to_metal(&self, key_price: Currency) -> Option<Currency> {
         let result = (self.keys * key_price as f32).round();
-        let result_metal = result as Currency;
+        let result_metal = helpers::strict_f32_to_currency(result)?;
         
         // Check for overflow by seeing if conversions produce unequal results
         if result != result_metal as f32 {
             return None;
         }
         
-        helpers::get_metal_from_float(self.metal).checked_add(result_metal)
+        helpers::get_metal_from_float_checked(self.metal)?.checked_add(result_metal)
     }
     
     /// Checks if the currencies do not contain any value.

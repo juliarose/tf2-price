@@ -5,6 +5,9 @@
 ### Changed
 -  **MAJOR CHANGE** Changed `ListingCurrencies` to `FloatCurrencies`. Both `keys` and `metal` fields are now defined as `f32`. This makes more sense as this is generally used as a container type for holding original values from responses. `FloatCurrencies` should always be converted to `Currencies` in order to perform arithmatic.
 
+### Added
+- `get_metal_from_float_checked` helper method.
+
 ## 0.12.0 (2024-01-26)
 
 ### Changed
