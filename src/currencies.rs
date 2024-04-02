@@ -1,9 +1,9 @@
 use crate::helpers;
 use crate::types::Currency;
 use crate::traits::SerializeCurrencies;
-use crate::error::{TryFromListingCurrenciesError, ParseError};
+use crate::error::{TryFromFloatCurrenciesError, ParseError};
 use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, EMPTY_SYMBOL};
-use crate::{ListingCurrencies, Rounding};
+use crate::{FloatCurrencies, Rounding};
 use std::fmt;
 use std::cmp::{Ord, Ordering};
 use std::ops::{self, AddAssign, SubAssign, MulAssign, DivAssign};
@@ -82,28 +82,29 @@ impl Currencies {
         }
     }
     
-    /// Converts from [`ListingCurrencies`] using the given key price (represented as weapons).
+    /// Converts from [`FloatCurrencies`] using the given key price (represented as weapons).
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currencies, ListingCurrencies, refined};
+    /// use tf2_price::{Currencies, FloatCurrencies, refined};
     /// 
     /// let key_price = refined!(60);
-    /// let listing_currencies = ListingCurrencies { keys: 1.5, metal: 0 };
-    /// let currencies = Currencies::from_listing_currencies(listing_currencies, key_price);
+    /// let float_currencies = FloatCurrencies { keys: 1.5, metal: 0.0 };
+    /// let currencies = Currencies::from_float_currencies(float_currencies, key_price);
     /// 
     /// assert_eq!(currencies.keys, 1);
     /// assert_eq!(currencies.metal, refined!(30));
     /// ```
-    pub fn from_listing_currencies(
-        currencies: ListingCurrencies,
+    pub fn from_float_currencies(
+        currencies: FloatCurrencies,
         key_price: Currency,
     ) -> Self {
         let keys_metal = ((currencies.keys % 1.0) * key_price as f32).round() as Currency;
+        let metal = helpers::get_metal_from_float(currencies.metal);
         
         Self {
             keys: currencies.keys as Currency,
-            metal: keys_metal.saturating_add(currencies.metal),
+            metal: keys_metal.saturating_add(metal),
         }
     }
     
@@ -112,7 +113,7 @@ impl Currencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currencies, ListingCurrencies, refined};
+    /// use tf2_price::{Currencies, FloatCurrencies, refined};
     /// 
     /// let key_price = refined!(60);
     /// let currencies = Currencies::from_keys_f32(1.5, key_price);
@@ -269,13 +270,17 @@ impl Currencies {
     }
 }
 
-/// Comparison with [`ListingCurrencies`] will fail if [`ListingCurrencies`] has a fractional key 
+/// Comparison with [`FloatCurrencies`] will fail if [`FloatCurrencies`] has a fractional key 
 /// value.
-impl PartialEq<ListingCurrencies> for Currencies {
-    fn eq(&self, other: &ListingCurrencies) -> bool {
-        !other.is_fract() &&
-        self.keys == other.keys as Currency &&
-        self.metal == other.metal
+impl PartialEq<FloatCurrencies> for Currencies {
+    fn eq(&self, other: &FloatCurrencies) -> bool {
+        if let Some(metal) = helpers::get_metal_from_float_checked(other.metal) {
+            !other.is_fract() &&
+            self.keys == other.keys as Currency &&
+            self.metal == metal
+        } else {
+            false
+        }
     }
 }
 
@@ -390,35 +395,41 @@ impl<'a> TryFrom<&'a str> for Currencies {
     }
 }
 
-/// Results in error if [`ListingCurrencies`] contains a fractional key value.
-impl TryFrom<ListingCurrencies> for Currencies {
-    type Error = TryFromListingCurrenciesError;
+/// Results in error if [`FloatCurrencies`] contains a fractional key value.
+impl TryFrom<FloatCurrencies> for Currencies {
+    type Error = TryFromFloatCurrenciesError;
     
-    fn try_from(currencies: ListingCurrencies) -> Result<Self, Self::Error> {
-        if currencies.is_fract() {
-            return Err(TryFromListingCurrenciesError { fract: currencies.keys.fract() });
+    fn try_from(currencies: FloatCurrencies) -> Result<Self, Self::Error> {
+        if currencies.keys.fract() != 0.0 {
+            return Err(TryFromFloatCurrenciesError::Fractional {
+                fract: currencies.keys.fract(),
+            });
         }
+
+        if currencies.metal.fract() != 0.0 {
+            return Err(TryFromFloatCurrenciesError::Fractional {
+                fract: currencies.metal.fract(),
+            });
+        }
+        
+        let metal = helpers::get_metal_from_float_checked(currencies.metal)
+            .ok_or(TryFromFloatCurrenciesError::MetalOutOfBounds {
+                metal: currencies.metal,
+            })?;
         
         Ok(Currencies {
             keys: currencies.keys as Currency,
-            metal: currencies.metal,
+            metal,
         })
     }
 }
 
-/// Results in error if [`ListingCurrencies`] contains a fractional key value.
-impl TryFrom<&ListingCurrencies> for Currencies {
-    type Error = &'static str;
+/// Results in error if [`FloatCurrencies`] contains a fractional key value.
+impl TryFrom<&FloatCurrencies> for Currencies {
+    type Error = TryFromFloatCurrenciesError;
     
-    fn try_from(currencies: &ListingCurrencies) -> Result<Self, Self::Error> {
-        if currencies.is_fract() {
-            return Err("Currencies contain fractional key value");
-        }
-        
-        Ok(Currencies {
-            keys: currencies.keys as Currency,
-            metal: currencies.metal,
-        })
+    fn try_from(currencies: &FloatCurrencies) -> Result<Self, Self::Error> {
+        Currencies::try_from(*currencies)
     }
 }
 

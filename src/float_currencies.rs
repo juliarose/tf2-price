@@ -3,7 +3,7 @@ use crate::types::Currency;
 use crate::traits::SerializeCurrencies;
 use crate::error::ParseError;
 use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, EMPTY_SYMBOL};
-use crate::{Currencies, Rounding};
+use crate::Currencies;
 use std::fmt;
 use std::cmp::{Ord, Ordering};
 use std::ops::{self, AddAssign, SubAssign, MulAssign, DivAssign};
@@ -11,28 +11,26 @@ use serde::{Serialize, Deserialize, Serializer, Deserializer};
 use serde::de::Error;
 use serde::ser::SerializeStruct;
 
-/// The `keys` field for [`ListingCurrencies`] is defined as an [`f32`]. Use this anywhere you may
-/// need key values which include decimal places.
+/// The `keys` and `metal` fields for [`FloatCurrencies`] are defined as an [`f32`]. Use this 
+/// anywhere you may need values which include decimal places.
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Copy)]
 #[serde(remote = "Self")]
-pub struct ListingCurrencies {
+pub struct FloatCurrencies {
     /// Amount of keys.
     #[serde(default)]
     pub keys: f32,
-    /// Amount of metal expressed as weapons. A metal value of 6 would be equivalent to 3 scrap. 
-    /// It's recommended to use the `ONE_REF`, `ONE_REC`, `ONE_SCRAP`, and `ONE_WEAPON` constants 
-    /// to perform arithmatic.
-    #[serde(deserialize_with = "helpers::metal_deserializer", default)]
-    pub metal: Currency,
+    /// Amount of metal expressed as a float e.g. "1.33 ref".
+    #[serde(default)]
+    pub metal: f32,
 }
 
-impl PartialOrd for ListingCurrencies {
-    fn partial_cmp(&self, other: &ListingCurrencies) -> Option<Ordering> {
+impl PartialOrd for FloatCurrencies {
+    fn partial_cmp(&self, other: &FloatCurrencies) -> Option<Ordering> {
        Some(self.cmp(other))
     }
 }
 
-impl Ord for ListingCurrencies {
+impl Ord for FloatCurrencies {
     fn cmp(&self, other:&Self) -> Ordering {
         if self.keys > other.keys {
             Ordering::Greater
@@ -48,19 +46,19 @@ impl Ord for ListingCurrencies {
     }
 }
 
-impl Eq for ListingCurrencies {}
+impl Eq for FloatCurrencies {}
 
-impl SerializeCurrencies for ListingCurrencies {}
+impl SerializeCurrencies for FloatCurrencies {}
 
-impl ListingCurrencies {
-    /// Creates a new [`ListingCurrencies`] with `0` keys and `0` metal. Same as 
-    /// `ListingCurrencies::default()`.
+impl FloatCurrencies {
+    /// Creates a new [`FloatCurrencies`] with `0` keys and `0` metal. Same as 
+    /// `FloatCurrencies::default()`.
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::ListingCurrencies;
+    /// use tf2_price::FloatCurrencies;
     /// 
-    /// let currencies = ListingCurrencies::new();
+    /// let currencies = FloatCurrencies::new();
     /// ```
     pub fn new() -> Self {
         Self::default()
@@ -70,11 +68,11 @@ impl ListingCurrencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::ListingCurrencies;
+    /// use tf2_price::FloatCurrencies;
     /// 
-    /// let currencies = ListingCurrencies {
+    /// let currencies = FloatCurrencies {
     ///     keys: 1.5,
-    ///     metal: 0,
+    ///     metal: 0.0,
     /// };
     /// 
     /// assert!(currencies.is_fract());
@@ -88,19 +86,19 @@ impl ListingCurrencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{ListingCurrencies, refined};
+    /// use tf2_price::{FloatCurrencies, refined};
     /// 
     /// let key_price = refined!(50);
-    /// let currencies = ListingCurrencies {
+    /// let currencies = FloatCurrencies {
     ///     keys: 1.0,
-    ///     metal: refined!(5),
+    ///     metal: 5.0,
     /// };
     /// 
     /// // 1.0 * 50 refined + 5 refined = 55 refined
     /// assert_eq!(currencies.to_metal(key_price), refined!(55));
     /// ```
     pub fn to_metal(&self, key_price: Currency) -> Currency {
-        self.metal.saturating_add((self.keys * key_price as f32).round() as Currency)
+        helpers::get_metal_from_float(self.metal).saturating_add((self.keys * key_price as f32).round() as Currency)
     }
     
     /// Converts currencies to a metal value using the given key price (represented as weapons).
@@ -115,16 +113,16 @@ impl ListingCurrencies {
             return None;
         }
         
-        self.metal.checked_add(result_metal)
+        helpers::get_metal_from_float(self.metal).checked_add(result_metal)
     }
     
     /// Checks if the currencies do not contain any value.
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::ListingCurrencies;
+    /// use tf2_price::FloatCurrencies;
     /// 
-    /// let mut currencies = ListingCurrencies { keys: 0.0, metal: 0 };
+    /// let mut currencies = FloatCurrencies::default();
     /// assert!(currencies.is_empty());
     /// 
     /// // Keys now has a value other than 0.0.
@@ -132,26 +130,8 @@ impl ListingCurrencies {
     /// assert!(!currencies.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
-        self.keys == 0.0 && self.metal == 0
-    }
-    
-    /// Rounds the metal value using the given rounding method. Returns a new `ListingCurrencies` 
-    /// rather than mutating the original in place.
-    /// 
-    /// # Examples
-    /// ```
-    /// use tf2_price::{ListingCurrencies, Rounding, refined, scrap};
-    /// 
-    /// let currencies = ListingCurrencies { keys: 0.0, metal: refined!(1) + scrap!(3) };
-    /// 
-    /// // Round metal to the nearest refined.
-    /// assert_eq!(currencies.round(&Rounding::Refined).metal, refined!(1));
-    /// // Round metal up to the nearest refined.
-    /// assert_eq!(currencies.round(&Rounding::UpRefined).metal, refined!(2));
-    /// ```
-    pub fn round(mut self, rounding: &Rounding) -> Self {
-        self.metal = helpers::round_metal(self.metal, rounding);
-        self
+        self.keys == 0.0 && !self.keys.is_nan() &&
+        self.metal == 0.0 && !self.metal.is_nan()
     }
     
     /// Checks whether the currencies have enough keys and metal to afford the `other` currencies.
@@ -173,210 +153,211 @@ impl ListingCurrencies {
     }
 }
 
-impl PartialEq<Currencies> for ListingCurrencies {
+impl PartialEq<Currencies> for FloatCurrencies {
     fn eq(&self, other: &Currencies) -> bool {
         self.keys.fract() == 0.0 &&
         self.keys == other.keys as f32 &&
-        self.metal == other.metal
+        self.metal.fract() == 0.0 &&
+        helpers::get_metal_from_float(self.metal) == other.metal
     }
 }
 
-impl_op_ex!(+ |a: &ListingCurrencies, b: &ListingCurrencies| -> ListingCurrencies { 
-    ListingCurrencies {
+impl_op_ex!(+ |a: &FloatCurrencies, b: &FloatCurrencies| -> FloatCurrencies { 
+    FloatCurrencies {
         keys: a.keys + b.keys,
-        metal: a.metal.saturating_add(b.metal),
+        metal: a.metal + b.metal,
     } 
 });
 
-impl_op_ex!(+ |a: &ListingCurrencies, b: &Currencies| -> ListingCurrencies { 
-    ListingCurrencies {
+impl_op_ex!(+ |a: &FloatCurrencies, b: &Currencies| -> FloatCurrencies { 
+    FloatCurrencies {
         keys: a.keys + b.keys as f32,
-        metal: a.metal.saturating_add(b.metal),
+        metal: a.metal + b.metal as f32,
     } 
 });
 
-impl_op_ex!(+ |a: &Currencies, b: &ListingCurrencies| -> ListingCurrencies { 
-    ListingCurrencies {
+impl_op_ex!(+ |a: &Currencies, b: &FloatCurrencies| -> FloatCurrencies { 
+    FloatCurrencies {
         keys: a.keys as f32 + b.keys,
-        metal: a.metal.saturating_add(b.metal),
+        metal: a.metal as f32 + b.metal,
     } 
 });
 
-impl_op_ex!(- |a: &ListingCurrencies, b: &ListingCurrencies| -> ListingCurrencies { 
-    ListingCurrencies {
+impl_op_ex!(- |a: &FloatCurrencies, b: &FloatCurrencies| -> FloatCurrencies { 
+    FloatCurrencies {
         keys: a.keys - b.keys,
-        metal: a.metal.saturating_sub(b.metal),
+        metal: a.metal - b.metal,
     }
 });
 
-impl_op_ex!(- |a: &ListingCurrencies, b: &Currencies| -> ListingCurrencies { 
-    ListingCurrencies {
+impl_op_ex!(- |a: &FloatCurrencies, b: &Currencies| -> FloatCurrencies { 
+    FloatCurrencies {
         keys: a.keys - b.keys as f32,
-        metal: a.metal.saturating_sub(b.metal),
+        metal: a.metal - b.metal as f32,
     } 
 });
 
-impl_op_ex!(- |a: &Currencies, b: &ListingCurrencies| -> ListingCurrencies { 
-    ListingCurrencies {
+impl_op_ex!(- |a: &Currencies, b: &FloatCurrencies| -> FloatCurrencies { 
+    FloatCurrencies {
         keys: a.keys as f32 - b.keys,
-        metal: a.metal.saturating_sub(b.metal),
+        metal: a.metal as f32 - b.metal,
     } 
 });
 
-impl_op_ex!(* |currencies: &ListingCurrencies, num: Currency| -> ListingCurrencies {
-    ListingCurrencies {
+impl_op_ex!(* |currencies: &FloatCurrencies, num: Currency| -> FloatCurrencies {
+    FloatCurrencies {
         keys: currencies.keys * num as f32,
-        metal: currencies.metal.saturating_mul(num),
+        metal: currencies.metal * num as f32,
     }
 });
 
-impl_op_ex!(/ |currencies: &ListingCurrencies, num: Currency| -> ListingCurrencies {
-    ListingCurrencies {
+impl_op_ex!(/ |currencies: &FloatCurrencies, num: Currency| -> FloatCurrencies {
+    FloatCurrencies {
         keys: currencies.keys / num as f32,
-        metal: currencies.metal.saturating_div(num),
+        metal: currencies.metal / num as f32,
     }
 });
 
-impl_op_ex!(* |currencies: &ListingCurrencies, num: f32| -> ListingCurrencies {
-    ListingCurrencies { 
+impl_op_ex!(* |currencies: &FloatCurrencies, num: f32| -> FloatCurrencies {
+    FloatCurrencies { 
         keys: currencies.keys * num,
-        metal: (currencies.metal as f32 * num).round() as Currency,
+        metal: currencies.metal * num,
     }
 });
 
-impl_op_ex!(/ |currencies: &ListingCurrencies, num: f32| -> ListingCurrencies {
-    ListingCurrencies {
+impl_op_ex!(/ |currencies: &FloatCurrencies, num: f32| -> FloatCurrencies {
+    FloatCurrencies {
         keys: currencies.keys / num,
-        metal: (currencies.metal as f32 / num).round() as Currency,
+        metal: currencies.metal / num,
     }
 });
 
-impl AddAssign<ListingCurrencies> for ListingCurrencies {
+impl AddAssign<FloatCurrencies> for FloatCurrencies {
     fn add_assign(&mut self, other: Self) {
         self.keys += other.keys;
-        self.metal = self.metal.saturating_add(other.metal);
+        self.metal += other.metal;
     }
 }
 
-impl AddAssign<&ListingCurrencies> for ListingCurrencies {
+impl AddAssign<&FloatCurrencies> for FloatCurrencies {
     fn add_assign(&mut self, other: &Self) {
         self.keys += other.keys;
-        self.metal = self.metal.saturating_add(other.metal);
+        self.metal += other.metal;
     }
 }
 
-impl SubAssign<ListingCurrencies> for ListingCurrencies {
+impl SubAssign<FloatCurrencies> for FloatCurrencies {
     fn sub_assign(&mut self, other: Self) {
         self.keys -= other.keys;
-        self.metal = self.metal.saturating_sub(other.metal);
+        self.metal -= other.metal;
     }
 }
 
-impl SubAssign<&ListingCurrencies> for ListingCurrencies {
+impl SubAssign<&FloatCurrencies> for FloatCurrencies {
     fn sub_assign(&mut self, other: &Self) {
         self.keys -= other.keys;
-        self.metal = self.metal.saturating_sub(other.metal);
+        self.metal-= other.metal;
     }
 }
 
 // Operations for non-float currencies
 
-impl AddAssign<Currencies> for ListingCurrencies {
+impl AddAssign<Currencies> for FloatCurrencies {
     fn add_assign(&mut self, other: Currencies) {
         self.keys += other.keys as f32;
-        self.metal = self.metal.saturating_add(other.metal);
+        self.metal += helpers::get_metal_float(other.metal);
     }
 }
 
-impl AddAssign<&Currencies> for ListingCurrencies {
+impl AddAssign<&Currencies> for FloatCurrencies {
     fn add_assign(&mut self, other: &Currencies) {
         self.keys += other.keys as f32;
-        self.metal = self.metal.saturating_add(other.metal);
+        self.metal += helpers::get_metal_float(other.metal);
     }
 }
 
-impl SubAssign<Currencies> for ListingCurrencies {
+impl SubAssign<Currencies> for FloatCurrencies {
     fn sub_assign(&mut self, other: Currencies) {
         self.keys -= other.keys as f32;
-        self.metal = self.metal.saturating_sub(other.metal);
+        self.metal -= helpers::get_metal_float(other.metal);
     }
 }
 
-impl SubAssign<&Currencies> for ListingCurrencies {
+impl SubAssign<&Currencies> for FloatCurrencies {
     fn sub_assign(&mut self, other: &Currencies) {
         self.keys -= other.keys as f32;
-        self.metal = self.metal.saturating_sub(other.metal);
+        self.metal -= helpers::get_metal_float(other.metal);
     }
 }
 
-impl MulAssign<Currency> for ListingCurrencies {
+impl MulAssign<Currency> for FloatCurrencies {
     fn mul_assign(&mut self, other: Currency) {
         self.keys *= other as f32;
-        self.metal = self.metal.saturating_mul(other);
+        self.metal *= other as f32;
     }
 }
 
-impl MulAssign<f32> for ListingCurrencies {
+impl MulAssign<f32> for FloatCurrencies {
     fn mul_assign(&mut self, other: f32) {
         self.keys *= other;
-        self.metal = (self.metal as f32 * other).round() as Currency;
+        self.metal *= other as f32;
     }
 }
 
-impl DivAssign<Currency> for ListingCurrencies {
+impl DivAssign<Currency> for FloatCurrencies {
     fn div_assign(&mut self, other: Currency) {
         self.keys /= other as f32;
-        self.metal = self.metal.saturating_div(other);
+        self.metal /= other as f32;
     }
 }
 
-impl DivAssign<f32> for ListingCurrencies {
+impl DivAssign<f32> for FloatCurrencies {
     fn div_assign(&mut self, other: f32) {
         self.keys /= other;
-        self.metal = (self.metal as f32 / other).round() as Currency;
+        self.metal /= other;
     }
 }
 
-impl<'a> TryFrom<&'a str> for ListingCurrencies {
+impl<'a> TryFrom<&'a str> for FloatCurrencies {
     type Error = ParseError;
     
     fn try_from(string: &'a str) -> Result<Self, Self::Error>  {
-        let (keys, metal) = helpers::parse_from_string::<f32>(string)?;
+        let (keys, metal) = helpers::parse_from_string_with_float_metal(string)?;
         
-        Ok(ListingCurrencies {
+        Ok(FloatCurrencies {
             keys,
             metal,
         })
     }
 }
 
-impl From<Currencies> for ListingCurrencies {
-    fn from(currencies: Currencies) -> ListingCurrencies {
-        ListingCurrencies {
+impl From<Currencies> for FloatCurrencies {
+    fn from(currencies: Currencies) -> FloatCurrencies {
+        FloatCurrencies {
             keys: currencies.keys as f32,
-            metal: currencies.metal,
+            metal: helpers::get_metal_float(currencies.metal),
         }
     }
 }
 
-impl From<&Currencies> for ListingCurrencies {
-    fn from(currencies: &Currencies) -> ListingCurrencies {
-        ListingCurrencies {
+impl From<&Currencies> for FloatCurrencies {
+    fn from(currencies: &Currencies) -> FloatCurrencies {
+        FloatCurrencies {
             keys: currencies.keys as f32,
-            metal: currencies.metal,
+            metal: helpers::get_metal_float(currencies.metal),
         }
     }
 }
 
-impl fmt::Display for ListingCurrencies {
+impl fmt::Display for FloatCurrencies {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.keys != 0.0 && self.metal != 0 {
+        if self.keys != 0.0 && self.metal != 0.0 {
             write!(
                 f,
                 "{} {}, {} {}",
                 helpers::print_float(self.keys),
                 helpers::pluralize_float(self.keys, KEY_SYMBOL, KEYS_SYMBOL),
-                helpers::get_metal_float(self.metal),
+                helpers::print_float(self.metal),
                 METAL_SYMBOL,
             )
         } else if self.keys != 0.0 {
@@ -386,11 +367,11 @@ impl fmt::Display for ListingCurrencies {
                 helpers::print_float(self.keys),
                 helpers::pluralize_float(self.keys, KEY_SYMBOL, KEYS_SYMBOL),
             )
-        } else if self.metal != 0 {
+        } else if self.metal != 0.0 {
             write!(
                 f,
                 "{} {}",
-                helpers::get_metal_float(self.metal),
+                helpers::print_float(self.metal),
                 METAL_SYMBOL,
             )
         } else {
@@ -399,14 +380,22 @@ impl fmt::Display for ListingCurrencies {
     }
 }
 
-impl<'de> Deserialize<'de> for ListingCurrencies {
+impl<'de> Deserialize<'de> for FloatCurrencies {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         let currencies = Self::deserialize(deserializer)?;
         
-        if currencies.keys == 0.0 && currencies.metal == 0 {
+        if currencies.keys.is_nan() {
+            return Err(D::Error::custom("Keys is NaN"));
+        }
+        
+        if currencies.metal.is_nan() {
+            return Err(D::Error::custom("Metal is NaN"));
+        }
+        
+        if currencies.keys == 0.0 && currencies.metal == 0.0 {
             return Err(D::Error::custom("Does not contain values for keys or metal"));
         }
         
@@ -414,12 +403,12 @@ impl<'de> Deserialize<'de> for ListingCurrencies {
     }
 }
 
-impl Serialize for ListingCurrencies {
+impl Serialize for FloatCurrencies {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        let mut currencies = serializer.serialize_struct("ListingCurrencies", 2)?;
+        let mut currencies = serializer.serialize_struct("FloatCurrencies", 2)?;
         
         if self.keys == 0.0 {
             currencies.skip_field("keys")?;
@@ -429,10 +418,10 @@ impl Serialize for ListingCurrencies {
             currencies.serialize_field("keys", &self.keys)?;
         }
         
-        if self.metal == 0 {
+        if self.metal == 0.0 {
             currencies.skip_field("metal")?;
         } else {
-            let float = helpers::get_metal_float(self.metal);
+            let float = self.metal;
             
             if float.fract() == 0.0 {
                 currencies.serialize_field("metal", &(float as Currency))?;
@@ -448,18 +437,18 @@ impl Serialize for ListingCurrencies {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{refined, scrap};
+    use crate::refined;
     use assert_json_diff::assert_json_eq;
     use serde_json::{self, json, Value};
 
     #[test]
     fn currencies_equal() {
-        assert_eq!(ListingCurrencies {
+        assert_eq!(FloatCurrencies {
             keys: 2.0,
-            metal: refined!(23) + scrap!(4),
-        }, ListingCurrencies {
+            metal: 23.44,
+        }, FloatCurrencies {
             keys: 2.0,
-            metal: refined!(23) + scrap!(4),
+            metal: 23.44,
         });
     }
     
@@ -467,100 +456,100 @@ mod tests {
     fn to_metal_correct() {
         let key_price = 10;
         
-        assert_eq!(ListingCurrencies {
+        assert_eq!(FloatCurrencies {
             keys: 0.19,
-            metal: 0,
+            metal: 0.0,
         }.to_metal(key_price), 2);
     }
     
     #[test]
     fn currencies_not_equal() {
-        assert_ne!(ListingCurrencies {
+        assert_ne!(FloatCurrencies {
             keys: 2.0,
-            metal: refined!(23) + scrap!(4),
-        }, ListingCurrencies {
+            metal: 23.44,
+        }, FloatCurrencies {
             keys: 2.0,
-            metal: refined!(23),
+            metal: 23.0,
         });
     }
     
     #[test]
     fn currencies_added() {
-        assert_eq!(ListingCurrencies {
+        assert_eq!(FloatCurrencies {
             keys: 10.0,
-            metal: refined!(10),
-        } + ListingCurrencies {
+            metal: 10.0,
+        } + FloatCurrencies {
             keys: 5.0,
-            metal: refined!(5),
-        }, ListingCurrencies {
+            metal: 5.0,
+        }, FloatCurrencies {
             keys: 15.0,
-            metal: refined!(15),
+            metal: 15.0,
         });
     }
     
     #[test]
     fn currencies_subtracted() {
-        assert_eq!(ListingCurrencies {
+        assert_eq!(FloatCurrencies {
             keys: 10.0,
-            metal: refined!(10),
-        } - ListingCurrencies {
+            metal: 10.0,
+        } - FloatCurrencies {
             keys: 5.0,
-            metal: refined!(5),
-        }, ListingCurrencies {
+            metal: 5.0,
+        }, FloatCurrencies {
             keys: 5.0,
-            metal: refined!(5),
+            metal: 5.0,
         });
     }
     
     #[test]
     fn currencies_multiplied_by_metal() {
-        assert_eq!(ListingCurrencies {
+        assert_eq!(FloatCurrencies {
             keys: 10.0,
-            metal: refined!(10),
-        } * 5, ListingCurrencies {
+            metal: 10.0,
+        } * 5, FloatCurrencies {
             keys: 50.0,
-            metal: refined!(50),
+            metal: 50.0,
         });
     }
     
     #[test]
     fn currencies_divided_by_metal() {
-        assert_eq!(ListingCurrencies {
+        assert_eq!(FloatCurrencies {
             keys: 10.0,
-            metal: refined!(10),
-        } / 5, ListingCurrencies {
+            metal: 10.0,
+        } / 5, FloatCurrencies {
             keys: 2.0,
-            metal: refined!(2),
+            metal: 2.0,
         });
     }
     
     #[test]
     fn currencies_multiplied_by_f32() {
-        assert_eq!(ListingCurrencies {
+        assert_eq!(FloatCurrencies {
             keys: 10.0,
-            metal: refined!(10),
-        } * 2.5, ListingCurrencies {
+            metal: 10.0,
+        } * 2.5, FloatCurrencies {
             keys: 25.0,
-            metal: refined!(25),
+            metal: 25.0,
         });
     }
     
     #[test]
     fn currencies_divided_by_f32() {
-        assert_eq!(ListingCurrencies {
+        assert_eq!(FloatCurrencies {
             keys: 10.0,
-            metal: refined!(10),
-        } / 2.5, ListingCurrencies {
+            metal: 10.0,
+        } / 2.5, FloatCurrencies {
             keys: 4.0,
-            metal: refined!(4),
+            metal: 4.0,
         });
     }
     
     #[test]
     fn converts_into_currencies() {
-        let currencies: Currencies = ListingCurrencies {
+        let currencies: Currencies = FloatCurrencies {
             keys: 10.0,
-            metal: refined!(10),
+            metal: 10.0,
         }.try_into().unwrap();
         
         assert_eq!(currencies, Currencies {
@@ -571,25 +560,25 @@ mod tests {
     
     #[test]
     fn subtracts_non_float_currencies() {
-        assert_eq!(ListingCurrencies {
+        assert_eq!(FloatCurrencies {
             keys: 1.5,
-            metal: 0,
-        } - Currencies { keys: 1, metal: 0 }, ListingCurrencies { keys: 0.5, metal: 0 });
+            metal: 0.0,
+        } - Currencies { keys: 1, metal: 0 }, FloatCurrencies { keys: 0.5, metal: 0.0 });
     }
     
     #[test]
     fn adds_non_float_currencies() {
-        assert_eq!(ListingCurrencies {
+        assert_eq!(FloatCurrencies {
             keys: 1.5,
-            metal: 0,
-        } + Currencies { keys: 1, metal: 0 }, ListingCurrencies { keys: 2.5, metal: 0 });
+            metal: 0.0,
+        } + Currencies { keys: 1, metal: 0 }, FloatCurrencies { keys: 2.5, metal: 0.0 });
     }
     
     #[test]
     fn converts_into_currencies_with_key_price() {
-        let currencies = Currencies::from_listing_currencies(ListingCurrencies {
+        let currencies = Currencies::from_float_currencies(FloatCurrencies {
             keys: 2.5,
-            metal: refined!(10),
+            metal: 10.0,
         }, refined!(10));
         
         assert_eq!(currencies, Currencies {
@@ -600,9 +589,9 @@ mod tests {
     
     #[test]
     fn converts_into_currencies_with_key_price_negative_values() {
-        let currencies = Currencies::from_listing_currencies(ListingCurrencies {
+        let currencies = Currencies::from_float_currencies(FloatCurrencies {
             keys: 2.5,
-            metal: refined!(-10),
+            metal: -10.0,
         }, refined!(10));
         
         assert_eq!(currencies, Currencies {
@@ -613,9 +602,9 @@ mod tests {
     
     #[test]
     fn fails_to_convert_into_currencies_when_fractional() {
-        let currencies = Currencies::try_from(ListingCurrencies {
+        let currencies = Currencies::try_from(FloatCurrencies {
             keys: 10.5,
-            metal: refined!(10),
+            metal: 10.0,
         });
         
         assert!(currencies.is_err());
@@ -623,45 +612,45 @@ mod tests {
     
     #[test]
     fn formats_currencies() {
-        assert_eq!(&format!("{}", ListingCurrencies {
+        assert_eq!(&format!("{}", FloatCurrencies {
             keys: 2.0,
-            metal: refined!(23),
+            metal: 23.0,
         }), "2 keys, 23 ref");
     }
     
     #[test]
     fn formats_currencies_with_decimal_places() {
-        assert_eq!(&format!("{}", ListingCurrencies {
+        assert_eq!(&format!("{}", FloatCurrencies {
             keys: 2.2555,
-            metal: refined!(23),
+            metal: 23.0,
         }), "2.26 keys, 23 ref");
     }
     
     #[test]
     fn deserializes_currencies() {
-        let currencies: ListingCurrencies = serde_json::from_str(r#"{"keys":1,"metal": 23.44}"#).unwrap();
+        let currencies: FloatCurrencies = serde_json::from_str(r#"{"keys":1,"metal": 23.44}"#).unwrap();
         
-        assert_eq!(ListingCurrencies {
+        assert_eq!(FloatCurrencies {
             keys: 1.0,
-            metal: refined!(23) + scrap!(4),
+            metal: 23.44,
         }, currencies);
     }
     
     #[test]
     fn deserializes_currencies_with_no_keys() {
-        let currencies: Currencies = serde_json::from_str(r#"{"metal": 23.44}"#).unwrap();
+        let currencies: FloatCurrencies = serde_json::from_str(r#"{"metal": 23.44}"#).unwrap();
         
-        assert_eq!(ListingCurrencies {
+        assert_eq!(FloatCurrencies {
             keys: 0.0,
-            metal: refined!(23) + scrap!(4),
+            metal: 23.44,
         }, currencies);
     }
     
     #[test]
     fn serializes_currencies() {
-        let currencies = ListingCurrencies {
+        let currencies = FloatCurrencies {
             keys: 1.0,
-            metal: refined!(23) + scrap!(4)
+            metal: 23.44,
         };
         let currencies_json = serde_json::to_string(&currencies).unwrap();
         let actual: Value = serde_json::from_str(&currencies_json).unwrap();
@@ -678,9 +667,9 @@ mod tests {
     
     #[test]
     fn serializes_currencies_with_float() {
-        let currencies = ListingCurrencies {
+        let currencies = FloatCurrencies {
             keys: 1.5,
-            metal: refined!(23) + scrap!(4)
+            metal: 23.44,
         };
         let currencies_json = serde_json::to_string(&currencies).unwrap();
         let actual: Value = serde_json::from_str(&currencies_json).unwrap();
@@ -697,32 +686,32 @@ mod tests {
     
     #[test]
     fn greater_than() {
-        assert!(ListingCurrencies { keys: 1.0, metal: 5 } > ListingCurrencies { keys: 0.0, metal: 10});
+        assert!(FloatCurrencies { keys: 1.0, metal: 5.0 } > FloatCurrencies { keys: 0.0, metal: 10.0 });
     }
     
     #[test]
     fn less_than() {
-        assert!(ListingCurrencies { keys: 0.0, metal: 1 } < ListingCurrencies { keys: 0.0, metal: 4});
+        assert!(FloatCurrencies { keys: 0.0, metal: 1.0 } < FloatCurrencies { keys: 0.0, metal: 4.0 });
     }
     
     #[test]
     fn sorts() {
         let mut currencies = vec![
-            ListingCurrencies { keys: 2.0, metal: 4 },
-            ListingCurrencies { keys: 0.0, metal: 2 },
-            ListingCurrencies { keys: 10.0, metal: 4 },
+            FloatCurrencies { keys: 2.0, metal: 4.0 },
+            FloatCurrencies { keys: 0.0, metal: 2.0 },
+            FloatCurrencies { keys: 10.0, metal: 4.0 },
         ];
         
         // lowest to highest
         currencies.sort();
         
-        assert_eq!(*currencies.iter().rev().next().unwrap(), ListingCurrencies { keys: 10.0, metal: 4});
+        assert_eq!(*currencies.iter().rev().next().unwrap(), FloatCurrencies { keys: 10.0, metal: 4.0 });
     }
     
     #[test]
     fn checked_to_metal() {
         assert_eq!(
-            ListingCurrencies { keys: Currency::MAX as f32, metal: 4 }.checked_to_metal(Currency::MAX),
+            FloatCurrencies { keys: Currency::MAX as f32, metal: 4.0 }.checked_to_metal(Currency::MAX),
             None,
         );
     }
@@ -730,8 +719,8 @@ mod tests {
     #[test]
     fn checked_to_metal_correct_value() {
         assert_eq!(
-            ListingCurrencies { keys: 10.0, metal: 5 }.checked_to_metal(10),
-            Some(105),
+            FloatCurrencies { keys: 10.0, metal: 5.0 }.checked_to_metal(10),
+            Some(100 + refined!(5)),
         );
     }
 }

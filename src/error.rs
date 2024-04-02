@@ -2,12 +2,21 @@
 
 use std::num::{ParseFloatError, ParseIntError};
 
-/// Error converting listing currencies to currencies.
+/// Error converting float currencies to currencies.
 #[derive(Debug, thiserror::Error)]
-#[error("Currencies contains fractional value: {fract}")]
-pub struct TryFromListingCurrenciesError {
-    /// Fractional key values are invalid.
-    pub fract: f32,
+pub enum TryFromFloatCurrenciesError {
+    /// For currencies which contain fractional values.
+    #[error("Currencies contains fractional value: {fract}")]
+    Fractional {
+        /// Fractional key values are invalid.
+        fract: f32,
+    },
+    /// For when converting from a float metal value into a weapon metal value is out of bounds.
+    #[error("Metal value is out of bounds for conversion into weapon value: {metal}")]
+    MetalOutOfBounds {
+        /// The amount of metal.
+        metal: f32,
+    },
 }
 
 /// An error occurred parsing a string into a currency.

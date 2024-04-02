@@ -150,13 +150,81 @@ pub fn get_metal_from_float(value: f32) -> Currency {
     (value * (ONE_REF as f32)).round() as Currency
 }
 
+/// Converts an f32 to currency strictly.
+pub fn strict_f32_to_currency(value: f32) -> Option<Currency> {
+    // https://stackoverflow.com/a/71431182
+    // Check if fractional component is 0 and that it can map to an integer in the f64
+    // Using fract() is equivalent to using `as u64 as f64` and checking it matches
+    if value.fract() == 0.0 && value >= Currency::MIN as f32 && value <= Currency::MAX as f32 {
+        return Some(value.trunc() as Currency)
+    }
+
+    None
+}
+
+pub fn get_metal_from_float_checked(value: f32) -> Option<Currency> {
+    strict_f32_to_currency((value * (ONE_REF as f32)).round())
+}
+
 /// Parses currencies from a string.
-pub fn parse_from_string<T>(string: &str) -> Result<(T, Currency), ParseError>
+pub fn parse_from_string_with_float_metal<K>(string: &str) -> Result<(K, f32), ParseError>
 where
-    T: Default + FromStr + PartialEq,
-    <T as FromStr>::Err: fmt::Display,
+    K: Default + FromStr + PartialEq,
+    <K as FromStr>::Err: fmt::Display,
 {
-    let mut keys = T::default();
+    let mut keys = K::default();
+    let mut metal = 0.0;
+    
+    for element in string.split(", ") {
+        let mut element_split = element.split(' ');
+        let (
+            count_str,
+            currency_name,
+        ) = (
+            element_split.next(),
+            element_split.next(),
+        );
+        
+        if count_str.is_none() || currency_name.is_none() || element_split.next().is_some() {
+            return Err(ParseError::Invalid);
+        }
+        
+        let (
+            count_str,
+            currency_name,
+        ) = (
+            count_str.unwrap(),
+            currency_name.unwrap(),
+        );
+        
+        match currency_name {
+            KEY_SYMBOL | KEYS_SYMBOL => {
+                keys = count_str.parse::<K>()
+                    .map_err(|e| ParseError::ParseNumeric(e.to_string()))?;
+            },
+            METAL_SYMBOL => {
+                metal = count_str.parse::<f32>()?;
+            },
+            _ => {
+                return Err(ParseError::Invalid);
+            },
+        }
+    }
+    
+    if keys == K::default() && metal == 0.0 {
+        return Err(ParseError::Invalid);
+    }
+    
+    Ok((keys, metal))
+}
+
+/// Parses currencies from a string.
+pub fn parse_from_string<K>(string: &str) -> Result<(K, Currency), ParseError>
+where
+    K: Default + FromStr + PartialEq,
+    <K as FromStr>::Err: fmt::Display,
+{
+    let mut keys = K::default();
     let mut metal = 0;
     
     for element in string.split(", ") {
@@ -183,7 +251,7 @@ where
         
         match currency_name {
             KEY_SYMBOL | KEYS_SYMBOL => {
-                keys = count_str.parse::<T>()
+                keys = count_str.parse::<K>()
                     .map_err(|e| ParseError::ParseNumeric(e.to_string()))?;
             },
             METAL_SYMBOL => {
@@ -195,7 +263,7 @@ where
         }
     }
     
-    if keys == T::default() && metal == 0 {
+    if keys == K::default() && metal == 0 {
         return Err(ParseError::Invalid);
     }
     
@@ -262,6 +330,11 @@ pub fn round_metal(metal: Currency, rounding: &Rounding) -> Currency {
 mod tests {
     use super::*;
     use crate::scrap;
+    
+    #[test]
+    fn converts_strict_f32_to_currency() {
+        assert!(strict_f32_to_currency(Currency::MAX as f32).is_some());
+    }
     
     #[test]
     fn prints_float_rounded_whole_number() {

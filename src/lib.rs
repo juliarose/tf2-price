@@ -47,14 +47,14 @@ pub mod error;
 mod types;
 mod helpers;
 mod currencies;
-mod listing_currencies;
+mod float_currencies;
 mod rounding;
 mod constants;
 mod usd_currencies;
 
 pub use usd_currencies::USDCurrencies;
 pub use currencies::Currencies;
-pub use listing_currencies::ListingCurrencies;
+pub use float_currencies::FloatCurrencies;
 pub use types::Currency;
 pub use rounding::Rounding;
 pub use helpers::{get_metal_from_float, get_metal_float};

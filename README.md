@@ -79,29 +79,29 @@ assert_eq!(currencies.checked_mul(i64::MAX), None);
 
 ### Floating Point Key Values
 ```rust
-use tf2_price::{Currencies, ListingCurrencies};
+use tf2_price::{Currencies, FloatCurrencies};
 
-// To preserve floating point key values, use ListingCurrencies.
-let currencies = ListingCurrencies {
+// To preserve floating point key values, use FloatCurrencies.
+let currencies = FloatCurrencies {
     keys: 1.5,
     metal: 0,
 };
 
 // Conversions to Currencies are supported.
-let listing_currencies = ListingCurrencies {
+let float_currencies = FloatCurrencies {
     keys: 1.0,
     metal: 0
 };
 assert!(
-    Currencies::try_from(listing_currencies).is_ok()
+    Currencies::try_from(float_currencies).is_ok()
 );
 // Fails if the key value holds a fractional number.
-let listing_currencies = ListingCurrencies {
+let float_currencies = FloatCurrencies {
     keys: 1.5,
     metal: 0
 };
 assert!(
-    Currencies::try_from(listing_currencies).is_err()
+    Currencies::try_from(float_currencies).is_err()
 );
 ```
 

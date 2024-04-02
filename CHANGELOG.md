@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.0 (2024-01-26)
+
+### Changed
+-  **MAJOR CHANGE** Changed `ListingCurrencies` to `FloatCurrencies`. Both `keys` and `metal` fields are now defined as `f32`. This makes more sense as this is generally used as a container type for holding original values from responses. `FloatCurrencies` should always be converted to `Currencies` in order to perform arithmatic.
+
 ## 0.12.0 (2024-01-26)
 
 ### Changed
@@ -11,7 +16,7 @@
 ### Changed
 - **MAJOR CHANGE:** All integer types are now `i64`. `i32` may not be big enough for some use-cases. For example: expressing the value of all Golden Pans in existence as number of weapons reaches close to the bounds. Given a key price of 80 refined and a Golden Pan price of 3400 keys, `i32` can only hold value for 438, while of course `i64` is exponentially larger and can hold value for 1883858667658 allowing more flexibility.
 - `checked_add` on `Currencies` is now under `impl` rather than a trait.
-- `checked_add` on `ListingCurrencies` is now under `impl` rather than a trait.
+- `checked_add` on `FloatCurrencies` is now under `impl` rather than a trait.
 
 ### Added
 - `Currency` type to represent the primitive used for integers.
@@ -26,7 +31,7 @@
 
 ### Changed
 - `round` on `Currencies` returns `self`.
-- `round` on `ListingCurrencies` returns `self`.
+- `round` on `FloatCurrencies` returns `self`.
 
 ### Fixed
 - An issue with overflowing values resulting in `i32::MIN` in the `to_metal` method.
@@ -35,7 +40,7 @@
 
 ### Added
 - `can_afford` to `Currencies`.
-- `can_afford` to ``ListingCurrencies``.
+- `can_afford` to ``FloatCurrencies``.
 
 ### Changed
 - Aside from the macros, all arithmatic operations are now saturating.
@@ -44,7 +49,7 @@
 
 ### Added
 - `checked_to_metal` to `Currencies`.
-- `checked_to_metal` to ``ListingCurrencies``.
+- `checked_to_metal` to ``FloatCurrencies``.
 
 ## 0.8.0 (2022-12-31)
 
@@ -66,7 +71,7 @@
 ## 0.7.1 (2022-05-11)
 
 ### Fixed
-- `to_metal` in `ListingCurrencies` method not rounding values.
+- `to_metal` in `FloatCurrencies` method not rounding values.
 
 ## 0.7.0 (2022-05-04)
 
@@ -76,26 +81,26 @@
 ## 0.6.0 (2022-04-21)
 
 ### Added
-- `SerializeCurrencies` implementation for `Currencies` and `ListingCurrencies`.
-- `Ord` implementation for `Currencies` and `ListingCurrencies`.
+- `SerializeCurrencies` implementation for `Currencies` and `FloatCurrencies`.
+- `Ord` implementation for `Currencies` and `FloatCurrencies`.
 
 ## 0.5.3 (2022-03-18)
 
 ### Fixed
-- `fmt::Display` implementation for `Currencies` and `ListingCurrencies` not recognizing negative numbers.
+- `fmt::Display` implementation for `Currencies` and `FloatCurrencies` not recognizing negative numbers.
 
 ### Changed
-- `fmt::Display` implementation for `Currencies` and `ListingCurrencies` now displays `"nothing"` when currencies are empty. 
+- `fmt::Display` implementation for `Currencies` and `FloatCurrencies` now displays `"nothing"` when currencies are empty. 
 
 ### Added
 - `std::ops::MulAssign<i32>` implementation for `Currencies`.
 - `std::ops::MulAssign<f32>` implementation for `Currencies`.
 - `std::ops::DivAssign<i32>` implementation for `Currencies`.
 - `std::ops::DivAssign<f32>` implementation for `Currencies`.
-- `std::ops::MulAssign<i32>` implementation for `ListingCurrencies`.
-- `std::ops::MulAssign<f32>` implementation for `ListingCurrencies`.
-- `std::ops::DivAssign<i32>` implementation for `ListingCurrencies`.
-- `std::ops::DivAssign<f32>` implementation for `ListingCurrencies`.
+- `std::ops::MulAssign<i32>` implementation for `FloatCurrencies`.
+- `std::ops::MulAssign<f32>` implementation for `FloatCurrencies`.
+- `std::ops::DivAssign<i32>` implementation for `FloatCurrencies`.
+- `std::ops::DivAssign<f32>` implementation for `FloatCurrencies`.
 
 ## 0.5.2 (2022-03-14)
 
@@ -105,14 +110,14 @@
 ## 0.5.1 (2022-03-14)
 
 ### Fixed
-- Missing borrowed `std::ops` for `Currencies` and `ListingCurrencies`.
+- Missing borrowed `std::ops` for `Currencies` and `FloatCurrencies`.
 
 ## 0.5.0 (2022-03-13)
 
 ### Added
-- `ListingCurrencies` for currencies which require a float value for keys.
+- `FloatCurrencies` for currencies which require a float value for keys.
 - `from_keys_f32` method for `Currencies`.
-- `from_listing_currencies` method for `Currencies`.
+- `from_float_currencies` method for `Currencies`.
 
 ### Changed
 - `Rounding::Up` is now `Rounding::UpScrap`.
