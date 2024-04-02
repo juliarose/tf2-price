@@ -108,6 +108,43 @@ impl Currencies {
         }
     }
     
+    /// Converts from [`FloatCurrencies`] using the given key price (represented as weapons).
+    /// 
+    /// Checks for safe conversion.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_price::{Currencies, FloatCurrencies, Currency, refined};
+    /// 
+    /// let key_price = refined!(60);
+    /// let float_currencies = FloatCurrencies { keys: 1.5, metal: 0.0 };
+    /// let currencies = Currencies::try_from_float_currencies(float_currencies, key_price).unwrap();
+    /// 
+    /// assert_eq!(currencies.keys, 1);
+    /// assert_eq!(currencies.metal, refined!(30));
+    /// 
+    /// let float_currencies = FloatCurrencies { keys: Currency::MAX as f32 * 2.0, metal: 0.0 };
+    /// 
+    /// assert!(Currencies::try_from_float_currencies(float_currencies, key_price).is_none());
+    /// ```
+    pub fn try_from_float_currencies(
+        currencies: FloatCurrencies,
+        key_price: Currency,
+    ) -> Option<Self> {
+        // Convert the integer part of the keys value.
+        let keys = helpers::strict_f32_to_currency(currencies.keys.trunc())?;
+        // Take the remainder of the keys value.
+        let keys_metal_float = ((currencies.keys % 1.0) * key_price as f32).round();
+        let keys_metal = helpers::strict_f32_to_currency(keys_metal_float)?;
+        // Convert the metal value to weapon and add the metal from the remainder.
+        let metal = helpers::checked_get_metal_from_float(currencies.metal)?.checked_add(keys_metal)?;
+        
+        Some(Self {
+            keys,
+            metal,
+        })
+    }
+    
     /// Converts an f32 key value into `Currencies` using the given key price represented as 
     /// weapons.
     /// 
@@ -395,7 +432,8 @@ impl<'a> TryFrom<&'a str> for Currencies {
     }
 }
 
-/// Results in error if [`FloatCurrencies`] contains a fractional key value.
+/// Results in error if [`FloatCurrencies`] contains a fractional key value or if the metal value
+/// cannot be safely converted.
 impl TryFrom<FloatCurrencies> for Currencies {
     type Error = TryFromFloatCurrenciesError;
     
