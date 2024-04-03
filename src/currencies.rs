@@ -12,7 +12,7 @@ use serde::de::Error;
 use serde::ser::SerializeStruct;
 
 /// For storing item currencies values.
-#[derive(Debug, Default, Serialize, Deserialize, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, Serialize, Deserialize, Eq, PartialEq, Clone, Copy, Hash)]
 #[serde(remote = "Self")]
 pub struct Currencies {
     /// Amount of keys.
@@ -1131,5 +1131,16 @@ mod tests {
             Currencies { keys: 10, metal: 5 }.checked_to_metal(10),
             Some(105),
         );
+    }
+    
+    #[test]
+    fn from_float_currencies() {
+        let float_currencies = FloatCurrencies {
+            keys: 1.0,
+            metal: 1.33,
+        };
+        let currencies = Currencies::try_from(float_currencies).unwrap();
+        
+        assert_eq!(currencies.metal, refined!(1) + scrap!(3));
     }
 }

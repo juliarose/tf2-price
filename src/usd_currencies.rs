@@ -6,7 +6,7 @@ use std::ops::{self, AddAssign, SubAssign, MulAssign, DivAssign};
 use serde::{Serialize, Deserialize};
 
 /// For storing cash values.
-#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Copy, Hash)]
 pub struct USDCurrencies {
     /// Cash value in cents.
     #[serde(with = "helpers::cents", default)]

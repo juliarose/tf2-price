@@ -150,11 +150,11 @@ pub fn get_metal_from_float(value: f32) -> Currency {
     (value * (ONE_REF as f32)).round() as Currency
 }
 
-/// Converts an f32 to currency strictly.
+/// Converts an `f32` into a `Currency` safely.
 pub fn strict_f32_to_currency(value: f32) -> Option<Currency> {
     // https://stackoverflow.com/a/71431182
-    // Check if fractional component is 0 and that it can map to an integer in the f64
-    // Using fract() is equivalent to using `as u64 as f64` and checking it matches
+    // Check if fractional component is 0 and that it can map to an integer
+    // Using fract() is equivalent to using `as Currency as f32` and checking it matches
     if value.fract() == 0.0 && value >= Currency::MIN as f32 && value <= Currency::MAX as f32 {
         return Some(value.trunc() as Currency)
     }
@@ -182,28 +182,17 @@ where
 {
     let mut keys = K::default();
     let mut metal = 0.0;
+    let mut has_value = false;
     
     for element in string.split(", ") {
         let mut element_split = element.split(' ');
-        let (
-            count_str,
-            currency_name,
-        ) = (
-            element_split.next(),
-            element_split.next(),
-        );
+        let count_str = element_split.next().ok_or(ParseError::Invalid)?;
+        let currency_name = element_split.next().ok_or(ParseError::Invalid)?;
         
-        if count_str.is_none() || currency_name.is_none() || element_split.next().is_some() {
+        // We don't expect another element after the currency name.
+        if element_split.next().is_some() {
             return Err(ParseError::Invalid);
         }
-        
-        let (
-            count_str,
-            currency_name,
-        ) = (
-            count_str.unwrap(),
-            currency_name.unwrap(),
-        );
         
         match currency_name {
             KEY_SYMBOL | KEYS_SYMBOL => {
@@ -217,9 +206,11 @@ where
                 return Err(ParseError::Invalid);
             },
         }
+        
+        has_value = true;
     }
     
-    if keys == K::default() && metal == 0.0 {
+    if !has_value {
         return Err(ParseError::Invalid);
     }
     
@@ -232,48 +223,9 @@ where
     K: Default + FromStr + PartialEq,
     <K as FromStr>::Err: fmt::Display,
 {
-    let mut keys = K::default();
-    let mut metal = 0;
-    
-    for element in string.split(", ") {
-        let mut element_split = element.split(' ');
-        let (
-            count_str,
-            currency_name,
-        ) = (
-            element_split.next(),
-            element_split.next(),
-        );
-        
-        if count_str.is_none() || currency_name.is_none() || element_split.next().is_some() {
-            return Err(ParseError::Invalid);
-        }
-        
-        let (
-            count_str,
-            currency_name,
-        ) = (
-            count_str.unwrap(),
-            currency_name.unwrap(),
-        );
-        
-        match currency_name {
-            KEY_SYMBOL | KEYS_SYMBOL => {
-                keys = count_str.parse::<K>()
-                    .map_err(|e| ParseError::ParseNumeric(e.to_string()))?;
-            },
-            METAL_SYMBOL => {
-                metal = get_metal_from_float(count_str.parse::<f32>()?);
-            },
-            _ => {
-                return Err(ParseError::Invalid);
-            },
-        }
-    }
-    
-    if keys == K::default() && metal == 0 {
-        return Err(ParseError::Invalid);
-    }
+    let (keys, metal) = parse_from_string_with_float_metal(string)?;
+    // Convert the metal value to a weapon value.
+    let metal = get_metal_from_float(metal);
     
     Ok((keys, metal))
 }

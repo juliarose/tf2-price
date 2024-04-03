@@ -29,11 +29,10 @@
 //! All `metal` values are represented as the number of weapons. For 1 refined, this would be 18. 
 //! The macros and constant values should be used to avoid any errors in accounting. For example: 
 //! if adding one scrap, add `ONE_SCRAP` to the `metal` field. `scrap!(1)` will also create the 
-//! same value.
+//! same value. The `metal!` macro can be used to convert floating point values into weapons e.g. 
+//! `metal!(1.0)` will convert to 18.
 //! 
-//! In addition, all key values in methods are represented as values in weapons. If you need to 
-//! use a floating point key price e.g. 70.22, you may use [`helpers::get_metal_from_float`] which 
-//! will convert it into the closest appropriate value e.g. `(70.22 * 18 as f32).round() as i64`.
+//! In addition, all key values in methods are represented as values in weapons.
 //! 
 //! Arithmatic uses saturating operations. Adding two currencies that both contain values of 
 //! [`i64::MAX`] will result in [`i64::MAX`] rather than rolling over. While values are stored as 
@@ -59,6 +58,16 @@ pub use types::Currency;
 pub use rounding::Rounding;
 pub use helpers::{get_metal_from_float, checked_get_metal_from_float, get_metal_float};
 pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
+
+/// Generates value for metal.
+#[macro_export]
+macro_rules! metal {
+    ( $a:expr ) => {
+        {
+            helpers::get_metal_from_float($a)
+        }
+    }
+}
 
 /// Generates value for refined metal.
 #[macro_export]
@@ -87,5 +96,20 @@ macro_rules! scrap {
         {
             $a * 2
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn metal_macro() {
+        assert_eq!(metal!(1.0), 18);
+        assert_eq!(metal!(1.05), 19);
+        assert_eq!(metal!(1.11), 20);
+        assert_eq!(metal!(1.77), 32);
+        assert_eq!(metal!(1.99), 36);
+        assert_eq!(metal!(50.66), 912);
     }
 }

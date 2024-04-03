@@ -6,11 +6,11 @@ Utilities for Team Fortress 2 item pricing.
 
 ### Basic usage
 ```rust
-use tf2_price::{Currencies, refined, scrap};
+use tf2_price::{Currencies, metal};
 
 let currencies = Currencies {
     keys: 5,
-    metal: refined!(2) + scrap!(3),
+    metal: metal!(2.33),
 };
 
 // 2.33 refined - metal values are counted in weapons.
@@ -77,24 +77,19 @@ assert_eq!(currencies.checked_add(max_keys), None);
 assert_eq!(currencies.checked_mul(i64::MAX), None);
 ```
 
-### Floating Point Key Values
+### Floating Point Precision
 ```rust
-use tf2_price::{Currencies, FloatCurrencies};
+use tf2_price::{Currencies, FloatCurrencies, metal};
 
 // To preserve floating point key values, use FloatCurrencies.
-let currencies = FloatCurrencies {
-    keys: 1.5,
-    metal: 0.0,
-};
-
-// Conversions to Currencies are supported.
 let float_currencies = FloatCurrencies {
     keys: 1.0,
-    metal: 0.0,
+    // Unlike Currencies, metal is not counted in weapons.
+    metal: 1.33,
 };
-assert!(
-    Currencies::try_from(float_currencies).is_ok()
-);
+let currencies = Currencies::try_from(float_currencies).unwrap();
+// Conversions to Currencies are supported.
+assert_eq!(currencies.metal, metal!(1.33));
 // Fails if the key value holds a fractional number.
 let float_currencies = FloatCurrencies {
     keys: 1.5,
@@ -107,7 +102,7 @@ assert!(
 
 ### Serialization
 ```rust
-use tf2_price::Currencies;
+use tf2_price::{Currencies, metal};
 
 // Serde deserialization.
 let json = r#"{"keys":5,"metal":2.33}"#;
@@ -117,7 +112,7 @@ assert_eq!(
     currencies,
     Currencies {
         keys: 5,
-        metal: refined!(2) + scrap!(3),
+        metal: metal!(2.33),
     },
 );
 ```

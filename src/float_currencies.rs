@@ -130,8 +130,7 @@ impl FloatCurrencies {
     /// assert!(!currencies.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
-        self.keys == 0.0 && !self.keys.is_nan() &&
-        self.metal == 0.0 && !self.metal.is_nan()
+        self.keys == 0.0 && self.metal == 0.0
     }
     
     /// Checks whether the currencies have enough keys and metal to afford the `other` currencies.
@@ -421,12 +420,10 @@ impl Serialize for FloatCurrencies {
         if self.metal == 0.0 {
             currencies.skip_field("metal")?;
         } else {
-            let float = self.metal;
-            
-            if float.fract() == 0.0 {
-                currencies.serialize_field("metal", &(float as Currency))?;
+            if self.metal.fract() == 0.0 {
+                currencies.serialize_field("metal", &(self.metal as Currency))?;
             } else {
-                currencies.serialize_field("metal", &float)?;
+                currencies.serialize_field("metal", &((self.metal * 100.0) / 100.0))?;
             }
         }
         
