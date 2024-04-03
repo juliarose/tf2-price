@@ -77,12 +77,13 @@ impl Currencies {
     pub fn from_metal(metal: Currency, key_price: Currency) -> Self {
         Self {
             // Will be 0 if metal is 30 and key price is 32 (rounds down)
-            keys: metal / key_price,
+            keys: metal.saturating_div(key_price),
             metal: metal % key_price,
         }
     }
     
-    /// Converts from [`FloatCurrencies`] using the given key price (represented as weapons).
+    /// Converts from [`FloatCurrencies`] using the given key price (represented as weapons). This 
+    /// method is [saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic).
     /// 
     /// # Examples
     /// ```
@@ -132,6 +133,8 @@ impl Currencies {
         key_price: Currency,
     ) -> Option<Self> {
         // Convert the integer part of the keys value.
+        // Using trunc() is OK here in the event that keys is Infinity or NaN, the output will be 
+        // the same value.
         let keys = helpers::strict_f32_to_currency(currencies.keys.trunc())?;
         // Take the remainder of the keys value.
         let keys_metal_float = ((currencies.keys % 1.0) * key_price as f32).round();
@@ -145,8 +148,8 @@ impl Currencies {
         })
     }
     
-    /// Converts an f32 key value into `Currencies` using the given key price represented as 
-    /// weapons.
+    /// Converts an f32 key value into `Currencies` using the given key price (represented as 
+    /// weapons).
     /// 
     /// # Examples
     /// ```
@@ -166,8 +169,7 @@ impl Currencies {
     }
     
     /// Converts currencies to a metal value using the given key price (represented as weapons).
-    /// In cases where the result overflows or underflows beyond the limit for [`Currency`], the 
-    /// max or min [`Currency`]` will be returned. In most cases values this high are not useful.
+    /// This method is [saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic).
     /// 
     /// # Examples
     /// ```
@@ -229,7 +231,8 @@ impl Currencies {
     }
     
     /// Neatens currencies. If the `metal` value is over `key_price`, the `metal` value will be 
-    /// converted to `keys`, with the remainder remaining as `metal`. This method is saturating.
+    /// converted to `keys`, with the remainder remaining as `metal`. This method is
+    /// [saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic).
     /// 
     /// # Examples
     /// ```

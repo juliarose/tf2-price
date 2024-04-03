@@ -1,6 +1,6 @@
 use crate::error::ParseError;
 use crate::types::Currency;
-use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, ONE_REF};
+use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, ONE_REF, ONE_REF_FLOAT};
 use crate::Rounding;
 use std::fmt;
 use std::str::FromStr;
@@ -35,7 +35,7 @@ where
     // get the metal value as a float e.g. 2.55 ref
     let metal_refined_float = f32::deserialize(deserializer)?;
     // will fit it into the nearest weapon value
-    let metal = (metal_refined_float * (ONE_REF as f32)).round() as Currency;
+    let metal = (metal_refined_float * ONE_REF_FLOAT).round() as Currency;
     
     Ok(metal)
 }
@@ -137,7 +137,7 @@ pub fn thousands(string: String) -> String {
 /// assert_eq!(tf2_price::get_metal_float(6), 0.33);
 /// ```
 pub fn get_metal_float(value: Currency) -> f32 {
-    f32::trunc((value as f32 / (ONE_REF as f32)) * 100.0) / 100.0
+    f32::trunc((value as f32 / ONE_REF_FLOAT) * 100.0) / 100.0
 }
 
 /// Converts a float value into a metal value.
@@ -147,15 +147,24 @@ pub fn get_metal_float(value: Currency) -> f32 {
 /// assert_eq!(tf2_price::get_metal_from_float(0.33), 6);
 /// ```
 pub fn get_metal_from_float(value: f32) -> Currency {
-    (value * (ONE_REF as f32)).round() as Currency
+    (value * ONE_REF_FLOAT).round() as Currency
 }
 
 /// Converts an `f32` into a `Currency` safely.
 pub fn strict_f32_to_currency(value: f32) -> Option<Currency> {
+    if value.is_nan() || value.is_infinite() {
+        return None
+    }
+    
     // https://stackoverflow.com/a/71431182
     // Check if fractional component is 0 and that it can map to an integer
     // Using fract() is equivalent to using `as Currency as f32` and checking it matches
-    if value.fract() == 0.0 && value >= Currency::MIN as f32 && value <= Currency::MAX as f32 {
+    if value.fract() != 0.0 {
+        return None;
+    }
+    
+    // Check if the value is within the bounds of a Currency
+    if value >= Currency::MIN as f32 && value <= Currency::MAX as f32 {
         return Some(value.trunc() as Currency)
     }
 
@@ -171,7 +180,9 @@ pub fn strict_f32_to_currency(value: f32) -> Option<Currency> {
 /// assert_eq!(tf2_price::checked_get_metal_from_float(0.33), Some(6));
 /// ```
 pub fn checked_get_metal_from_float(value: f32) -> Option<Currency> {
-    strict_f32_to_currency((value * (ONE_REF as f32)).round())
+    let metal = (value * ONE_REF_FLOAT).round();
+    
+    strict_f32_to_currency(metal)
 }
 
 /// Parses currencies from a string.
