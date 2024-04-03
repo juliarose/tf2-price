@@ -17,5 +17,3 @@ pub const KEY_SYMBOL: &str = "key";
 pub const KEYS_SYMBOL: &str = "keys";
 /// Symbol for metal.
 pub const METAL_SYMBOL: &str = "ref";
-/// Symbol for empty currencies.
-pub const EMPTY_SYMBOL: &str = "nothing";

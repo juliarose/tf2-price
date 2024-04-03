@@ -1,8 +1,7 @@
 use crate::helpers;
 use crate::types::Currency;
-use crate::traits::SerializeCurrencies;
-use crate::error::{TryFromFloatCurrenciesError, ParseError};
-use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, EMPTY_SYMBOL};
+use crate::error::{ParseError, TryFromFloatCurrenciesError};
+use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL};
 use crate::{FloatCurrencies, Rounding};
 use std::fmt;
 use std::cmp::{Ord, Ordering};
@@ -47,8 +46,6 @@ impl Ord for Currencies {
     }
 }
 
-impl SerializeCurrencies for Currencies {}
-
 impl Currencies {
     /// Creates a new [`Currencies`] with `0` keys and `0` metal. Same as `Currencies::default()`.
     /// 
@@ -91,16 +88,19 @@ impl Currencies {
     /// 
     /// let key_price = refined!(60);
     /// let float_currencies = FloatCurrencies { keys: 1.5, metal: 0.0 };
-    /// let currencies = Currencies::from_float_currencies(float_currencies, key_price);
+    /// let currencies = Currencies::from_float_currencies_with(
+    ///     float_currencies,
+    ///     key_price,
+    /// );
     /// 
     /// assert_eq!(currencies.keys, 1);
     /// assert_eq!(currencies.metal, refined!(30));
     /// ```
-    pub fn from_float_currencies(
+    pub fn from_float_currencies_with(
         currencies: FloatCurrencies,
         key_price: Currency,
     ) -> Self {
-        let keys_metal = ((currencies.keys % 1.0) * key_price as f32).round() as Currency;
+        let keys_metal = ((currencies.keys.fract()) * key_price as f32).round() as Currency;
         let metal = helpers::get_metal_from_float(currencies.metal);
         
         Self {
@@ -119,16 +119,23 @@ impl Currencies {
     /// 
     /// let key_price = refined!(60);
     /// let float_currencies = FloatCurrencies { keys: 1.5, metal: 0.0 };
-    /// let currencies = Currencies::try_from_float_currencies(float_currencies, key_price).unwrap();
+    /// let currencies = Currencies::try_from_float_currencies_with(
+    ///     float_currencies,
+    ///     key_price,
+    /// ).unwrap();
     /// 
     /// assert_eq!(currencies.keys, 1);
     /// assert_eq!(currencies.metal, refined!(30));
     /// 
     /// let float_currencies = FloatCurrencies { keys: Currency::MAX as f32 * 2.0, metal: 0.0 };
+    /// let currencies = Currencies::try_from_float_currencies_with(
+    ///     float_currencies,
+    ///     key_price,
+    /// );
     /// 
-    /// assert!(Currencies::try_from_float_currencies(float_currencies, key_price).is_none());
+    /// assert!(currencies.is_none());
     /// ```
-    pub fn try_from_float_currencies(
+    pub fn try_from_float_currencies_with(
         currencies: FloatCurrencies,
         key_price: Currency,
     ) -> Option<Self> {
@@ -137,10 +144,40 @@ impl Currencies {
         // the same value.
         let keys = helpers::strict_f32_to_currency(currencies.keys.trunc())?;
         // Take the remainder of the keys value.
-        let keys_metal_float = ((currencies.keys % 1.0) * key_price as f32).round();
+        let keys_metal_float = (currencies.keys.fract() * key_price as f32).round();
         let keys_metal = helpers::strict_f32_to_currency(keys_metal_float)?;
         // Convert the metal value to weapon and add the metal from the remainder.
         let metal = helpers::checked_get_metal_from_float(currencies.metal)?.checked_add(keys_metal)?;
+        
+        Some(Self {
+            keys,
+            metal,
+        })
+    }
+    
+    /// Similar to `TryFrom<FloatCurrencies>` but strict. This method will return `None` if either 
+    /// value is out of bounds or if the keys value is fractional.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_price::{Currencies, FloatCurrencies, Currency};
+    /// 
+    /// assert!(Currencies::checked_try_from_float_currencies(FloatCurrencies {
+    ///     keys: 1.5,
+    ///     metal: 0.0,
+    /// }).is_none());
+    /// assert!(Currencies::checked_try_from_float_currencies(FloatCurrencies {
+    ///     keys: Currency::MAX as f32 * 2.0,
+    ///     metal: 0.0,
+    /// }).is_none());
+    /// ```
+    pub fn checked_try_from_float_currencies(
+        currencies: FloatCurrencies
+    ) -> Option<Self> {
+        // Convert the integer part of the keys value.
+        let keys = helpers::strict_f32_to_currency(currencies.keys)?;
+        // Convert the metal value to weapon and add the metal from the remainder.
+        let metal = helpers::checked_get_metal_from_float(currencies.metal)?;
         
         Some(Self {
             keys,
@@ -164,7 +201,7 @@ impl Currencies {
     pub fn from_keys_f32(keys: f32, key_price: Currency) -> Self {
         Self {
             keys: keys as Currency,
-            metal: ((keys % 1.0) * key_price as f32) as Currency
+            metal: ((keys.fract()) * key_price as f32) as Currency
         }
     }
     
@@ -422,21 +459,45 @@ impl DivAssign<f32> for Currencies {
     }
 }
 
-impl<'a> TryFrom<&'a str> for Currencies {
+impl TryFrom<&str> for Currencies {
     type Error = ParseError;
     
-    fn try_from(string: &'a str) -> Result<Self, Self::Error>  {
-        let (keys, metal) = helpers::parse_from_string::<Currency>(string)?;
+    fn try_from(string: &str) -> Result<Self, Self::Error>  {
+        string.parse::<Self>()
+    }
+}
+
+impl TryFrom<&String> for Currencies {
+    type Error = ParseError;
+    
+    fn try_from(string: &String) -> Result<Self, Self::Error> {
+        string.parse::<Self>()
+    }
+}
+
+impl TryFrom<String> for Currencies {
+    type Error = ParseError;
+    
+    fn try_from(string: String) -> Result<Self, Self::Error> {
+        string.parse::<Self>()
+    }
+}
+
+impl std::str::FromStr for Currencies {
+    type Err = ParseError;
+    
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let (keys, metal) = helpers::parse_currency_from_string(string)?;
         
-        Ok(Currencies {
+        Ok(Self {
             keys,
             metal,
         })
     }
 }
 
-/// Results in error if [`FloatCurrencies`] contains a fractional key value or if the metal value
-/// cannot be safely converted.
+/// Results in error if [`FloatCurrencies`] contains a fractional key value. If the key or metal 
+/// value is out of bounds, the resulting value will be at the bounds.
 impl TryFrom<FloatCurrencies> for Currencies {
     type Error = TryFromFloatCurrenciesError;
     
@@ -447,14 +508,9 @@ impl TryFrom<FloatCurrencies> for Currencies {
             });
         }
         
-        let metal = helpers::checked_get_metal_from_float(currencies.metal)
-            .ok_or(TryFromFloatCurrenciesError::MetalOutOfBounds {
-                metal: currencies.metal,
-            })?;
-        
-        Ok(Currencies {
+        Ok(Self {
             keys: currencies.keys as Currency,
-            metal,
+            metal: helpers::get_metal_from_float(currencies.metal),
         })
     }
 }
@@ -464,13 +520,14 @@ impl TryFrom<&FloatCurrencies> for Currencies {
     type Error = TryFromFloatCurrenciesError;
     
     fn try_from(currencies: &FloatCurrencies) -> Result<Self, Self::Error> {
-        Currencies::try_from(*currencies)
+        Self::try_from(*currencies)
     }
 }
 
 impl fmt::Display for Currencies {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.keys != 0 && self.metal != 0 {
+        // Either both keys and metal are non-zero or both are zero.
+        if (self.keys != 0 && self.metal != 0) || self.is_empty() {
             write!(
                 f,
                 "{} {}, {} {}",
@@ -486,15 +543,14 @@ impl fmt::Display for Currencies {
                 self.keys,
                 helpers::pluralize(self.keys, KEY_SYMBOL, KEYS_SYMBOL),
             )
-        } else if self.metal != 0 {
+        } else {
+            // It can be assumed that metal is not zero.
             write!(
                 f,
                 "{} {}",
                 helpers::get_metal_float(self.metal),
                 METAL_SYMBOL,
             )
-        } else {
-            write!(f, "{}", EMPTY_SYMBOL)
         }
     }
 }
@@ -736,6 +792,11 @@ mod tests {
     #[test]
     fn parses_currencies_from_string_invalid_currencies_extra() {
         assert!(Currencies::try_from("2 keys, 3 what").is_err());
+    }
+    
+    #[test]
+    fn prints_empty_currencies() {
+        assert_eq!(Currencies::default().to_string(), "0 keys, 0 ref");
     }
     
     #[test]
@@ -1060,19 +1121,6 @@ mod tests {
     }
     
     #[test]
-    fn accepts_trait_currencies() {
-        fn get_keys<T>(currencies: &T) -> String
-        where T: SerializeCurrencies {
-            serde_json::to_string(currencies).unwrap()
-        }
-        
-        let currencies = Currencies { keys: 1, metal: 1 };
-        let serialized = get_keys(&currencies);
-        
-        assert_eq!(serialized, r#"{"keys":1,"metal":0.05}"#);
-    }
-    
-    #[test]
     fn greater_than() {
         assert!(Currencies { keys: 1, metal: 5 } > Currencies { keys: 0, metal: 10});
     }
@@ -1145,5 +1193,40 @@ mod tests {
         let currencies = Currencies::try_from(float_currencies).unwrap();
         
         assert_eq!(currencies.metal, refined!(1) + scrap!(3));
+    }
+    
+    #[test]
+    fn from_float_currencies_infinity() {
+        assert!(Currencies::try_from(FloatCurrencies {
+            keys: f32::INFINITY,
+            metal: 1.33,
+        }).is_err());
+        assert!(Currencies::try_from(FloatCurrencies {
+            keys: f32::NEG_INFINITY,
+            metal: 1.33,
+        }).is_err());
+    }
+    
+    #[test]
+    fn from_float_currencies_nan() {
+        assert!(Currencies::try_from(FloatCurrencies {
+            keys: f32::NAN,
+            metal: 1.33,
+        }).is_err());
+        assert!(Currencies::try_from(FloatCurrencies {
+            keys: f32::NAN,
+            metal: 1.33,
+        }).is_err());
+    }
+    
+    #[test]
+    fn from_float_currencies_overflow_saturating_bounds() {
+        assert_eq!(Currencies::try_from(FloatCurrencies {
+            keys: Currency::MAX as f32 * 2.0,
+            metal: 1.33,
+        }).unwrap(), Currencies {
+            keys: Currency::MAX,
+            metal: refined!(1) + scrap!(3),
+        });
     }
 }

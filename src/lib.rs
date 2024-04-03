@@ -40,7 +40,6 @@
 //! check for overflows some checked methods are included.
 #[macro_use] extern crate impl_ops;
 
-pub mod traits;
 pub mod error;
 
 mod types;

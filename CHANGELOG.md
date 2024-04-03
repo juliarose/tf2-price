@@ -1,17 +1,28 @@
 # Changelog
 
-## 0.13.0 (2024-01-26)
+## 0.13.0 (2024-04-03)
 
 ### Changed
--  **MAJOR CHANGE:** Renamed `ListingCurrencies` to `FloatCurrencies`. Both `keys` and `metal` fields are now defined as `f32`. This makes more sense as this is generally used as a container type for holding original values from responses. `FloatCurrencies` should always be converted to `Currencies` in order to perform arithmetic.
+- **MAJOR CHANGE:** Renamed `ListingCurrencies` to `FloatCurrencies`. Both `keys` and `metal` fields are now defined as `f32`. This makes more sense as this is generally used as a container type for holding original values from responses. `FloatCurrencies` should always be converted to `Currencies` in order to perform arithmetic.
+- Some method names to fit with above change.
+- "from" methods that also take in a key price are now suffixed with "with".
+- Converting `Currencies` and `FloatCurrencies` not prints `"0 keys, 0 ref"` when currencies are empty.
 
 ### Added
 - `checked_get_metal_from_float` helper method.
 - `metal!` macro.
 - `Hash` derive for `Currencies` and `USDCurrencies`.
+- More detailed errors.
+- `FromStr` implementations for `Currencies` and `FloatCurrencies`.
+- `ParseFromStrError` for FromStr errors.
+- `TryFrom<&String>` and `TryFrom<String>` for `Currencies` and `FloatCurrencies`.
 
 ### Fixed
 - Previously, parsing strings with empty currencies e.g. "0 keys" would result in an error. This is no longer the case.
+
+### Removed
+- `SerializeCurrencies`.
+- `round` from `FloatCurrencies`.
 
 ## 0.12.0 (2024-01-26)
 

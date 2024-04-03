@@ -6,16 +6,10 @@ use std::num::{ParseFloatError, ParseIntError};
 #[derive(Debug, thiserror::Error)]
 pub enum TryFromFloatCurrenciesError {
     /// For currencies which contain fractional values.
-    #[error("Currencies contains fractional value: {fract}")]
+    #[error("Currencies contains fractional value: {}", .fract)]
     Fractional {
         /// Fractional key values are invalid.
         fract: f32,
-    },
-    /// For when converting from a float metal value into a weapon metal value is out of bounds.
-    #[error("Metal value is out of bounds for conversion into weapon value: {metal}")]
-    MetalOutOfBounds {
-        /// The amount of metal.
-        metal: f32,
     },
 }
 
@@ -24,10 +18,19 @@ pub enum TryFromFloatCurrenciesError {
 pub enum ParseError {
     /// String was invalid.
     #[error("No currencies could be parsed from string")]
-    Invalid,
-    /// A value expected to be number failed to parse. 
-    #[error(r#"Failed to parse "{}" as numeric"#, .0)]
-    ParseNumeric(String),
+    NoCurrenciesDetected,
+    /// A number was expected, but none was found.
+    #[error("Expected a number, but none was found")]
+    MissingCount,
+    /// A currency name was expected, but none was found.
+    #[error("Expected a currency name, but none was found")]
+    MissingCurrencyName,
+    /// An unexpected element was found.
+    #[error("Unexpected token")]
+    UnexpectedToken,
+    /// An invalid currency name was found.
+    #[error("Invalid currency name")]
+    InvalidCurrencyName,
     /// A string failed to parse to an integer.
     #[error("{}", .0)]
     ParseInt(#[from] ParseIntError),

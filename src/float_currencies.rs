@@ -1,8 +1,7 @@
 use crate::helpers;
 use crate::types::Currency;
-use crate::traits::SerializeCurrencies;
 use crate::error::ParseError;
-use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, EMPTY_SYMBOL};
+use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL};
 use crate::Currencies;
 use std::fmt;
 use std::cmp::{Ord, Ordering};
@@ -11,15 +10,18 @@ use serde::{Serialize, Deserialize, Serializer, Deserializer};
 use serde::de::Error;
 use serde::ser::SerializeStruct;
 
-/// The `keys` and `metal` fields for [`FloatCurrencies`] are defined as an [`f32`]. Use this 
-/// anywhere you may need values which include decimal places.
+/// For storing floating point values of currencies. This is useful for retaining the original 
+/// values from responses. Convert to [`Currencies`] to perform precise arithmetical operations or 
+/// comparisons.
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Copy)]
 #[serde(remote = "Self")]
 pub struct FloatCurrencies {
     /// Amount of keys.
     #[serde(default)]
     pub keys: f32,
-    /// Amount of metal expressed as a float e.g. "1.33 ref".
+    /// Amount of metal expressed as a float e.g. "1.33 ref". Unlike [`Currencies`], this 
+    /// **is not** represented as weapons and is meant to retain the original values from 
+    /// responses.
     #[serde(default)]
     pub metal: f32,
 }
@@ -47,8 +49,6 @@ impl Ord for FloatCurrencies {
 }
 
 impl Eq for FloatCurrencies {}
-
-impl SerializeCurrencies for FloatCurrencies {}
 
 impl FloatCurrencies {
     /// Creates a new [`FloatCurrencies`] with `0` keys and `0` metal. Same as 
@@ -317,13 +317,37 @@ impl DivAssign<f32> for FloatCurrencies {
     }
 }
 
-impl<'a> TryFrom<&'a str> for FloatCurrencies {
+impl TryFrom<&str> for FloatCurrencies {
     type Error = ParseError;
     
-    fn try_from(string: &'a str) -> Result<Self, Self::Error>  {
-        let (keys, metal) = helpers::parse_from_string_with_float_metal(string)?;
+    fn try_from(string: &str) -> Result<Self, Self::Error>  {
+        string.parse::<Self>()
+    }
+}
+
+impl TryFrom<&String> for FloatCurrencies {
+    type Error = ParseError;
+    
+    fn try_from(string: &String) -> Result<Self, Self::Error> {
+        string.parse::<Self>()
+    }
+}
+
+impl TryFrom<String> for FloatCurrencies {
+    type Error = ParseError;
+    
+    fn try_from(string: String) -> Result<Self, Self::Error> {
+        string.parse::<Self>()
+    }
+}
+
+impl std::str::FromStr for FloatCurrencies {
+    type Err = ParseError;
+    
+    fn from_str(string: &str) -> Result<Self, Self::Err> {
+        let (keys, metal) = helpers::parse_float_from_string(string)?;
         
-        Ok(FloatCurrencies {
+        Ok(Self {
             keys,
             metal,
         })
@@ -331,8 +355,8 @@ impl<'a> TryFrom<&'a str> for FloatCurrencies {
 }
 
 impl From<Currencies> for FloatCurrencies {
-    fn from(currencies: Currencies) -> FloatCurrencies {
-        FloatCurrencies {
+    fn from(currencies: Currencies) -> Self {
+        Self {
             keys: currencies.keys as f32,
             metal: helpers::get_metal_float(currencies.metal),
         }
@@ -340,8 +364,8 @@ impl From<Currencies> for FloatCurrencies {
 }
 
 impl From<&Currencies> for FloatCurrencies {
-    fn from(currencies: &Currencies) -> FloatCurrencies {
-        FloatCurrencies {
+    fn from(currencies: &Currencies) -> Self {
+        Self {
             keys: currencies.keys as f32,
             metal: helpers::get_metal_float(currencies.metal),
         }
@@ -350,7 +374,8 @@ impl From<&Currencies> for FloatCurrencies {
 
 impl fmt::Display for FloatCurrencies {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.keys != 0.0 && self.metal != 0.0 {
+        // Either both keys and metal are non-zero or both are zero.
+        if (self.keys != 0.0 && self.metal != 0.0) || self.is_empty() {
             write!(
                 f,
                 "{} {}, {} {}",
@@ -366,15 +391,14 @@ impl fmt::Display for FloatCurrencies {
                 helpers::print_float(self.keys),
                 helpers::pluralize_float(self.keys, KEY_SYMBOL, KEYS_SYMBOL),
             )
-        } else if self.metal != 0.0 {
+        } else {
+            // It can be assumed that metal is not zero.
             write!(
                 f,
                 "{} {}",
                 helpers::print_float(self.metal),
                 METAL_SYMBOL,
             )
-        } else {
-            write!(f, "{}", EMPTY_SYMBOL)
         }
     }
 }
@@ -573,7 +597,7 @@ mod tests {
     
     #[test]
     fn converts_into_currencies_with_key_price() {
-        let currencies = Currencies::from_float_currencies(FloatCurrencies {
+        let currencies = Currencies::from_float_currencies_with(FloatCurrencies {
             keys: 2.5,
             metal: 10.0,
         }, refined!(10));
@@ -586,7 +610,7 @@ mod tests {
     
     #[test]
     fn converts_into_currencies_with_key_price_negative_values() {
-        let currencies = Currencies::from_float_currencies(FloatCurrencies {
+        let currencies = Currencies::from_float_currencies_with(FloatCurrencies {
             keys: 2.5,
             metal: -10.0,
         }, refined!(10));
@@ -621,6 +645,11 @@ mod tests {
             keys: 2.2555,
             metal: 23.0,
         }), "2.26 keys, 23 ref");
+    }
+    
+    #[test]
+    fn prints_empty_currencies() {
+        assert_eq!(FloatCurrencies::default().to_string(), "0 keys, 0 ref");
     }
     
     #[test]

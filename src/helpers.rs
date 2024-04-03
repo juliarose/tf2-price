@@ -2,8 +2,6 @@ use crate::error::ParseError;
 use crate::types::Currency;
 use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, ONE_REF, ONE_REF_FLOAT};
 use crate::Rounding;
-use std::fmt;
-use std::str::FromStr;
 use serde::{Deserialize, Deserializer};
 
 /// Converts currencies to a metal value using the given key price (represented as weapons). This
@@ -152,6 +150,7 @@ pub fn get_metal_from_float(value: f32) -> Currency {
 
 /// Converts an `f32` into a `Currency` safely.
 pub fn strict_f32_to_currency(value: f32) -> Option<Currency> {
+    // We don't want to allow NaN or infinite values.
     if value.is_nan() || value.is_infinite() {
         return None
     }
@@ -163,12 +162,12 @@ pub fn strict_f32_to_currency(value: f32) -> Option<Currency> {
         return None;
     }
     
-    // Check if the value is within the bounds of a Currency
-    if value >= Currency::MIN as f32 && value <= Currency::MAX as f32 {
-        return Some(value.trunc() as Currency)
+    // Check if the value is out of bounds of a Currency.
+    if value < Currency::MIN as f32 || value > Currency::MAX as f32 {
+        return None;
     }
 
-    None
+    Some(value.trunc() as Currency)
 }
 
 /// Converts a float value into a metal value.
@@ -186,57 +185,70 @@ pub fn checked_get_metal_from_float(value: f32) -> Option<Currency> {
 }
 
 /// Parses currencies from a string.
-pub fn parse_from_string_with_float_metal<K>(string: &str) -> Result<(K, f32), ParseError>
-where
-    K: Default + FromStr + PartialEq,
-    <K as FromStr>::Err: fmt::Display,
-{
-    let mut keys = K::default();
-    let mut metal = 0.0;
-    let mut has_value = false;
+fn parse_currencies(
+    string: &str,
+) -> Result<(Option<&str>, Option<&str>), ParseError> {
+    let mut keys = None;
+    let mut metal = None;
     
-    for element in string.split(", ") {
-        let mut element_split = element.split(' ');
-        let count_str = element_split.next().ok_or(ParseError::Invalid)?;
-        let currency_name = element_split.next().ok_or(ParseError::Invalid)?;
+    for element in string.split(',') {
+        let mut element_split = element.trim().split(' ');
+        let count_str = element_split.next().ok_or(ParseError::MissingCount)?;
+        let currency_name = element_split.next().ok_or(ParseError::MissingCurrencyName)?;
         
         // We don't expect another element after the currency name.
         if element_split.next().is_some() {
-            return Err(ParseError::Invalid);
+            return Err(ParseError::UnexpectedToken);
         }
         
-        match currency_name {
-            KEY_SYMBOL | KEYS_SYMBOL => {
-                keys = count_str.parse::<K>()
-                    .map_err(|e| ParseError::ParseNumeric(e.to_string()))?;
-            },
-            METAL_SYMBOL => {
-                metal = count_str.parse::<f32>()?;
-            },
-            _ => {
-                return Err(ParseError::Invalid);
-            },
+        if currency_name.eq_ignore_ascii_case(METAL_SYMBOL) {
+            metal = Some(count_str);
+        } else if currency_name.eq_ignore_ascii_case(KEYS_SYMBOL) || currency_name.eq_ignore_ascii_case(KEY_SYMBOL) {
+            keys = Some(count_str);
+        } else {
+            return Err(ParseError::InvalidCurrencyName);
         }
-        
-        has_value = true;
     }
     
-    if !has_value {
-        return Err(ParseError::Invalid);
+    if keys.is_none() && metal.is_none() {
+        return Err(ParseError::NoCurrenciesDetected);
     }
     
     Ok((keys, metal))
 }
 
 /// Parses currencies from a string.
-pub fn parse_from_string<K>(string: &str) -> Result<(K, Currency), ParseError>
-where
-    K: Default + FromStr + PartialEq,
-    <K as FromStr>::Err: fmt::Display,
-{
-    let (keys, metal) = parse_from_string_with_float_metal(string)?;
-    // Convert the metal value to a weapon value.
-    let metal = get_metal_from_float(metal);
+pub fn parse_currency_from_string(
+    string: &str,
+) -> Result<(Currency, Currency), ParseError> {
+    let (keys, metal) = parse_currencies(string)?;
+    let keys = keys
+        .map(|s| s.parse::<Currency>())
+        .transpose()?
+        .unwrap_or_default();
+    let metal = metal
+        .map(|s| s.parse::<f32>())
+        .transpose()?
+        // Convert the metal value to a weapon value.
+        .map(get_metal_from_float)
+        .unwrap_or_default();
+    
+    Ok((keys, metal))
+}
+
+/// Parses currencies from a string.
+pub fn parse_float_from_string(
+    string: &str,
+) -> Result<(f32, f32), ParseError> {
+    let (keys, metal) = parse_currencies(string)?;
+    let keys = keys
+        .map(|s| s.parse::<f32>())
+        .transpose()?
+        .unwrap_or_default();
+    let metal = metal
+        .map(|s| s.parse::<f32>())
+        .transpose()?
+        .unwrap_or_default();
     
     Ok((keys, metal))
 }
