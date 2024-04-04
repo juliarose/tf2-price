@@ -26,11 +26,11 @@
 //! 
 //! ## Conventions
 //! 
-//! All `metal` values are represented as the number of weapons. For 1 refined, this would be 18. 
-//! The macros and constant values should be used to avoid any errors in accounting. For example: 
-//! if adding one scrap, add `ONE_SCRAP` to the `metal` field. `scrap!(1)` will also create the 
-//! same value. The `metal!` macro can be used to convert floating point values into weapons e.g. 
-//! `metal!(1.0)` will convert to 18.
+//! With the exception of [`FloatCurrencies`], all `metal` values are represented as the number of 
+//! weapons. For 1 refined, this would be 18. The macros and constant values should be used to 
+//! avoid any errors in accounting. For example: if adding one scrap, add `ONE_SCRAP` to the 
+//! `metal` field. `scrap!(1)` will also create the same value. The `metal!` macro can be used to 
+//! convert floating point refined values into weapons e.g. `metal!(1.0)` will convert to 18.
 //! 
 //! In addition, all key values in methods are represented as values in weapons.
 //! 
@@ -58,12 +58,24 @@ pub use rounding::Rounding;
 pub use helpers::{get_metal_from_float, checked_get_metal_from_float, get_metal_float};
 pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
 
+#[cfg(not(feature = "b32"))]
 /// Generates value for metal.
 #[macro_export]
 macro_rules! metal {
     ( $a:expr ) => {
         {
-            helpers::get_metal_from_float($a)
+            ($a * 18.0_f32).round() as i64
+        }
+    }
+}
+
+#[cfg(feature = "b32")]
+/// Generates value for metal.
+#[macro_export]
+macro_rules! metal {
+    ( $a:expr ) => {
+        {
+            ($a * 18.00_f32).round() as i32
         }
     }
 }

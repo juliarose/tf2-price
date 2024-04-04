@@ -13,6 +13,25 @@ use serde::ser::SerializeStruct;
 /// For storing floating point values of currencies. This is useful for retaining the original 
 /// values from responses. Convert to [`Currencies`] to perform precise arithmetical operations or 
 /// comparisons.
+/// 
+/// # Examples
+/// ```
+/// use tf2_price::{FloatCurrencies, Currencies, metal, refined};
+/// 
+/// let float_currencies = FloatCurrencies {
+///     keys: 1.0,
+///     metal: 1.33,
+/// };
+/// let mut currencies = Currencies::try_from(float_currencies).unwrap();
+/// 
+/// assert_eq!(currencies.keys, 1);
+/// assert_eq!(currencies.metal, metal!(1.33));
+/// 
+/// // For precision, arithmetical operations should be done with Currencies, not FloatCurrencies.
+/// currencies.metal += refined!(1);
+/// 
+/// assert_eq!(currencies.metal, metal!(2.33));
+/// ```
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Copy)]
 #[serde(remote = "Self")]
 pub struct FloatCurrencies {
@@ -105,15 +124,10 @@ impl FloatCurrencies {
     /// In cases where the result overflows or underflows beyond the limit for [`Currency`], `None` 
     /// is returned.
     pub fn checked_to_metal(&self, key_price: Currency) -> Option<Currency> {
-        let result = (self.keys * key_price as f32).round();
-        let result_metal = helpers::strict_f32_to_currency(result)?;
+        let keys_metal_float = (self.keys * key_price as f32).round();
+        let keys_metal = helpers::strict_f32_to_currency(keys_metal_float)?;
         
-        // Check for overflow by seeing if conversions produce unequal results
-        if result != result_metal as f32 {
-            return None;
-        }
-        
-        helpers::checked_get_metal_from_float(self.metal)?.checked_add(result_metal)
+        helpers::checked_get_metal_from_float(self.metal)?.checked_add(keys_metal)
     }
     
     /// Checks if the currencies do not contain any value.
@@ -264,6 +278,8 @@ impl SubAssign<&FloatCurrencies> for FloatCurrencies {
 impl AddAssign<Currencies> for FloatCurrencies {
     fn add_assign(&mut self, other: Currencies) {
         self.keys += other.keys as f32;
+        // The float value is a value in weapons, but we need to convert it to a float value in
+        // refined before applying the operation.
         self.metal += helpers::get_metal_float(other.metal);
     }
 }
@@ -271,6 +287,8 @@ impl AddAssign<Currencies> for FloatCurrencies {
 impl AddAssign<&Currencies> for FloatCurrencies {
     fn add_assign(&mut self, other: &Currencies) {
         self.keys += other.keys as f32;
+        // The float value is a value in weapons, but we need to convert it to a float value in
+        // refined before applying the operation.
         self.metal += helpers::get_metal_float(other.metal);
     }
 }
@@ -278,6 +296,8 @@ impl AddAssign<&Currencies> for FloatCurrencies {
 impl SubAssign<Currencies> for FloatCurrencies {
     fn sub_assign(&mut self, other: Currencies) {
         self.keys -= other.keys as f32;
+        // The float value is a value in weapons, but we need to convert it to a float value in
+        // refined before applying the operation.
         self.metal -= helpers::get_metal_float(other.metal);
     }
 }
@@ -285,6 +305,8 @@ impl SubAssign<Currencies> for FloatCurrencies {
 impl SubAssign<&Currencies> for FloatCurrencies {
     fn sub_assign(&mut self, other: &Currencies) {
         self.keys -= other.keys as f32;
+        // The float value is a value in weapons, but we need to convert it to a float value in
+        // refined before applying the operation.
         self.metal -= helpers::get_metal_float(other.metal);
     }
 }

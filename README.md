@@ -29,8 +29,8 @@ assert_eq!(
 
 ### Arithmetic
 ```rust
-use tf2_price::Currencies;
-
+use tf2_price::{Currencies, Currency};
+    
 let golden_frying_pan = Currencies {
     keys: 3000,
     metal: 0,
@@ -68,18 +68,25 @@ assert_eq!(
 );
 
 // Helper methods for checking for integer overflow.
+let currencies = Currencies {
+    keys: 2,
+    metal: 0,
+};
 let max_keys = Currencies {
-    keys: i64::MAX,
+    keys: Currency::MAX,
     metal: 0,
 };
 
 assert_eq!(currencies.checked_add(max_keys), None);
-assert_eq!(currencies.checked_mul(i64::MAX), None);
+assert_eq!(currencies.checked_mul(Currency::MAX), None);
 ```
 
 ### Floating Point Precision
+
+Since responses usually contain floating point numbers, we also need a way to store these values. It is strongly recommended to use this only as a container for converting into `Currencies` and not for calculations and comparisons. This crate offers utilities for handling the complicated task of converting floats into integers depending on use-case (saturating, checked).
+
 ```rust
-use tf2_price::{Currencies, FloatCurrencies, metal};
+use tf2_price::{Currencies, FloatCurrencies, Currency, metal};
 
 // To preserve floating point key values, use FloatCurrencies.
 let float_currencies = FloatCurrencies {
@@ -87,17 +94,27 @@ let float_currencies = FloatCurrencies {
     // Unlike Currencies, metal is not counted in weapons.
     metal: 1.33,
 };
+// Converting to Currencies (checks for safe conversion).
 let currencies = Currencies::try_from(float_currencies).unwrap();
-// Conversions to Currencies are supported.
+
+assert_eq!(currencies.keys, 1);
 assert_eq!(currencies.metal, metal!(1.33));
+
 // Fails if the key value holds a fractional number.
 let float_currencies = FloatCurrencies {
     keys: 1.5,
     metal: 0.0,
 };
-assert!(
-    Currencies::try_from(float_currencies).is_err()
-);
+
+assert!(Currencies::try_from(float_currencies).is_err());
+
+// Fails if a value is outside of integer bounds.
+let float_currencies = FloatCurrencies {
+    keys: Currency::MAX as f32 * 2.0,
+    metal: 0.0,
+};
+
+assert!(Currencies::try_from(float_currencies).is_err());
 ```
 
 ### Serialization

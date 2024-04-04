@@ -128,7 +128,7 @@ pub fn thousands(string: String) -> String {
     output
 }
 
-/// Converts a metal value into its float value.
+/// Converts a metal value (represented as weapons) into its float value.
 ///
 /// # Examples
 /// ```
@@ -138,7 +138,7 @@ pub fn get_metal_float(value: Currency) -> f32 {
     f32::trunc((value as f32 / ONE_REF_FLOAT) * 100.0) / 100.0
 }
 
-/// Converts a float value into a metal value.
+/// Converts a float value into a metal value (represented as weapons).
 ///
 /// # Examples
 /// ```

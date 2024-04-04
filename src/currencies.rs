@@ -60,7 +60,8 @@ impl Currencies {
     }
     
     /// Converts a metal value into the appropriate number of keys using the given key price 
-    /// (represented as weapons).
+    /// (represented as weapons). This method is 
+    /// [saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic).
     /// 
     /// # Examples
     /// ```
@@ -148,36 +149,6 @@ impl Currencies {
         let keys_metal = helpers::strict_f32_to_currency(keys_metal_float)?;
         // Convert the metal value to weapon and add the metal from the remainder.
         let metal = helpers::checked_get_metal_from_float(currencies.metal)?.checked_add(keys_metal)?;
-        
-        Some(Self {
-            keys,
-            metal,
-        })
-    }
-    
-    /// Similar to `TryFrom<FloatCurrencies>` but strict. This method will return `None` if either 
-    /// value is out of bounds or if the keys value is fractional.
-    /// 
-    /// # Examples
-    /// ```
-    /// use tf2_price::{Currencies, FloatCurrencies, Currency};
-    /// 
-    /// assert!(Currencies::checked_try_from_float_currencies(FloatCurrencies {
-    ///     keys: 1.5,
-    ///     metal: 0.0,
-    /// }).is_none());
-    /// assert!(Currencies::checked_try_from_float_currencies(FloatCurrencies {
-    ///     keys: Currency::MAX as f32 * 2.0,
-    ///     metal: 0.0,
-    /// }).is_none());
-    /// ```
-    pub fn checked_try_from_float_currencies(
-        currencies: FloatCurrencies
-    ) -> Option<Self> {
-        // Convert the integer part of the keys value.
-        let keys = helpers::strict_f32_to_currency(currencies.keys)?;
-        // Convert the metal value to weapon and add the metal from the remainder.
-        let metal = helpers::checked_get_metal_from_float(currencies.metal)?;
         
         Some(Self {
             keys,
@@ -331,7 +302,7 @@ impl Currencies {
     }
     
     /// Adds currencies. `None` if the result overflows integer bounds.
-    pub fn checked_add(&self, other: &Self) -> Option<Self> {
+    pub fn checked_add(&self, other: Self) -> Option<Self> {
         let keys = self.keys.checked_add(other.keys)?;
         let metal = self.metal.checked_add(other.metal)?;
         
@@ -339,7 +310,7 @@ impl Currencies {
     }
     
     /// Subtracts currencies. `None` if the result overflows integer bounds.
-    pub fn checked_sub(&self, other: &Self) -> Option<Self> {
+    pub fn checked_sub(&self, other: Self) -> Option<Self> {
         let keys = self.keys.checked_sub(other.keys)?;
         let metal = self.metal.checked_sub(other.metal)?;
         
@@ -508,9 +479,20 @@ impl TryFrom<FloatCurrencies> for Currencies {
             });
         }
         
+        // Convert the integer part of the keys value.
+        let keys = helpers::strict_f32_to_currency(currencies.keys)
+            .ok_or_else(|| TryFromFloatCurrenciesError::OutOfBounds {
+                value: currencies.keys,
+            })?;
+        // Convert the metal value to weapon and add the metal from the remainder.
+        let metal = helpers::checked_get_metal_from_float(currencies.metal)
+            .ok_or_else(|| TryFromFloatCurrenciesError::OutOfBounds {
+                value: currencies.metal,
+            })?;
+        
         Ok(Self {
-            keys: currencies.keys as Currency,
-            metal: helpers::get_metal_from_float(currencies.metal),
+            keys,
+            metal,
         })
     }
 }
@@ -1163,7 +1145,7 @@ mod tests {
     #[test]
     fn checked_add() {
         assert_eq!(
-            Currencies { keys: 2, metal: 0 }.checked_add(&Currencies { keys: Currency::MAX, metal: 0 }),
+            Currencies { keys: 2, metal: 0 }.checked_add(Currencies { keys: Currency::MAX, metal: 0 }),
             None,
         );
     }
@@ -1220,13 +1202,10 @@ mod tests {
     }
     
     #[test]
-    fn from_float_currencies_overflow_saturating_bounds() {
-        assert_eq!(Currencies::try_from(FloatCurrencies {
+    fn from_float_currencies_does_not_overflow_bounds() {
+        assert!(Currencies::try_from(FloatCurrencies {
             keys: Currency::MAX as f32 * 2.0,
             metal: 1.33,
-        }).unwrap(), Currencies {
-            keys: Currency::MAX,
-            metal: refined!(1) + scrap!(3),
-        });
+        }).is_err());
     }
 }

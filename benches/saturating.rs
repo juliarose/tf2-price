@@ -22,7 +22,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     
     c.bench_function("checked adds two currencies", |b| b.iter(||
         // this checks bounds
-        left_currencies.checked_add(&right_currencies)
+        left_currencies.checked_add(right_currencies)
     ));
 }
 

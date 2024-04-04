@@ -11,6 +11,12 @@ pub enum TryFromFloatCurrenciesError {
         /// Fractional key values are invalid.
         fract: f32,
     },
+    /// For values which are out of bounds.
+    #[error("Conversion of {} was out of integer bounds", .value)]
+    OutOfBounds {
+        /// The value that was out of bounds.
+        value: f32,
+    },
 }
 
 /// An error occurred parsing a string into a currency.
