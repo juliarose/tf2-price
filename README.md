@@ -2,7 +2,9 @@
 
 Utilities for Team Fortress 2 item pricing.
 
-Fractional currencies pose arithmetic challenges due to the inherent imprecision of floating-point numbers. A solution is to handle currency in its smallest unit (e.g., cents for US currency, or weapons in Team Fortress 2), stored as integers. This allows precise calculations without cumbersome conversions, ensuring predictable outcomes. Additionally, this crate offers a container for floating-point currencies when needed.
+Fractional currencies pose arithmetic challenges due to the inherent imprecision of floating-point numbers. A solution is to handle currency in its smallest unit (e.g., cents for US currency, or weapons in Team Fortress 2), stored as integers. This allows precise calculations without [cumbersome conversions](https://gist.github.com/juliarose/cf4e246294bf8740c592c3ef1de2d71b), ensuring predictable outcomes. Additionally, this crate offers a container for floating-point currencies when needed.
+
+In release builds in Rust, integers pose the risk of [overflowing](https://en.wikipedia.org/wiki/Integer_overflow). While, this behaviour is [not considered unsafe](https://doc.rust-lang.org/reference/behavior-not-considered-unsafe.html#integer-overflow), it is problematic. This crate uses [saturating arithmetic](https://en.wikipedia.org/wiki/Saturation_arithmetic) for integer arithmetic and also provides methods for checking for overflow.
 
 ## Installation
 
@@ -106,7 +108,7 @@ assert_eq!(currencies.checked_mul(Currency::MAX), None);
 
 ### Floating Point Precision
 
-To store original floating point numbers from responses, use `FloatCurrencies` as a container. However, it's advised not to use it for calculations or comparisons. This crate provides utilities for converting floats to integers based on use-case (saturating, checked).
+To store original floating point numbers from responses, use `FloatCurrencies` as a container. However, it's advised not to use it for calculations or comparisons. This crate provides utilities for converting floats to integers based on use-case ([saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic), [checked](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/checked-and-unchecked)).
 
 ```rust
 use tf2_price::{Currencies, FloatCurrencies, Currency};
