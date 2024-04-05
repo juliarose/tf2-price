@@ -3,26 +3,23 @@
 ## 0.13.0 (2024-04-03)
 
 ### Changed
-- **MAJOR CHANGE:** Renamed `ListingCurrencies` to `FloatCurrencies`. Both `keys` and `metal` fields are now defined as `f32`. This makes more sense as this is generally used as a container type for holding original values from responses. `FloatCurrencies` should always be converted to `Currencies` in order to perform arithmetic.
-- **MAJOR CHANGE:** Renamed `metal` to `weapons` for `Currencies`. Now many values which are in weapons are suffixed with `weapons` to be concise what the value is measured in.
+- **MAJOR CHANGE:** Renamed `ListingCurrencies` to `FloatCurrencies`. Both `keys` and `metal` fields are now defined as `f32`. This makes more sense as this is generally used as a container type for holding original values from responses. `FloatCurrencies` should generally be converted to `Currencies` in order to perform arithmetic.
+- **MAJOR CHANGE:** Renamed `metal` to `weapons` for `Currencies`. Many values which are in weapons are suffixed with `weapons` to be concise what the value is measured in.
 - Changed method names to fit with the above changes.
-- Changed helper method names to fit with the above changes.
-- "from" methods that also take in a key price are now suffixed with "with".
 - Printing `Currencies` and `FloatCurrencies` now prints `"0 keys, 0 ref"` when currencies are empty.
 - `TryFrom<FloatCurrencies>` for `Currencies` is strict now.
 - `checked_add` and `checked_sub` now take owned values.
 
-### Added
-- `checked_get_metal_from_float` helper method.
-- `metal!` macro.
-- `Hash` derive for `Currencies` and `USDCurrencies`.
-- More detailed errors.
-- `FromStr` implementations for `Currencies` and `FloatCurrencies`.
-- `ParseFromStrError` for FromStr errors.
-- `TryFrom<&String>` and `TryFrom<String>` for `Currencies` and `FloatCurrencies`.
-
 ### Fixed
 - Previously, parsing strings with empty currencies e.g. "0 keys" would result in an error. This is no longer the case.
+
+### Added
+- `checked_get_weapons_from_metal_float` helper method.
+- `metal!` macro.
+- `Hash` derive for `Currencies` and `USDCurrencies`.
+- `FromStr` implementations for `Currencies` and `FloatCurrencies`.
+- `TryFrom<&String>` and `TryFrom<String>` for `Currencies` and `FloatCurrencies`.
+- More detailed errors.
 
 ### Removed
 - `SerializeCurrencies`.

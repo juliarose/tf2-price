@@ -70,11 +70,11 @@ impl Currencies {
     /// use tf2_price::{Currencies, refined};
     /// 
     /// let key_price = refined!(60);
-    /// let currencies = Currencies::from_weapons_with(refined!(80), key_price);
+    /// let currencies = Currencies::from_weapons(refined!(80), key_price);
     /// 
     /// assert_eq!(currencies, Currencies { keys: 1, weapons: refined!(20) });
     /// ```
-    pub fn from_weapons_with(
+    pub fn from_weapons(
         weapons: Currency,
         key_price_weapons: Currency,
     ) -> Self {
@@ -292,7 +292,7 @@ impl Currencies {
     /// );
     /// ```
     pub fn neaten(&self, key_price_weapons: Currency) -> Self {
-        Self::from_weapons_with(self.to_weapons(key_price_weapons), key_price_weapons)
+        Self::from_weapons(self.to_weapons(key_price_weapons), key_price_weapons)
     }
     
     /// Checks whether the currencies have enough `keys` and `weapons` to afford the `other` 
@@ -522,8 +522,7 @@ impl std::str::FromStr for Currencies {
     }
 }
 
-/// Results in error if [`FloatCurrencies`] contains a fractional key value. If the key or metal 
-/// value is out of bounds, the resulting value will be at the bounds.
+/// Results in error if [`FloatCurrencies`] contains a fractional key value.
 impl TryFrom<FloatCurrencies> for Currencies {
     type Error = TryFromFloatCurrenciesError;
     
@@ -534,12 +533,10 @@ impl TryFrom<FloatCurrencies> for Currencies {
             });
         }
         
-        // Convert the integer part of the keys value.
         let keys = helpers::strict_f32_to_currency(currencies.keys)
             .ok_or(TryFromFloatCurrenciesError::OutOfBounds {
                 value: currencies.keys,
             })?;
-        // Convert the metal value to weapon and add the metal from the remainder.
         let weapons = helpers::checked_get_weapons_from_metal_float(currencies.metal)
             .ok_or(TryFromFloatCurrenciesError::OutOfBounds {
                 value: currencies.metal,
@@ -875,7 +872,7 @@ mod tests {
     #[test]
     fn gets_correct_value_from_metal() {
         assert_eq!(
-            Currencies::from_weapons_with(9, 10),
+            Currencies::from_weapons(9, 10),
             Currencies {
                 keys: 0,
                 weapons: 9,
@@ -886,7 +883,7 @@ mod tests {
     #[test]
     fn gets_correct_value_from_metal_with_keys() {
         assert_eq!(
-            Currencies::from_weapons_with(10, 10),
+            Currencies::from_weapons(10, 10),
             Currencies {
                 keys: 1,
                 weapons: 0,
@@ -897,7 +894,7 @@ mod tests {
     #[test]
     fn gets_correct_value_from_metal_with_keys_and_metal() {
         assert_eq!(
-            Currencies::from_weapons_with(11, 10),
+            Currencies::from_weapons(11, 10),
             Currencies {
                 keys: 1,
                 weapons: 1,
@@ -1260,7 +1257,7 @@ mod tests {
     #[test]
     fn greater_than() {
         let a = Currencies { keys: 1, weapons: 5 };
-        let b = Currencies { keys: 0, weapons: 10};
+        let b = Currencies { keys: 0, weapons: 10 };
         
         assert!(a > b);
     }
@@ -1268,7 +1265,7 @@ mod tests {
     #[test]
     fn less_than() {
         let a = Currencies { keys: 0, weapons: 1 };
-        let b = Currencies { keys: 0, weapons: 4};
+        let b = Currencies { keys: 0, weapons: 4 };
         
         assert!(a < b);
     }

@@ -2,9 +2,14 @@
 
 Utilities for Team Fortress 2 item pricing.
 
-A common problem with currencies which contain fractional values is arithmetic. Floating point numbers by design are imprecise. To achieve precise calculations, integers are required. One way of approaching this problem is to think of currency in its lowest unit. For example, for US currency this is one cent. In Team Fortress 2, this is one weapon.
+Fractional currencies pose arithmetic challenges due to the inherent imprecision of floating-point numbers. A solution is to handle currency in its smallest unit (e.g., cents for US currency, or weapons in Team Fortress 2), stored as integers. This allows precise calculations without cumbersome conversions, ensuring predictable outcomes. Additionally, this crate offers a container for floating-point currencies when needed.
 
-By storing the metal value as an integer we can accurately add currencies together without needing odd conversions each time an operation needs to be performed.
+## Installation
+
+### Cargo.toml
+```
+tf2-price = "0.12.0"
+```
 
 ## Usage
 
@@ -29,6 +34,18 @@ assert_eq!(
 );
 assert_eq!(
     "5 keys, 1.33 ref".parse::<Currencies>().unwrap(),
+    currencies,
+);
+
+// Key price stored as weapons.
+let key_price_weapons = metal!(50);
+// Conversion to a single total.
+let total = currencies.to_weapons(key_price_weapons);
+
+assert_eq!(total, 924);
+assert_eq!(
+    // Convert total back into keys + weapons.
+    Currencies::from_weapons(total, key_price_weapons),
     currencies,
 );
 ```
@@ -89,7 +106,7 @@ assert_eq!(currencies.checked_mul(Currency::MAX), None);
 
 ### Floating Point Precision
 
-Since responses usually contain floating point numbers, we also need a way to store these values. It is recommended to use this only as a container for converting into `Currencies` and not for calculations and comparisons. This crate offers utilities for handling the complicated task of converting floats into integers depending on use-case (saturating, checked).
+To store original floating point numbers from responses, use `FloatCurrencies` as a container. However, it's advised not to use it for calculations or comparisons. This crate provides utilities for converting floats to integers based on use-case (saturating, checked).
 
 ```rust
 use tf2_price::{Currencies, FloatCurrencies, Currency};
@@ -104,9 +121,13 @@ let float_currencies = FloatCurrencies {
 // Converting to Currencies (checks for safe conversion).
 let currencies = Currencies::try_from(float_currencies).unwrap();
 
-assert_eq!(currencies.keys, 1);
-// 1.33 refined.
-assert_eq!(currencies.weapons, 24);
+assert_eq!(
+    currencies,
+    Currencies {
+        keys: 1,
+        metal: 24,
+    },
+);
 
 // Fails if the key value holds a fractional number.
 assert!(Currencies::try_from(FloatCurrencies {
