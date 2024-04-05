@@ -67,7 +67,7 @@ pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
 #[macro_export]
 macro_rules! metal {
     ( $a:expr ) => {
-        ($a * 18.0_f32).round() as i64
+        ($a as f32 * 18.0_f32).round() as i64
     }
 }
 
@@ -76,7 +76,7 @@ macro_rules! metal {
 #[macro_export]
 macro_rules! metal {
     ( $a:expr ) => {
-        ($a * 18.00_f32).round() as i32
+        ($a as f32 * 18.0_f32).round() as i32
     }
 }
 

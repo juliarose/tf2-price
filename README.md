@@ -2,7 +2,7 @@
 
 Utilities for Team Fortress 2 item pricing.
 
-Fractional currencies pose arithmetic challenges due to the inherent imprecision of floating-point numbers. A solution is to handle currency in its smallest unit (e.g., cents for US currency, or weapons in Team Fortress 2), stored as integers. This allows precise calculations without [cumbersome conversions](https://gist.github.com/juliarose/cf4e246294bf8740c592c3ef1de2d71b), ensuring predictable outcomes. Additionally, this crate offers a container for floating-point currencies when needed.
+Fractional currencies pose arithmetic challenges due to the inherent imprecision of floating-point numbers. A solution is to handle currency in its smallest unit (e.g., cents for US currency, or weapons in Team Fortress 2), stored as integers. This allows precise calculations without [cumbersome conversions](https://gist.github.com/juliarose/f2b5aaa2c71b90d536668e0143d16936), ensuring predictable outcomes. Additionally, this crate offers a container for floating-point currencies when needed.
 
 In release builds in Rust, integers pose the risk of [overflowing](https://en.wikipedia.org/wiki/Integer_overflow). While, this behaviour is [not considered unsafe](https://doc.rust-lang.org/reference/behavior-not-considered-unsafe.html#integer-overflow), it is problematic. This crate uses [saturating arithmetic](https://en.wikipedia.org/wiki/Saturation_arithmetic) for integer arithmetic and also provides methods for checking for overflow.
 
@@ -15,7 +15,7 @@ tf2-price = "0.12.0"
 
 ## Usage
 
-### Basic usage
+### Basic Usage
 ```rust
 use tf2_price::{Currencies, metal, ONE_REF, ONE_REC};
 
@@ -44,7 +44,7 @@ let key_price_weapons = metal!(50);
 // Conversion to a single total.
 let total = currencies.to_weapons(key_price_weapons);
 
-assert_eq!(total, 924);
+assert_eq!(total, 4524);
 assert_eq!(
     // Convert total back into keys + weapons.
     Currencies::from_weapons(total, key_price_weapons),
