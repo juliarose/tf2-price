@@ -7,10 +7,16 @@
 //! ```
 //! use tf2_price::{Currencies, ONE_REF, scrap};
 //! 
-//! let mut currencies = Currencies { keys: 5, weapons: scrap!(5) };
+//! let mut currencies = Currencies {
+//!     keys: 5,
+//!     weapons: scrap!(5),
+//! };
 //! 
 //! // add another currencies
-//! currencies += Currencies { keys: 2, weapons: 0 };
+//! currencies += Currencies {
+//!     keys: 2,
+//!     weapons: 0,
+//! };
 //! assert_eq!(currencies, Currencies { keys: 7, weapons: 10 });
 //! 
 //! // add keys
@@ -24,21 +30,20 @@
 //! 
 //! ## Conventions
 //! 
-//! With the exception of [`FloatCurrencies`], all `metal` values are represented as the number of 
-//! weapons. For 1 refined, this would be 18. The macros and constant values should be used to 
-//! avoid any errors in accounting. For example: if adding one scrap, add `ONE_SCRAP` to the 
-//! `metal` field. `scrap!(1)` will also create the same value. The `metal!` macro can be used to 
-//! convert floating point refined values into weapons e.g. `metal!(1.0)` will convert to 18.
+//! Metal values are represented as weapons, the smallest unit of currency. To ensure accurate 
+//! accounting, utilize the provided macros and constants. For instance, by using the `ONE_SCRAP` 
+//! constant or the `scrap!(1)` macro, one scrap will be added to the weapons field. To convert 
+//! floating point refined values into weapons, use the `metal!` macro e.g. `metal!(1.33)` 
+//! converts into 24 weapons.
 //! 
 //! In addition, all key values in methods are represented as values in weapons.
 //! 
-//! Arithmatic uses saturating operations. Adding two currencies that both contain values of 
-//! [`i64::MAX`] will result in [`i64::MAX`] rather than rolling over. While values are stored as 
-//! 64-bit integers and usually won't overflow if you're using reasonable numbers, if you need to 
-//! check for overflows some checked methods are included.
+//! Arithmetic operations employ saturating operations, preventing overflow. Adding two currencies 
+//! each containing [i64::MAX] will yield [i64::MAX] instead of wrapping around. Although values 
+//! are stored as 64-bit integers and typically won't overflow with reasonable numbers, checked 
+//! methods are provided for overflow checking if needed.
 
 #![warn(missing_docs)]
-#[macro_use] extern crate impl_ops;
 
 pub mod error;
 

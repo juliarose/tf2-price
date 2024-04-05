@@ -5,23 +5,22 @@ use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL};
 use crate::{FloatCurrencies, Rounding};
 use std::fmt;
 use std::cmp::{Ord, Ordering};
-use std::ops::{self, AddAssign, SubAssign, MulAssign, DivAssign};
-use serde::{Serialize, Deserialize, Serializer, Deserializer};
-use serde::de::Error;
-use serde::ser::SerializeStruct;
+use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
+use auto_ops::impl_op_ex;
 
 /// For storing item currencies values.
-#[derive(Debug, Default, Serialize, Deserialize, Eq, PartialEq, Clone, Copy, Hash)]
-#[serde(remote = "Self")]
+#[derive(Debug, Default, Eq, PartialEq, Clone, Copy, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(remote = "Self"))]
 pub struct Currencies {
     /// Amount of keys.
-    #[serde(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     pub keys: Currency,
     /// Amount of metal expressed as weapons. It's recommended to use the `ONE_REF`, `ONE_REC`, 
     /// `ONE_SCRAP`, and `ONE_WEAPON` constants to perform arithmatic.
-    #[serde(default)]
-    #[serde(rename = "metal")]
-    #[serde(deserialize_with = "helpers::metal_deserializer")]
+    #[cfg_attr(feature = "serde", serde(default))]
+    #[cfg_attr(feature = "serde", serde(rename = "metal"))]
+    #[cfg_attr(feature = "serde", serde(deserialize_with = "helpers::metal_deserializer"))]
     pub weapons: Currency,
 }
 
@@ -589,11 +588,14 @@ impl fmt::Display for Currencies {
     }
 }
 
-impl<'de> Deserialize<'de> for Currencies {
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Currencies {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de>,
+        D: serde::Deserializer<'de>,
     {
+        use serde::de::Error;
+        
         let currencies = Self::deserialize(deserializer)?;
         
         if currencies.keys == 0 && currencies.weapons == 0 {
@@ -604,11 +606,14 @@ impl<'de> Deserialize<'de> for Currencies {
     }
 }
 
-impl Serialize for Currencies {
+#[cfg(feature = "serde")]
+impl serde::Serialize for Currencies {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
+        S: serde::Serializer,
     {
+        use serde::ser::SerializeStruct;
+        
         let mut currencies = serializer.serialize_struct("Currencies", 2)?;
         
         if self.keys == 0 {
@@ -637,8 +642,6 @@ impl Serialize for Currencies {
 mod tests {
     use super::*;
     use crate::{refined, scrap};
-    use assert_json_diff::assert_json_eq;
-    use serde_json::{self, json, Value};
 
     #[test]
     fn currencies_equal() {
@@ -1155,106 +1158,6 @@ mod tests {
     }
     
     #[test]
-    fn correct_json_format() {
-        let currencies = Currencies {
-            keys: 1,
-            weapons: refined!(23) + scrap!(4),
-        };
-        let currencies_json = serde_json::to_string(&currencies).unwrap();
-        let actual: Value = serde_json::from_str(&currencies_json).unwrap();
-        let expected: Value = json!({
-            "keys": 1,
-            "metal": 23.44
-        });
-        
-        assert_json_eq!(actual, expected);
-    }
-    
-    #[test]
-    fn deserializes_currencies() {
-        let currencies: Currencies = serde_json::from_str(r#"{"keys":1,"metal": 23.44}"#).unwrap();
-        
-        assert_eq!(
-            currencies,
-            Currencies {
-                keys: 1,
-                weapons: refined!(23) + scrap!(4),
-            },
-        );
-    }
-    
-    #[test]
-    fn deserializes_currencies_with_no_keys() {
-        let currencies: Currencies = serde_json::from_str(r#"{"metal": 23.44}"#).unwrap();
-        
-        assert_eq!(
-            currencies,
-            Currencies {
-                keys: 0,
-                weapons: refined!(23) + scrap!(4),
-            },
-        );
-    }
-    
-    #[test]
-    fn deserializes_currencies_with_no_metal() {
-        let currencies: Currencies = serde_json::from_str(r#"{"keys":5}"#).unwrap();
-        
-        assert_eq!(
-            currencies,
-            Currencies {
-                keys: 5,
-                weapons: 0,
-            },
-        );
-    }
-    
-    #[test]
-    fn deserializes_currencies_with_weapon_value() {
-        let currencies: Currencies = serde_json::from_str(r#"{"keys":1,"metal": 23.16}"#).unwrap();
-        
-        assert_eq!(
-            currencies,
-            Currencies {
-                keys: 1,
-                weapons: refined!(23) + 3,
-            },
-        );
-    }
-    
-    #[test]
-    fn serializes_currencies() {
-        let currencies = Currencies {
-            keys: 1,
-            weapons: refined!(23) + scrap!(4)
-        };
-        let currencies_json = serde_json::to_string(&currencies).unwrap();
-        let actual: Value = serde_json::from_str(&currencies_json).unwrap();
-        let expected: Value = json!({
-            "keys": 1,
-            "metal": 23.44
-        });
-        
-        assert_json_eq!(actual, expected);
-    }
-    
-    #[test]
-    fn serializes_currencies_whole_numbers_have_no_decimals() {
-        let currencies = Currencies {
-            keys: 1,
-            weapons: refined!(23)
-        };
-        let currencies_json = serde_json::to_string(&currencies).unwrap();
-        let actual: Value = serde_json::from_str(&currencies_json).unwrap();
-        let expected: Value = json!({
-            "keys": 1,
-            "metal": 23
-        });
-        
-        assert_json_eq!(actual, expected);
-    }
-    
-    #[test]
     fn greater_than() {
         let a = Currencies { keys: 1, weapons: 5 };
         let b = Currencies { keys: 0, weapons: 10 };
@@ -1416,5 +1319,150 @@ mod tests {
             keys: Currency::MAX as f32 * 2.0,
             metal: 1.33,
         }).is_err());
+    }
+    
+    #[test]
+    fn can_hash() {
+        let mut hash = std::collections::HashMap::<Currencies, i32>::new();
+        
+        hash.insert(Currencies {
+            keys: 1,
+            weapons: 1,
+        }, 1);
+        hash.insert(Currencies {
+            keys: 1,
+            weapons: 2,
+        }, 1);
+        
+        if let Some(value) = hash.get_mut(&Currencies {
+            keys: 1,
+            weapons: 1,
+        }) {
+            *value += 1;
+        }
+        
+        assert_eq!(
+            hash.get(&Currencies {
+                keys: 1,
+                weapons: 1,
+            }),
+            Some(&2),
+        );
+        assert_eq!(
+            hash.get(&Currencies {
+                keys: 1,
+                weapons: 2,
+            }),
+            Some(&1),
+        );
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg(test)]
+mod tests_serde {
+    use super::*;
+    use crate::{refined, scrap};
+    use serde_json::{self, json, Value};
+    use assert_json_diff::assert_json_eq;
+    
+    #[test]
+    fn correct_json_format() {
+        let currencies = Currencies {
+            keys: 1,
+            weapons: refined!(23) + scrap!(4),
+        };
+        let currencies_json = serde_json::to_string(&currencies).unwrap();
+        let actual: Value = serde_json::from_str(&currencies_json).unwrap();
+        let expected: Value = json!({
+            "keys": 1,
+            "metal": 23.44
+        });
+        
+        assert_json_eq!(actual, expected);
+    }
+    
+    #[test]
+    fn deserializes_currencies() {
+        let currencies: Currencies = serde_json::from_str(r#"{"keys":1,"metal": 23.44}"#).unwrap();
+        
+        assert_eq!(
+            currencies,
+            Currencies {
+                keys: 1,
+                weapons: refined!(23) + scrap!(4),
+            },
+        );
+    }
+    
+    #[test]
+    fn deserializes_currencies_with_no_keys() {
+        let currencies: Currencies = serde_json::from_str(r#"{"metal": 23.44}"#).unwrap();
+        
+        assert_eq!(
+            currencies,
+            Currencies {
+                keys: 0,
+                weapons: refined!(23) + scrap!(4),
+            },
+        );
+    }
+    
+    #[test]
+    fn deserializes_currencies_with_no_metal() {
+        let currencies: Currencies = serde_json::from_str(r#"{"keys":5}"#).unwrap();
+        
+        assert_eq!(
+            currencies,
+            Currencies {
+                keys: 5,
+                weapons: 0,
+            },
+        );
+    }
+    
+    #[test]
+    fn deserializes_currencies_with_weapon_value() {
+        let currencies: Currencies = serde_json::from_str(r#"{"keys":1,"metal": 23.16}"#).unwrap();
+        
+        assert_eq!(
+            currencies,
+            Currencies {
+                keys: 1,
+                weapons: refined!(23) + 3,
+            },
+        );
+    }
+    
+    #[test]
+    fn serializes_currencies() {
+        let currencies = Currencies {
+            keys: 1,
+            weapons: refined!(23) + scrap!(4)
+        };
+        let currencies_json = serde_json::to_string(&currencies).unwrap();
+        let actual: Value = serde_json::from_str(&currencies_json).unwrap();
+        let expected: Value = json!({
+            "keys": 1,
+            "metal": 23.44
+        });
+        
+        assert_json_eq!(actual, expected);
+    }
+    
+    #[test]
+    fn serializes_currencies_whole_numbers_have_no_decimals() {
+        let currencies = Currencies {
+            keys: 1,
+            weapons: refined!(23)
+        };
+        let currencies_json = serde_json::to_string(&currencies).unwrap();
+        let actual: Value = serde_json::from_str(&currencies_json).unwrap();
+        let expected: Value = json!({
+            "keys": 1,
+            "metal": 23
+        });
+        
+        assert_json_eq!(actual, expected);
     }
 }

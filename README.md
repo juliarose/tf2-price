@@ -8,7 +8,12 @@ In release builds in Rust, integers pose the risk of [overflowing](https://en.wi
 
 ## Installation
 
-### Cargo.toml
+### With Serde
+```
+tf2-price = { version = "0.12.0", features = ["serde"] }
+```
+
+### Without Serde
 ```
 tf2-price = "0.12.0"
 ```
@@ -44,6 +49,8 @@ let key_price_weapons = metal!(50);
 // Conversion to a single total.
 let total = currencies.to_weapons(key_price_weapons);
 
+// 5 (keys) * 18 (one ref) * 50 (key price) = 4500
+// 4500 + 24 (weapons) = 4524
 assert_eq!(total, 4524);
 assert_eq!(
     // Convert total back into keys + weapons.

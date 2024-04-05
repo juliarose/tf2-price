@@ -5,10 +5,8 @@ use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL};
 use crate::Currencies;
 use std::fmt;
 use std::cmp::{Ord, Ordering};
-use std::ops::{self, AddAssign, SubAssign, MulAssign, DivAssign};
-use serde::{Serialize, Deserialize, Serializer, Deserializer};
-use serde::de::Error;
-use serde::ser::SerializeStruct;
+use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
+use auto_ops::impl_op_ex;
 
 /// For storing floating point values of currencies. This is useful for retaining the original 
 /// values from responses. Convert to [`Currencies`] to perform precise arithmetical operations or 
@@ -32,16 +30,17 @@ use serde::ser::SerializeStruct;
 /// 
 /// assert_eq!(currencies.weapons, metal!(2.33));
 /// ```
-#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Copy)]
-#[serde(remote = "Self")]
+#[derive(Debug, Default, PartialEq, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(remote = "Self"))]
 pub struct FloatCurrencies {
     /// Amount of keys.
-    #[serde(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     pub keys: f32,
     /// Amount of metal expressed as a float e.g. "1.33 ref". Unlike [`Currencies`], this 
     /// **is not** represented as weapons. This is meant to retain the original values from 
     /// responses.
-    #[serde(default)]
+    #[cfg_attr(feature = "serde", serde(default))]
     pub metal: f32,
 }
 
@@ -467,11 +466,14 @@ impl fmt::Display for FloatCurrencies {
     }
 }
 
-impl<'de> Deserialize<'de> for FloatCurrencies {
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for FloatCurrencies {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de>,
+        D: serde::Deserializer<'de>,
     {
+        use serde::de::Error;
+        
         let currencies = Self::deserialize(deserializer)?;
         
         if currencies.keys.is_nan() {
@@ -490,11 +492,14 @@ impl<'de> Deserialize<'de> for FloatCurrencies {
     }
 }
 
-impl Serialize for FloatCurrencies {
+#[cfg(feature = "serde")]
+impl serde::Serialize for FloatCurrencies {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
+        S: serde::Serializer,
     {
+        use serde::ser::SerializeStruct;
+        
         let mut currencies = serializer.serialize_struct("FloatCurrencies", 2)?;
         
         if self.keys == 0.0 {
@@ -521,8 +526,6 @@ impl Serialize for FloatCurrencies {
 mod tests {
     use super::*;
     use crate::{refined, scrap};
-    use assert_json_diff::assert_json_eq;
-    use serde_json::{self, json, Value};
     
     #[test]
     fn to_weapons_correct() {
@@ -785,6 +788,72 @@ mod tests {
     }
     
     #[test]
+    fn greater_than() {
+        let a = FloatCurrencies { keys: 1.0, metal: 5.0 };
+        let b = FloatCurrencies { keys: 0.0, metal: 10.0 };
+        
+        assert!(a > b);
+    }
+    
+    #[test]
+    fn less_than() {
+        let a = FloatCurrencies { keys: 0.0, metal: 1.0 };
+        let b = FloatCurrencies { keys: 0.0, metal: 4.0 };
+        
+        assert!(a < b);
+    }
+    
+    #[test]
+    fn sorts() {
+        let mut currencies = vec![
+            FloatCurrencies { keys: 2.0, metal: 4.0 },
+            FloatCurrencies { keys: 0.0, metal: 2.0 },
+            FloatCurrencies { keys: 10.0, metal: 4.0 },
+        ];
+        
+        // lowest to highest
+        currencies.sort();
+        
+        assert_eq!(
+            *currencies.iter().rev().next().unwrap(),
+            FloatCurrencies {
+                keys: 10.0,
+                metal: 4.0,
+            },
+        );
+    }
+    
+    #[test]
+    fn checked_to_metal() {
+        assert_eq!(
+            FloatCurrencies {
+                keys: Currency::MAX as f32,
+                metal: 4.0,
+            }.checked_to_weapons(Currency::MAX),
+            None,
+        );
+    }
+    
+    #[test]
+    fn checked_to_metal_correct_value() {
+        assert_eq!(
+            FloatCurrencies {
+                keys: 10.0,
+                metal: 5.0,
+            }.checked_to_weapons(10),
+            Some(100 + refined!(5)),
+        );
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg(test)]
+mod tests_serde {
+    use super::*;
+    use assert_json_diff::assert_json_eq;
+    use serde_json::{self, json, Value};
+    
+    #[test]
     fn deserializes_currencies() {
         let currencies: FloatCurrencies = serde_json::from_str(
             r#"{"keys":1,"metal": 23.44}"#
@@ -844,63 +913,5 @@ mod tests {
         });
         
         assert_json_eq!(actual, expected);
-    }
-    
-    #[test]
-    fn greater_than() {
-        let a = FloatCurrencies { keys: 1.0, metal: 5.0 };
-        let b = FloatCurrencies { keys: 0.0, metal: 10.0 };
-        
-        assert!(a > b);
-    }
-    
-    #[test]
-    fn less_than() {
-        let a = FloatCurrencies { keys: 0.0, metal: 1.0 };
-        let b = FloatCurrencies { keys: 0.0, metal: 4.0 };
-        
-        assert!(a < b);
-    }
-    
-    #[test]
-    fn sorts() {
-        let mut currencies = vec![
-            FloatCurrencies { keys: 2.0, metal: 4.0 },
-            FloatCurrencies { keys: 0.0, metal: 2.0 },
-            FloatCurrencies { keys: 10.0, metal: 4.0 },
-        ];
-        
-        // lowest to highest
-        currencies.sort();
-        
-        assert_eq!(
-            *currencies.iter().rev().next().unwrap(),
-            FloatCurrencies {
-                keys: 10.0,
-                metal: 4.0,
-            },
-        );
-    }
-    
-    #[test]
-    fn checked_to_metal() {
-        assert_eq!(
-            FloatCurrencies {
-                keys: Currency::MAX as f32,
-                metal: 4.0,
-            }.checked_to_weapons(Currency::MAX),
-            None,
-        );
-    }
-    
-    #[test]
-    fn checked_to_metal_correct_value() {
-        assert_eq!(
-            FloatCurrencies {
-                keys: 10.0,
-                metal: 5.0,
-            }.checked_to_weapons(10),
-            Some(100 + refined!(5)),
-        );
     }
 }

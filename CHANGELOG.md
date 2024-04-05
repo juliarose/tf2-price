@@ -9,6 +9,8 @@
 - Printing `Currencies` and `FloatCurrencies` now prints `"0 keys, 0 ref"` when currencies are empty.
 - `TryFrom<FloatCurrencies>` for `Currencies` is strict now.
 - `checked_add` and `checked_sub` now take owned values.
+- `impl_ops` dependency to `auto_ops`.
+- `serde` dependency is now optional.
 
 ### Fixed
 - Previously, parsing strings with empty currencies e.g. "0 keys" would result in an error. This is no longer the case.

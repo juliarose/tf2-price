@@ -2,15 +2,16 @@ use crate::helpers;
 use crate::types::Currency;
 use std::fmt;
 use std::cmp::{Ord, Ordering};
-use std::ops::{self, AddAssign, SubAssign, MulAssign, DivAssign};
-use serde::{Serialize, Deserialize};
+use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
+use auto_ops::impl_op_ex;
 
 /// For storing cash values.
-#[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Copy, Hash)]
+#[derive(Debug, Default, PartialEq, Clone, Copy, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct USDCurrencies {
     /// Cash value in cents.
-    #[serde(default)]
-    #[serde(with = "helpers::cents")]
+    #[cfg_attr(feature = "serde", serde(default))]
+    #[cfg_attr(feature = "serde", serde(with = "helpers::cents"))]
     pub usd: Currency,
 }
 
@@ -205,8 +206,6 @@ impl DivAssign<f32> for USDCurrencies {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::{self, json, Value};
-    use assert_json_diff::assert_json_eq;
 
     #[test]
     fn currencies_equal() {
@@ -389,8 +388,17 @@ mod tests {
         
         assert_eq!(currencies.to_string(), "$1,234.56");
     }
+}
+
+#[cfg(feature = "serde")]
+#[cfg(test)]
+mod tests_serde {
+    use super::*;
+    use serde_json::{self, json, Value};
+    use assert_json_diff::assert_json_eq;
     
     #[test]
+    #[cfg(feature = "serde")]
     fn correct_json_format() {
         let currencies = USDCurrencies {
             usd: 123,
@@ -405,6 +413,7 @@ mod tests {
     }
     
     #[test]
+    #[cfg(feature = "serde")]
     fn deserializes_currencies() {
         let currencies: USDCurrencies = serde_json::from_str(r#"{"usd":1234.56}"#).unwrap();
         

@@ -2,7 +2,6 @@ use crate::error::ParseError;
 use crate::types::Currency;
 use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, ONE_REF, ONE_REF_FLOAT};
 use crate::Rounding;
-use serde::{Deserialize, Deserializer};
 
 /// Converts currencies to a metal value using the given key price (represented as weapons). This
 /// method is saturating.
@@ -26,10 +25,13 @@ pub fn checked_to_metal(
 }
 
 /// Deserializes float weapon values as weapons.
+#[cfg(feature = "serde")]
 pub fn metal_deserializer<'de, D>(deserializer: D) -> Result<Currency, D::Error>
 where
-    D: Deserializer<'de>
+    D: serde::Deserializer<'de>
 {
+    use serde::Deserialize;
+    
     // get the metal value as a float e.g. 2.55 ref
     let metal_refined_float = f32::deserialize(deserializer)?;
     // will fit it into the nearest weapon value
@@ -39,6 +41,7 @@ where
 }
 
 /// Serialzies and deserializes cents.
+#[cfg(feature = "serde")]
 pub mod cents {
     use serde::{Serializer, Deserialize, Deserializer};
     use crate::types::Currency;
