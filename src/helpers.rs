@@ -68,7 +68,11 @@ pub fn cents_to_dollars(cents: Currency) -> f32 {
 }
 
 /// Pluralizes a value using an integer as the test.
-pub fn pluralize<'a>(amount: Currency, singular: &'a str, plural: &'a str) -> &'a str {
+pub fn pluralize<'a>(
+    amount: Currency,
+    singular: &'a str,
+    plural: &'a str,
+) -> &'a str {
     if amount == 1 {
         singular
     } else {
@@ -77,7 +81,11 @@ pub fn pluralize<'a>(amount: Currency, singular: &'a str, plural: &'a str) -> &'
 }
 
 /// Pluralizes a value using a float as the test.
-pub fn pluralize_float<'a>(amount: f32, singular: &'a str, plural: &'a str) -> &'a str {
+pub fn pluralize_float<'a>(
+    amount: f32,
+    singular: &'a str,
+    plural: &'a str,
+) -> &'a str {
     if amount == 1.0 {
         singular
     } else {
@@ -91,7 +99,7 @@ pub fn print_float(amount: f32) -> String {
     if amount.fract() == 0.0 {
         (amount.round() as Currency).to_string()
     } else {
-        format!("{:.2}", amount)
+        format!("{amount:.2}")
     }
 }
 

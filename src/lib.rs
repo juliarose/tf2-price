@@ -1,5 +1,3 @@
-#![warn(missing_docs)]
-
 //! # tf2-price
 //! 
 //! Utilities for Team Fortress 2 item pricing.
@@ -57,7 +55,11 @@ pub use currencies::Currencies;
 pub use float_currencies::FloatCurrencies;
 pub use types::Currency;
 pub use rounding::Rounding;
-pub use helpers::{get_weapons_from_metal_float, checked_get_weapons_from_metal_float, get_metal_float_from_weapons};
+pub use helpers::{
+    get_weapons_from_metal_float,
+    checked_get_weapons_from_metal_float,
+    get_metal_float_from_weapons,
+};
 pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
 
 #[cfg(not(feature = "b32"))]
@@ -65,9 +67,7 @@ pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
 #[macro_export]
 macro_rules! metal {
     ( $a:expr ) => {
-        {
-            ($a * 18.0_f32).round() as i64
-        }
+        ($a * 18.0_f32).round() as i64
     }
 }
 
@@ -76,9 +76,7 @@ macro_rules! metal {
 #[macro_export]
 macro_rules! metal {
     ( $a:expr ) => {
-        {
-            ($a * 18.00_f32).round() as i32
-        }
+        ($a * 18.00_f32).round() as i32
     }
 }
 
@@ -86,9 +84,7 @@ macro_rules! metal {
 #[macro_export]
 macro_rules! refined {
     ( $a:expr ) => {
-        {
-            $a * 18
-        }
+        $a * 18
     }
 }
 
@@ -96,9 +92,7 @@ macro_rules! refined {
 #[macro_export]
 macro_rules! reclaimed {
     ( $a:expr ) => {
-        {
-            $a * 6
-        }
+        $a * 6
     }
 }
 
@@ -106,9 +100,7 @@ macro_rules! reclaimed {
 #[macro_export]
 macro_rules! scrap {
     ( $a:expr ) => {
-        {
-            $a * 2
-        }
+        $a * 2
     }
 }
 

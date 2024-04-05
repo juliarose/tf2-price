@@ -2,9 +2,33 @@
 
 Utilities for Team Fortress 2 item pricing.
 
-## Usage
+A common problem with currencies which contain fractional values is arithmetic. Floating point numbers by design are imprecise. To achieve precise calculations, integers are required. One way of approaching this problem is to think of currency in its lowest unit. For example, for US currency this is one cent. In Team Fortress 2, this is one weapon.
 
-Due to issues with floating point precision, it's [common practice to do arithmetic on fixed measurements](https://en.wikipedia.org/wiki/Fixed-point_arithmetic). One way of approaching this problem is to think of currency in its lowest unit. For example, for US currency this is one cent. In Team Fortress 2, this is one weapon.
+By storing the metal value as an integer we can accurately add currencies together without needing odd conversions each time an operation needs to be performed.
+
+```javascript
+const ONE_REF = 18;
+
+function toScrap(metal) {
+    return metal * ONE_REF;
+}
+
+function fromScrap(metal) {
+    return metal / ONE_REF;
+}
+
+function reduceMetal(...metal, accum) {
+    return fromScrap(metal.map(toScrap).reduce(accum));
+}
+
+let metal = 1.33;
+
+metal = reduceMetal(1.33, 0.11);
+
+console.log(metal);
+```
+
+## Usage
 
 ### Basic usage
 ```rust
