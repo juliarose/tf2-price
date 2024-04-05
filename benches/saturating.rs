@@ -4,8 +4,8 @@ use tf2_price::{Currencies, Currency};
 fn criterion_benchmark(c: &mut Criterion) {
     let left: Currency = 100;
     let right: Currency = 400;
-    let left_currencies = Currencies { keys: 1, metal: 10 };
-    let right_currencies = Currencies { keys: 1, metal: 10 };
+    let left_currencies = Currencies { keys: 1, weapons: 10 };
+    let right_currencies = Currencies { keys: 1, weapons: 10 };
     
     c.bench_function("adds two numbers", |b| b.iter(||
         left + right

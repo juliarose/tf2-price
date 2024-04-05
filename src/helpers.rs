@@ -128,13 +128,13 @@ pub fn thousands(string: String) -> String {
     output
 }
 
-/// Converts a metal value (represented as weapons) into its float value.
+/// Converts a value in weapons into its float value.
 ///
 /// # Examples
 /// ```
-/// assert_eq!(tf2_price::get_metal_float(6), 0.33);
+/// assert_eq!(tf2_price::get_metal_float_from_weapons(6), 0.33);
 /// ```
-pub fn get_metal_float(value: Currency) -> f32 {
+pub fn get_metal_float_from_weapons(value: Currency) -> f32 {
     f32::trunc((value as f32 / ONE_REF_FLOAT) * 100.0) / 100.0
 }
 
@@ -142,10 +142,24 @@ pub fn get_metal_float(value: Currency) -> f32 {
 ///
 /// # Examples
 /// ```
-/// assert_eq!(tf2_price::get_metal_from_float(0.33), 6);
+/// assert_eq!(tf2_price::get_weapons_from_metal_float(0.33), 6);
 /// ```
-pub fn get_metal_from_float(value: f32) -> Currency {
+pub fn get_weapons_from_metal_float(value: f32) -> Currency {
     (value * ONE_REF_FLOAT).round() as Currency
+}
+
+/// Converts a float value into a metal value.
+/// 
+/// Checks for safe conversion.
+///
+/// # Examples
+/// ```
+/// assert_eq!(tf2_price::checked_get_weapons_from_metal_float(0.33), Some(6));
+/// ```
+pub fn checked_get_weapons_from_metal_float(value: f32) -> Option<Currency> {
+    let metal = (value * ONE_REF_FLOAT).round();
+    
+    strict_f32_to_currency(metal)
 }
 
 /// Converts an `f32` into a `Currency` safely.
@@ -166,22 +180,8 @@ pub fn strict_f32_to_currency(value: f32) -> Option<Currency> {
     if value < Currency::MIN as f32 || value > Currency::MAX as f32 {
         return None;
     }
-
-    Some(value.trunc() as Currency)
-}
-
-/// Converts a float value into a metal value.
-/// 
-/// Checks for safe conversion.
-///
-/// # Examples
-/// ```
-/// assert_eq!(tf2_price::checked_get_metal_from_float(0.33), Some(6));
-/// ```
-pub fn checked_get_metal_from_float(value: f32) -> Option<Currency> {
-    let metal = (value * ONE_REF_FLOAT).round();
     
-    strict_f32_to_currency(metal)
+    Some(value.trunc() as Currency)
 }
 
 /// Parses currencies from a string.
@@ -230,7 +230,7 @@ pub fn parse_currency_from_string(
         .map(|s| s.parse::<f32>())
         .transpose()?
         // Convert the metal value to a weapon value.
-        .map(get_metal_from_float)
+        .map(get_weapons_from_metal_float)
         .unwrap_or_default();
     
     Ok((keys, metal))
@@ -331,11 +331,11 @@ mod tests {
     
     #[test]
     fn converts_from_metal_float() {
-        assert_eq!(scrap!(3), get_metal_from_float(0.33));
+        assert_eq!(scrap!(3), get_weapons_from_metal_float(0.33));
     }
     
     #[test]
     fn converts_to_metal_float() {
-        assert_eq!(0.33, get_metal_float(6));
+        assert_eq!(0.33, get_metal_float_from_weapons(6));
     }
 }

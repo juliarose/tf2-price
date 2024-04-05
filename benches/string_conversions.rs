@@ -5,11 +5,11 @@ fn criterion_benchmark(c: &mut Criterion) {
     let currencies_str_keys_and_ref = "12 keys, 23.33 ref";
     let currencies_keys_and_ref = Currencies {
         keys: 12, 
-        metal: refined!(23) + scrap!(3),
+        weapons: refined!(23) + scrap!(3),
     };
     let curencies_keys = Currencies {
         keys: 12,
-        metal: 0,
+        weapons: 0,
     };
     
     c.bench_function("from string keys and ref", |b| b.iter(||

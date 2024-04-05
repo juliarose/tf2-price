@@ -4,11 +4,13 @@
 
 ### Changed
 - **MAJOR CHANGE:** Renamed `ListingCurrencies` to `FloatCurrencies`. Both `keys` and `metal` fields are now defined as `f32`. This makes more sense as this is generally used as a container type for holding original values from responses. `FloatCurrencies` should always be converted to `Currencies` in order to perform arithmetic.
-- Some method names to fit with above change.
+- **MAJOR CHANGE:** Renamed `metal` to `weapons` for `Currencies`. Now many values which are in weapons are suffixed with `weapons` to be concise what the value is measured in.
+- Changed method names to fit with the above changes.
+- Changed helper method names to fit with the above changes.
 - "from" methods that also take in a key price are now suffixed with "with".
 - Printing `Currencies` and `FloatCurrencies` now prints `"0 keys, 0 ref"` when currencies are empty.
 - `TryFrom<FloatCurrencies>` for `Currencies` is strict now.
-- `checked_add` and `checked_sub` now require owned values.
+- `checked_add` and `checked_sub` now take owned values.
 
 ### Added
 - `checked_get_metal_from_float` helper method.

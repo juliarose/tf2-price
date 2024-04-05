@@ -9,19 +9,19 @@
 //! ```
 //! use tf2_price::{Currencies, ONE_REF, scrap};
 //! 
-//! let mut currencies = Currencies { keys: 5, metal: scrap!(5) };
+//! let mut currencies = Currencies { keys: 5, weapons: scrap!(5) };
 //! 
 //! // add another currencies
-//! currencies += Currencies { keys: 2, metal: 0 };
-//! assert_eq!(currencies, Currencies { keys: 7, metal: 10 });
+//! currencies += Currencies { keys: 2, weapons: 0 };
+//! assert_eq!(currencies, Currencies { keys: 7, weapons: 10 });
 //! 
 //! // add keys
 //! currencies.keys += 5;
-//! assert_eq!(currencies, Currencies { keys: 12, metal: 10 });
+//! assert_eq!(currencies, Currencies { keys: 12, weapons: 10 });
 //! 
 //! // add metal - this value is represented as the number of weapons
-//! currencies.metal += ONE_REF * 5;
-//! assert_eq!(currencies, Currencies { keys: 12, metal: 100 });
+//! currencies.weapons += ONE_REF * 5;
+//! assert_eq!(currencies, Currencies { keys: 12, weapons: 100 });
 //! ```
 //! 
 //! ## Conventions
@@ -38,6 +38,8 @@
 //! [`i64::MAX`] will result in [`i64::MAX`] rather than rolling over. While values are stored as 
 //! 64-bit integers and usually won't overflow if you're using reasonable numbers, if you need to 
 //! check for overflows some checked methods are included.
+
+#![warn(missing_docs)]
 #[macro_use] extern crate impl_ops;
 
 pub mod error;
@@ -55,7 +57,7 @@ pub use currencies::Currencies;
 pub use float_currencies::FloatCurrencies;
 pub use types::Currency;
 pub use rounding::Rounding;
-pub use helpers::{get_metal_from_float, checked_get_metal_from_float, get_metal_float};
+pub use helpers::{get_weapons_from_metal_float, checked_get_weapons_from_metal_float, get_metal_float_from_weapons};
 pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
 
 #[cfg(not(feature = "b32"))]

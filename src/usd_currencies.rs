@@ -9,7 +9,8 @@ use serde::{Serialize, Deserialize};
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Copy, Hash)]
 pub struct USDCurrencies {
     /// Cash value in cents.
-    #[serde(with = "helpers::cents", default)]
+    #[serde(default)]
+    #[serde(with = "helpers::cents")]
     pub usd: Currency,
 }
 
@@ -40,38 +41,52 @@ impl USDCurrencies {
         Self::default()
     }
     
-    /// Converts currencies to a key value using the given key price (represented as weapons).
-    pub fn to_keys(&self, usd_key_price: Currency) -> f32 {
-        self.usd as f32 / usd_key_price as f32
-    }
-    
-    /// Converts currencies to a metal value using the key prices.
+    /// Converts currencies to a key value using the given key price (represented as cents).
     /// 
     /// # Examples
     /// ```
-    /// assert_eq!(tf2_price::USDCurrencies { usd: 100 }.to_metal(100, 10), 10);
+    /// use tf2_price::USDCurrencies;
+    /// 
+    /// assert_eq!(USDCurrencies { usd: 100 }.to_keys(100), 1.0);
     /// ```
-    pub fn to_metal(
+    pub fn to_keys(
         &self,
-        usd_key_price: Currency,
-        metal_key_price: Currency,
-    ) -> Currency {
-        ((self.usd as f32 / usd_key_price as f32) * metal_key_price as f32).round() as Currency
+        key_price_cents: Currency,
+    ) -> f32 {
+        self.usd as f32 / key_price_cents as f32
     }
     
-    /// Checks if the currencies contain any value.
-    pub fn is_empty(&self) -> bool {
-        self.usd == 0
+    /// Converts currencies to a value in weapons using the key prices.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_price::USDCurrencies;
+    /// 
+    /// assert_eq!(USDCurrencies { usd: 100 }.to_weapons(100, 10), 10);
+    /// ```
+    pub fn to_weapons(
+        &self,
+        key_price_cents: Currency,
+        key_price_weapons: Currency,
+    ) -> Currency {
+        ((self.usd as f32 / key_price_cents as f32) * key_price_weapons as f32).round() as Currency
     }
     
     /// Converts to dollars.
     /// 
     /// # Examples
     /// ```
-    /// assert_eq!(tf2_price::USDCurrencies { usd: 99 }.to_dollars(), 0.99);
+    /// use tf2_price::USDCurrencies;
+    /// 
+    /// assert_eq!(USDCurrencies { usd: 99 }.to_dollars(), 0.99);
     /// ```
     pub fn to_dollars(&self) -> f32 {
         helpers::cents_to_dollars(self.usd)
+    }
+    
+    /// Checks if the currencies contain any value.
+    pub fn is_empty(&self) -> bool {
+        self.usd == 0
     }
     
     /// Checked integer multiplication. Computes `self * rhs` for each field, returning `None` if 
@@ -195,78 +210,102 @@ mod tests {
 
     #[test]
     fn currencies_equal() {
-        assert_eq!(USDCurrencies {
-            usd: 10,
-        }, USDCurrencies {
-            usd: 10,
-        });
+        assert_eq!(
+            USDCurrencies {
+                usd: 10,
+            },
+            USDCurrencies {
+                usd: 10,
+            },
+        );
     }
     
     #[test]
     fn currencies_not_equal() {
-        assert_ne!(USDCurrencies {
-            usd: 10,
-        }, USDCurrencies {
-            usd: 2,
-        });
+        assert_ne!(
+            USDCurrencies {
+                usd: 10,
+            },
+            USDCurrencies {
+                usd: 2,
+            },
+        );
     }
     
     #[test]
     fn currencies_added() {
-        assert_eq!(USDCurrencies {
-            usd: 10,
-        } + USDCurrencies {
-            usd: 5,
-        }, USDCurrencies {
-            usd: 15,
-        });
+        assert_eq!(
+            USDCurrencies {
+                usd: 10,
+            } + USDCurrencies {
+                usd: 5,
+            },
+            USDCurrencies {
+                usd: 15,
+            },
+        );
     }
     
     #[test]
     fn currencies_subtracted() {
-        assert_eq!(USDCurrencies {
-            usd: 10,
-        } - USDCurrencies {
-            usd: 5,
-        }, USDCurrencies {
-            usd: 5,
-        });
+        assert_eq!(
+            USDCurrencies {
+                usd: 10,
+            } - USDCurrencies {
+                usd: 5,
+            },
+            USDCurrencies {
+                usd: 5,
+            },
+        );
     }
     
     #[test]
     fn currencies_multiplied_by_metal() {
-        assert_eq!(USDCurrencies {
-            usd: 10,
-        } * 5, USDCurrencies {
-            usd: 50,
-        });
+        assert_eq!(
+            USDCurrencies {
+                usd: 10,
+            } * 5,
+            USDCurrencies {
+                usd: 50,
+            },
+        );
     }
     
     #[test]
     fn currencies_divided_by_f32() {
-        assert_eq!(USDCurrencies {
-            usd: 10,
-        } / 2.5, USDCurrencies {
-            usd: 4,
-        });
+        assert_eq!(
+            USDCurrencies {
+                usd: 10,
+            } / 2.5,
+            USDCurrencies {
+                usd: 4,
+            },
+        );
     }
     
     #[test]
     fn currencies_divided_by_metal() {
-        assert_eq!(USDCurrencies {
-            usd: 10,
-        } / 5, USDCurrencies {
-            usd: 2,
-        });
+        assert_eq!(
+            USDCurrencies {
+                usd: 10,
+            } / 5,
+            USDCurrencies {
+                usd: 2,
+            },
+        );
     }
     
     #[test]
     fn currencies_multiplied_by_f32() {
-        assert_eq!(USDCurrencies {
-            usd: 10,
-        } * 2.5, USDCurrencies {
-            usd: 25,
-        });
+        assert_eq!(
+            USDCurrencies {
+                usd: 10,
+            } * 2.5,
+            USDCurrencies {
+                usd: 25,
+            },
+        );
     }
     
     #[test]
@@ -277,9 +316,12 @@ mod tests {
         
         currencies *= 2;
         
-        assert_eq!(currencies, USDCurrencies {
-            usd: 20,
-        });
+        assert_eq!(
+            currencies,
+            USDCurrencies {
+                usd: 20,
+            },
+        );
     }
     
     #[test]
@@ -290,9 +332,12 @@ mod tests {
         
         currencies *= 2.5;
         
-        assert_eq!(currencies, USDCurrencies {
-            usd: 25,
-        });
+        assert_eq!(
+            currencies,
+            USDCurrencies {
+                usd: 25,
+            },
+        );
     }
     
     #[test]
@@ -303,9 +348,12 @@ mod tests {
         
         currencies /= 2;
         
-        assert_eq!(currencies, USDCurrencies {
-            usd: 5,
-        });
+        assert_eq!(
+            currencies,
+            USDCurrencies {
+                usd: 5,
+            },
+        );
     }
     
     #[test]
@@ -316,23 +364,30 @@ mod tests {
         
         currencies /= 2.5;
         
-        assert_eq!(currencies, USDCurrencies {
-            usd: 4,
-        });
+        assert_eq!(
+            currencies,
+            USDCurrencies {
+                usd: 4,
+            },
+        );
     }
     
     #[test]
     fn to_string() {
-        assert_eq!(USDCurrencies {
+        let currencies = USDCurrencies {
             usd: 320,
-        }.to_string(), "$3.20");
+        };
+        
+        assert_eq!(currencies.to_string(), "$3.20");
     }
     
     #[test]
     fn to_string_with_thosands() {
-        assert_eq!(USDCurrencies {
+        let currencies = USDCurrencies {
             usd: 123456,
-        }.to_string(), "$1,234.56");
+        };
+        
+        assert_eq!(currencies.to_string(), "$1,234.56");
     }
     
     #[test]
@@ -346,18 +401,18 @@ mod tests {
             "usd": 1.23
         });
         
-        assert_json_eq!(
-            actual,
-            expected,
-        );
+        assert_json_eq!(actual, expected);
     }
     
     #[test]
     fn deserializes_currencies() {
         let currencies: USDCurrencies = serde_json::from_str(r#"{"usd":1234.56}"#).unwrap();
         
-        assert_eq!(USDCurrencies {
-            usd: 123456,
-        }, currencies);
+        assert_eq!(
+            currencies,
+            USDCurrencies {
+                usd: 123456,
+            },
+        );
     }
 }

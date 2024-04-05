@@ -25,12 +25,12 @@ use serde::ser::SerializeStruct;
 /// let mut currencies = Currencies::try_from(float_currencies).unwrap();
 /// 
 /// assert_eq!(currencies.keys, 1);
-/// assert_eq!(currencies.metal, metal!(1.33));
+/// assert_eq!(currencies.weapons, metal!(1.33));
 /// 
 /// // For precision, arithmetical operations should be done with Currencies, not FloatCurrencies.
-/// currencies.metal += refined!(1);
+/// currencies.weapons += refined!(1);
 /// 
-/// assert_eq!(currencies.metal, metal!(2.33));
+/// assert_eq!(currencies.weapons, metal!(2.33));
 /// ```
 #[derive(Debug, Default, Serialize, Deserialize, PartialEq, Clone, Copy)]
 #[serde(remote = "Self")]
@@ -39,7 +39,7 @@ pub struct FloatCurrencies {
     #[serde(default)]
     pub keys: f32,
     /// Amount of metal expressed as a float e.g. "1.33 ref". Unlike [`Currencies`], this 
-    /// **is not** represented as weapons and is meant to retain the original values from 
+    /// **is not** represented as weapons. This is meant to retain the original values from 
     /// responses.
     #[serde(default)]
     pub metal: f32,
@@ -100,34 +100,64 @@ impl FloatCurrencies {
         self.keys.fract() != 0.0
     }
     
-    /// Converts currencies to a metal value using the given key price (represented as weapons).
-    /// Rounds float conversions and saturates at integer bounds.
+    /// Converts currencies to a value in weapons using the given key price (represented as 
+    /// weapons). Rounds float conversions.
+    /// 
+    /// This method is [saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic).
     /// 
     /// # Examples
     /// ```
     /// use tf2_price::{FloatCurrencies, refined};
     /// 
-    /// let key_price = refined!(50);
+    /// let key_price_weapons = refined!(50);
     /// let currencies = FloatCurrencies {
     ///     keys: 1.0,
     ///     metal: 5.0,
     /// };
     /// 
     /// // 1.0 * 50 refined + 5 refined = 55 refined
-    /// assert_eq!(currencies.to_metal(key_price), refined!(55));
+    /// assert_eq!(currencies.to_weapons(key_price_weapons), refined!(55));
     /// ```
-    pub fn to_metal(&self, key_price: Currency) -> Currency {
-        helpers::get_metal_from_float(self.metal).saturating_add((self.keys * key_price as f32).round() as Currency)
+    pub fn to_weapons(
+        &self,
+        key_price_weapons: Currency,
+    ) -> Currency {
+        let keys_weapons = (self.keys * key_price_weapons as f32).round() as Currency;
+        
+        helpers::get_weapons_from_metal_float(self.metal).saturating_add(keys_weapons)
     }
     
-    /// Converts currencies to a metal value using the given key price (represented as weapons).
-    /// In cases where the result overflows or underflows beyond the limit for [`Currency`], `None` 
-    /// is returned.
-    pub fn checked_to_metal(&self, key_price: Currency) -> Option<Currency> {
-        let keys_metal_float = (self.keys * key_price as f32).round();
-        let keys_metal = helpers::strict_f32_to_currency(keys_metal_float)?;
+    /// Converts currencies to a value in weapons using the given key price (represented as 
+    /// weapons).
+    /// 
+    /// Checks for safe conversion.
+    /// 
+    /// In cases where the result overflows or underflows beyond the limit for 
+    /// [`Currency`], `None` is returned. Currencies containing NaN or Infinity values will also
+    /// return `None`.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_price::{Currency, FloatCurrencies, refined};
+    /// 
+    /// let key_price_weapons = refined!(50);
+    /// 
+    /// assert_eq!(
+    ///     FloatCurrencies {
+    ///         keys: Currency::MAX as f32 + 1.0,
+    ///         metal: 0.0,
+    ///     }.checked_to_weapons(key_price_weapons),
+    ///     None,
+    /// );
+    /// ```
+    pub fn checked_to_weapons(
+        &self,
+        key_price_weapons: Currency,
+    ) -> Option<Currency> {
+        let keys_weapons_float = (self.keys * key_price_weapons as f32).round();
+        let keys_weapons = helpers::strict_f32_to_currency(keys_weapons_float)?;
         
-        helpers::checked_get_metal_from_float(self.metal)?.checked_add(keys_metal)
+        helpers::checked_get_weapons_from_metal_float(self.metal)?.checked_add(keys_weapons)
     }
     
     /// Checks if the currencies do not contain any value.
@@ -152,14 +182,23 @@ impl FloatCurrencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::Currencies;
+    /// use tf2_price::FloatCurrencies;
     /// 
-    /// let currencies = Currencies { keys: 100, metal: 30 };
+    /// let currencies = FloatCurrencies {
+    ///     keys: 100.0,
+    ///     metal: 30.0,
+    /// };
     /// 
     /// // We have at least 50 keys and 30 metal.
-    /// assert!(currencies.can_afford(&Currencies { keys: 50, metal: 30 }));
+    /// assert!(currencies.can_afford(&FloatCurrencies {
+    ///     keys: 50.0,
+    ///     metal: 30.0,
+    /// }));
     /// // Not enough metal - we can't afford this.
-    /// assert!(!currencies.can_afford(&Currencies { keys: 50, metal: 100 }));
+    /// assert!(!currencies.can_afford(&FloatCurrencies {
+    ///     keys: 50.0,
+    ///     metal: 100.0,
+    /// }));
     /// ```
     pub fn can_afford(&self, other: &Self) -> bool {
         self.keys >= other.keys && self.metal >= other.metal
@@ -170,8 +209,7 @@ impl PartialEq<Currencies> for FloatCurrencies {
     fn eq(&self, other: &Currencies) -> bool {
         self.keys.fract() == 0.0 &&
         self.keys == other.keys as f32 &&
-        self.metal.fract() == 0.0 &&
-        helpers::get_metal_from_float(self.metal) == other.metal
+        helpers::get_weapons_from_metal_float(self.metal) == other.weapons
     }
 }
 
@@ -185,14 +223,16 @@ impl_op_ex!(+ |a: &FloatCurrencies, b: &FloatCurrencies| -> FloatCurrencies {
 impl_op_ex!(+ |a: &FloatCurrencies, b: &Currencies| -> FloatCurrencies { 
     FloatCurrencies {
         keys: a.keys + b.keys as f32,
-        metal: a.metal + b.metal as f32,
+        // Convert the value in weapons to a value in refined before applying the operation.
+        metal: a.metal + helpers::get_metal_float_from_weapons(b.weapons),
     } 
 });
 
 impl_op_ex!(+ |a: &Currencies, b: &FloatCurrencies| -> FloatCurrencies { 
     FloatCurrencies {
         keys: a.keys as f32 + b.keys,
-        metal: a.metal as f32 + b.metal,
+        // Convert the value in weapons to a value in refined before applying the operation.
+        metal: helpers::get_metal_float_from_weapons(a.weapons) + b.metal,
     } 
 });
 
@@ -206,14 +246,16 @@ impl_op_ex!(- |a: &FloatCurrencies, b: &FloatCurrencies| -> FloatCurrencies {
 impl_op_ex!(- |a: &FloatCurrencies, b: &Currencies| -> FloatCurrencies { 
     FloatCurrencies {
         keys: a.keys - b.keys as f32,
-        metal: a.metal - b.metal as f32,
+        // Convert the value in weapons to a value in refined before applying the operation.
+        metal: a.metal - helpers::get_metal_float_from_weapons(b.weapons),
     } 
 });
 
 impl_op_ex!(- |a: &Currencies, b: &FloatCurrencies| -> FloatCurrencies { 
     FloatCurrencies {
         keys: a.keys as f32 - b.keys,
-        metal: a.metal as f32 - b.metal,
+        // Convert the value in weapons to a value in refined before applying the operation.
+        metal: helpers::get_metal_float_from_weapons(a.weapons) - b.metal,
     } 
 });
 
@@ -280,7 +322,7 @@ impl AddAssign<Currencies> for FloatCurrencies {
         self.keys += other.keys as f32;
         // The float value is a value in weapons, but we need to convert it to a float value in
         // refined before applying the operation.
-        self.metal += helpers::get_metal_float(other.metal);
+        self.metal += helpers::get_metal_float_from_weapons(other.weapons);
     }
 }
 
@@ -289,7 +331,7 @@ impl AddAssign<&Currencies> for FloatCurrencies {
         self.keys += other.keys as f32;
         // The float value is a value in weapons, but we need to convert it to a float value in
         // refined before applying the operation.
-        self.metal += helpers::get_metal_float(other.metal);
+        self.metal += helpers::get_metal_float_from_weapons(other.weapons);
     }
 }
 
@@ -298,7 +340,7 @@ impl SubAssign<Currencies> for FloatCurrencies {
         self.keys -= other.keys as f32;
         // The float value is a value in weapons, but we need to convert it to a float value in
         // refined before applying the operation.
-        self.metal -= helpers::get_metal_float(other.metal);
+        self.metal -= helpers::get_metal_float_from_weapons(other.weapons);
     }
 }
 
@@ -307,7 +349,7 @@ impl SubAssign<&Currencies> for FloatCurrencies {
         self.keys -= other.keys as f32;
         // The float value is a value in weapons, but we need to convert it to a float value in
         // refined before applying the operation.
-        self.metal -= helpers::get_metal_float(other.metal);
+        self.metal -= helpers::get_metal_float_from_weapons(other.weapons);
     }
 }
 
@@ -380,7 +422,7 @@ impl From<Currencies> for FloatCurrencies {
     fn from(currencies: Currencies) -> Self {
         Self {
             keys: currencies.keys as f32,
-            metal: helpers::get_metal_float(currencies.metal),
+            metal: helpers::get_metal_float_from_weapons(currencies.weapons),
         }
     }
 }
@@ -389,7 +431,7 @@ impl From<&Currencies> for FloatCurrencies {
     fn from(currencies: &Currencies) -> Self {
         Self {
             keys: currencies.keys as f32,
-            metal: helpers::get_metal_float(currencies.metal),
+            metal: helpers::get_metal_float_from_weapons(currencies.weapons),
         }
     }
 }
@@ -465,12 +507,10 @@ impl Serialize for FloatCurrencies {
         
         if self.metal == 0.0 {
             currencies.skip_field("metal")?;
+        } else if self.metal.fract() == 0.0 {
+            currencies.serialize_field("metal", &(self.metal as Currency))?;
         } else {
-            if self.metal.fract() == 0.0 {
-                currencies.serialize_field("metal", &(self.metal as Currency))?;
-            } else {
-                currencies.serialize_field("metal", &((self.metal * 100.0) / 100.0))?;
-            }
+            currencies.serialize_field("metal", &((self.metal * 100.0) / 100.0))?;
         }
         
         currencies.end()
@@ -480,112 +520,153 @@ impl Serialize for FloatCurrencies {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::refined;
+    use crate::{refined, scrap};
     use assert_json_diff::assert_json_eq;
     use serde_json::{self, json, Value};
+    
+    #[test]
+    fn to_weapons_correct() {
+        let key_price = 10;
+        
+        assert_eq!(
+            FloatCurrencies {
+                keys: 0.19,
+                metal: 0.0,
+            }.to_weapons(key_price),
+            2,
+        );
+    }
 
     #[test]
     fn currencies_equal() {
-        assert_eq!(FloatCurrencies {
-            keys: 2.0,
-            metal: 23.44,
-        }, FloatCurrencies {
-            keys: 2.0,
-            metal: 23.44,
-        });
-    }
-    
-    #[test]
-    fn to_metal_correct() {
-        let key_price = 10;
-        
-        assert_eq!(FloatCurrencies {
-            keys: 0.19,
-            metal: 0.0,
-        }.to_metal(key_price), 2);
+        assert_eq!(
+            FloatCurrencies {
+                keys: 2.0,
+                metal: 23.44,
+            },
+            FloatCurrencies {
+                keys: 2.0,
+                metal: 23.44,
+            },
+        );
     }
     
     #[test]
     fn currencies_not_equal() {
-        assert_ne!(FloatCurrencies {
-            keys: 2.0,
-            metal: 23.44,
-        }, FloatCurrencies {
-            keys: 2.0,
-            metal: 23.0,
-        });
+        assert_ne!(
+            FloatCurrencies {
+                keys: 2.0,
+                metal: 23.44,
+            },
+            FloatCurrencies {
+                keys: 2.0,
+                metal: 23.0,
+            },
+        );
     }
     
     #[test]
     fn currencies_added() {
-        assert_eq!(FloatCurrencies {
-            keys: 10.0,
-            metal: 10.0,
-        } + FloatCurrencies {
-            keys: 5.0,
-            metal: 5.0,
-        }, FloatCurrencies {
-            keys: 15.0,
-            metal: 15.0,
-        });
+        assert_eq!(
+            FloatCurrencies {
+                keys: 10.0,
+                metal: 10.0,
+            } + FloatCurrencies {
+                keys: 5.0,
+                metal: 5.0,
+            },
+            FloatCurrencies {
+                keys: 15.0,
+                metal: 15.0,
+            },
+        );
     }
     
     #[test]
     fn currencies_subtracted() {
-        assert_eq!(FloatCurrencies {
-            keys: 10.0,
-            metal: 10.0,
-        } - FloatCurrencies {
-            keys: 5.0,
-            metal: 5.0,
-        }, FloatCurrencies {
-            keys: 5.0,
-            metal: 5.0,
-        });
+        assert_eq!(
+            FloatCurrencies {
+                keys: 10.0,
+                metal: 10.0,
+            } - FloatCurrencies {
+                keys: 5.0,
+                metal: 5.0,
+            },
+            FloatCurrencies {
+                keys: 5.0,
+                metal: 5.0,
+            },
+        );
     }
     
     #[test]
     fn currencies_multiplied_by_metal() {
-        assert_eq!(FloatCurrencies {
-            keys: 10.0,
-            metal: 10.0,
-        } * 5, FloatCurrencies {
-            keys: 50.0,
-            metal: 50.0,
-        });
+        assert_eq!(
+            FloatCurrencies {
+                keys: 10.0,
+                metal: 10.0,
+            } * 5,
+            FloatCurrencies {
+                keys: 50.0,
+                metal: 50.0,
+            },
+        );
     }
     
     #[test]
     fn currencies_divided_by_metal() {
-        assert_eq!(FloatCurrencies {
-            keys: 10.0,
-            metal: 10.0,
-        } / 5, FloatCurrencies {
-            keys: 2.0,
-            metal: 2.0,
-        });
+        assert_eq!(
+            FloatCurrencies {
+                keys: 10.0,
+                metal: 10.0,
+            } / 5,
+            FloatCurrencies {
+                keys: 2.0,
+                metal: 2.0,
+            },
+        );
     }
     
     #[test]
     fn currencies_multiplied_by_f32() {
-        assert_eq!(FloatCurrencies {
-            keys: 10.0,
-            metal: 10.0,
-        } * 2.5, FloatCurrencies {
-            keys: 25.0,
-            metal: 25.0,
-        });
+        assert_eq!(
+            FloatCurrencies {
+                keys: 10.0,
+                metal: 10.0,
+            } * 2.5,
+            FloatCurrencies {
+                keys: 25.0,
+                metal: 25.0,
+            },
+        );
     }
     
     #[test]
     fn currencies_divided_by_f32() {
-        assert_eq!(FloatCurrencies {
-            keys: 10.0,
-            metal: 10.0,
-        } / 2.5, FloatCurrencies {
-            keys: 4.0,
-            metal: 4.0,
-        });
+        assert_eq!(
+            FloatCurrencies {
+                keys: 10.0,
+                metal: 10.0,
+            } / 2.5,
+            FloatCurrencies {
+                keys: 4.0,
+                metal: 4.0,
+            },
+        );
+    }
+    
+    #[test]
+    fn currencies_partial_eq() {
+        assert_eq!(
+            FloatCurrencies {
+                keys: 1.0,
+                metal: 1.33,
+            },
+            Currencies {
+                keys: 1,
+                weapons: refined!(1) + scrap!(3),
+            },
+        );
     }
     
     #[test]
@@ -595,26 +676,47 @@ mod tests {
             metal: 10.0,
         }.try_into().unwrap();
         
-        assert_eq!(currencies, Currencies {
-            keys: 10,
-            metal: refined!(10),
-        });
+        assert_eq!(
+            currencies,
+            Currencies {
+                keys: 10,
+                weapons: refined!(10),
+            },
+        );
     }
     
     #[test]
     fn subtracts_non_float_currencies() {
-        assert_eq!(FloatCurrencies {
-            keys: 1.5,
-            metal: 0.0,
-        } - Currencies { keys: 1, metal: 0 }, FloatCurrencies { keys: 0.5, metal: 0.0 });
+        assert_eq!(
+            FloatCurrencies {
+                keys: 1.5,
+                metal: 0.0,
+            } - Currencies {
+                keys: 1,
+                weapons: 0,
+            },
+            FloatCurrencies {
+                keys: 0.5,
+                metal: 0.0,
+            },
+        );
     }
     
     #[test]
     fn adds_non_float_currencies() {
-        assert_eq!(FloatCurrencies {
-            keys: 1.5,
-            metal: 0.0,
-        } + Currencies { keys: 1, metal: 0 }, FloatCurrencies { keys: 2.5, metal: 0.0 });
+        assert_eq!(
+            FloatCurrencies {
+                keys: 1.5,
+                metal: 0.0,
+            } + Currencies {
+                keys: 1,
+                weapons: 0,
+            },
+            FloatCurrencies {
+                keys: 2.5,
+                metal: 0.0,
+            },
+        );
     }
     
     #[test]
@@ -624,10 +726,13 @@ mod tests {
             metal: 10.0,
         }, refined!(10));
         
-        assert_eq!(currencies, Currencies {
-            keys: 2,
-            metal: refined!(15),
-        });
+        assert_eq!(
+            currencies,
+            Currencies {
+                keys: 2,
+                weapons: refined!(15),
+            },
+        );
     }
     
     #[test]
@@ -637,36 +742,41 @@ mod tests {
             metal: -10.0,
         }, refined!(10));
         
-        assert_eq!(currencies, Currencies {
-            keys: 2,
-            metal: refined!(-5),
-        });
+        assert_eq!(
+            currencies,
+            Currencies {
+                keys: 2,
+                weapons: refined!(-5),
+            },
+        );
     }
     
     #[test]
     fn fails_to_convert_into_currencies_when_fractional() {
-        let currencies = Currencies::try_from(FloatCurrencies {
+        assert!(Currencies::try_from(FloatCurrencies {
             keys: 10.5,
             metal: 10.0,
-        });
-        
-        assert!(currencies.is_err());
+        }).is_err());
     }
     
     #[test]
     fn formats_currencies() {
-        assert_eq!(&format!("{}", FloatCurrencies {
+        let currencies = FloatCurrencies {
             keys: 2.0,
             metal: 23.0,
-        }), "2 keys, 23 ref");
+        };
+        
+        assert_eq!(format!("{currencies}"), "2 keys, 23 ref");
     }
     
     #[test]
     fn formats_currencies_with_decimal_places() {
-        assert_eq!(&format!("{}", FloatCurrencies {
+        let currencies = FloatCurrencies {
             keys: 2.2555,
             metal: 23.0,
-        }), "2.26 keys, 23 ref");
+        };
+        
+        assert_eq!(format!("{currencies}"), "2.26 keys, 23 ref");
     }
     
     #[test]
@@ -676,22 +786,32 @@ mod tests {
     
     #[test]
     fn deserializes_currencies() {
-        let currencies: FloatCurrencies = serde_json::from_str(r#"{"keys":1,"metal": 23.44}"#).unwrap();
+        let currencies: FloatCurrencies = serde_json::from_str(
+            r#"{"keys":1,"metal": 23.44}"#
+        ).unwrap();
         
-        assert_eq!(FloatCurrencies {
-            keys: 1.0,
-            metal: 23.44,
-        }, currencies);
+        assert_eq!(
+            currencies,
+            FloatCurrencies {
+                keys: 1.0,
+                metal: 23.44,
+            },
+        );
     }
     
     #[test]
     fn deserializes_currencies_with_no_keys() {
-        let currencies: FloatCurrencies = serde_json::from_str(r#"{"metal": 23.44}"#).unwrap();
+        let currencies: FloatCurrencies = serde_json::from_str(
+            r#"{"metal": 23.44}"#
+        ).unwrap();
         
-        assert_eq!(FloatCurrencies {
-            keys: 0.0,
-            metal: 23.44,
-        }, currencies);
+        assert_eq!(
+            currencies,
+            FloatCurrencies {
+                keys: 0.0,
+                metal: 23.44,
+            },
+        );
     }
     
     #[test]
@@ -707,10 +827,7 @@ mod tests {
             "metal": 23.44
         });
         
-        assert_json_eq!(
-            actual,
-            expected,
-        );
+        assert_json_eq!(actual, expected);
     }
     
     #[test]
@@ -726,20 +843,23 @@ mod tests {
             "metal": 23.44
         });
         
-        assert_json_eq!(
-            actual,
-            expected,
-        );
+        assert_json_eq!(actual, expected);
     }
     
     #[test]
     fn greater_than() {
-        assert!(FloatCurrencies { keys: 1.0, metal: 5.0 } > FloatCurrencies { keys: 0.0, metal: 10.0 });
+        let a = FloatCurrencies { keys: 1.0, metal: 5.0 };
+        let b = FloatCurrencies { keys: 0.0, metal: 10.0 };
+        
+        assert!(a > b);
     }
     
     #[test]
     fn less_than() {
-        assert!(FloatCurrencies { keys: 0.0, metal: 1.0 } < FloatCurrencies { keys: 0.0, metal: 4.0 });
+        let a = FloatCurrencies { keys: 0.0, metal: 1.0 };
+        let b = FloatCurrencies { keys: 0.0, metal: 4.0 };
+        
+        assert!(a < b);
     }
     
     #[test]
@@ -753,13 +873,22 @@ mod tests {
         // lowest to highest
         currencies.sort();
         
-        assert_eq!(*currencies.iter().rev().next().unwrap(), FloatCurrencies { keys: 10.0, metal: 4.0 });
+        assert_eq!(
+            *currencies.iter().rev().next().unwrap(),
+            FloatCurrencies {
+                keys: 10.0,
+                metal: 4.0,
+            },
+        );
     }
     
     #[test]
     fn checked_to_metal() {
         assert_eq!(
-            FloatCurrencies { keys: Currency::MAX as f32, metal: 4.0 }.checked_to_metal(Currency::MAX),
+            FloatCurrencies {
+                keys: Currency::MAX as f32,
+                metal: 4.0,
+            }.checked_to_weapons(Currency::MAX),
             None,
         );
     }
@@ -767,7 +896,10 @@ mod tests {
     #[test]
     fn checked_to_metal_correct_value() {
         assert_eq!(
-            FloatCurrencies { keys: 10.0, metal: 5.0 }.checked_to_metal(10),
+            FloatCurrencies {
+                keys: 10.0,
+                metal: 5.0,
+            }.checked_to_weapons(10),
             Some(100 + refined!(5)),
         );
     }
