@@ -6,28 +6,6 @@ A common problem with currencies which contain fractional values is arithmetic. 
 
 By storing the metal value as an integer we can accurately add currencies together without needing odd conversions each time an operation needs to be performed.
 
-```javascript
-const ONE_REF = 18;
-
-function toScrap(metal) {
-    return metal * ONE_REF;
-}
-
-function fromScrap(metal) {
-    return metal / ONE_REF;
-}
-
-function reduceMetal(...metal, accum) {
-    return fromScrap(metal.map(toScrap).reduce(accum));
-}
-
-let metal = 1.33;
-
-metal = reduceMetal(1.33, 0.11);
-
-console.log(metal);
-```
-
 ## Usage
 
 ### Basic usage
