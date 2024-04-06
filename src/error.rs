@@ -18,6 +18,12 @@ pub enum TryFromFloatCurrenciesError {
     },
 }
 
+impl std::error::Error for TryFromFloatCurrenciesError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    }
+}
+
 impl fmt::Display for TryFromFloatCurrenciesError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -48,6 +54,12 @@ pub enum ParseError {
     ParseInt(ParseIntError),
     /// A string failed to parse to a float.
     ParseFloat(ParseFloatError),
+}
+
+impl std::error::Error for ParseError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    }
 }
 
 impl fmt::Display for ParseError {

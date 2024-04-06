@@ -170,8 +170,7 @@ assert!(Currencies::try_from(FloatCurrencies {
 ### Serialization
 ```rust
 use tf2_price::{Currencies, metal};
-
-// Serde deserialization.
+    
 let json = r#"{"keys":5,"metal":2.33}"#;
 let currencies: Currencies = serde_json::from_str(json).unwrap();
 
@@ -181,6 +180,10 @@ assert_eq!(
         keys: 5,
         weapons: metal!(2.33),
     },
+);
+assert_eq!(
+    json,
+    serde_json::to_string(&currencies).unwrap(),
 );
 ```
 

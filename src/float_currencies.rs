@@ -24,7 +24,6 @@ use auto_ops::impl_op_ex;
 /// assert_eq!(currencies.keys, 1);
 /// assert_eq!(currencies.weapons, metal!(1.33));
 /// 
-/// // For precision, arithmetical operations should be done with Currencies, not FloatCurrencies.
 /// currencies.weapons += refined!(1);
 /// 
 /// assert_eq!(currencies.weapons, metal!(2.33));

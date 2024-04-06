@@ -116,6 +116,7 @@ mod tests {
     #[test]
     fn metal_macro() {
         assert_eq!(metal!(1.0), 18);
+        assert_eq!(metal!(1), 18);
         assert_eq!(metal!(1.05), 19);
         assert_eq!(metal!(1.11), 20);
         assert_eq!(metal!(1.77), 32);
