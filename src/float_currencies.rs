@@ -81,23 +81,6 @@ impl FloatCurrencies {
         Self::default()
     }
     
-    /// Checks if the `keys` value is a fractional value.
-    /// 
-    /// # Examples
-    /// ```
-    /// use tf2_price::FloatCurrencies;
-    /// 
-    /// let currencies = FloatCurrencies {
-    ///     keys: 1.5,
-    ///     metal: 0.0,
-    /// };
-    /// 
-    /// assert!(currencies.is_fract());
-    /// ```
-    pub fn is_fract(&self) -> bool {
-        self.keys.fract() != 0.0
-    }
-    
     /// Converts currencies to a value in weapons using the given key price (represented as 
     /// weapons). Rounds float conversions.
     /// 

@@ -24,11 +24,6 @@ pub fn checked_to_metal(
     metal.checked_add(keys.checked_mul(key_price)?)
 }
 
-/// Converts cents to dollars.
-pub fn cents_to_dollars(cents: Currency) -> f32 {
-    (cents as f32) / 100.0
-}
-
 /// Pluralizes a value using an integer as the test.
 pub fn pluralize<'a>(
     amount: Currency,
@@ -63,39 +58,6 @@ pub fn print_float(amount: f32) -> String {
     } else {
         format!("{amount:.2}")
     }
-}
-
-/// Adds thousands places to a number string e.g. "1000" becomes "1,000".
-pub fn thousands(string: String) -> String {
-    // from https://crates.io/crates/separator
-    let index = match string.find('.') {
-        Some(i) => i,
-        None => string.len()
-    };
-    let int_part = &string[..index];
-    let fract_part = &string[index..];
-    let mut output = String::new();
-    let magnitude = if let Some(stripped) = int_part.strip_prefix('-') {
-        output.push('-');
-        stripped.to_owned()
-    } else {
-        int_part.to_owned()
-    };
-    let mut place = magnitude.len();
-    let mut later_loop = false;
-    
-    for ch in magnitude.chars() {
-        if later_loop && place % 3 == 0 {
-            output.push(',');
-        }
-        
-        output.push(ch);
-        later_loop = true;
-        place -= 1;
-    };
-    
-    output.push_str(fract_part);
-    output
 }
 
 /// Converts a value in weapons into its float value.

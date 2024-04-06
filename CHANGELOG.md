@@ -16,17 +16,19 @@
 - Previously, parsing strings with empty currencies e.g. "0 keys" would result in an error. This is no longer the case.
 
 ### Added
+- `metal!` macro.
 - `checked_get_weapons_from_metal_float` helper method.
 - `checked_from_weapons` for `Currencies`.
-- `metal!` macro.
-- `Hash` derive for `Currencies` and `USDCurrencies`.
-- `FromStr` implementations for `Currencies` and `FloatCurrencies`.
-- `TryFrom<&String>` and `TryFrom<String>` for `Currencies` and `FloatCurrencies`.
+- `Hash` derive for `Currencies`.
+- `FromStr` , `TryFrom<&String>`, and `TryFrom<String>` for `Currencies`.
+- `FromStr` , `TryFrom<&String>`, and `TryFrom<String>` for `FloatCurrencies`.
 - More detailed errors.
 
 ### Removed
-- `SerializeCurrencies`.
+- `USDCurrencies` struct. This is somewhat out of the scope of this crate and can be better solved with other crates. The `rust_decimal` crate for example is a popular choice.
+- `SerializeCurrencies` trait.
 - `round` from `FloatCurrencies`.
+- `is_fract` from `FloatCurrencies`.
 
 ## 0.12.0 (2024-01-26)
 

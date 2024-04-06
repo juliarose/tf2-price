@@ -400,7 +400,7 @@ impl Currencies {
 impl PartialEq<FloatCurrencies> for Currencies {
     fn eq(&self, other: &FloatCurrencies) -> bool {
         if let Some(weapons) = helpers::checked_get_weapons_from_metal_float(other.metal) {
-            !other.is_fract() &&
+            other.keys.fract() != 0.0 &&
             self.keys == other.keys as Currency &&
             self.weapons == weapons
         } else {

@@ -2,7 +2,7 @@
 
 Utilities for Team Fortress 2 item pricing. Lightweight with [only one required dependency](https://github.com/juliarose/tf2-price/tree/main/Cargo.toml).
 
-Fractional currencies pose arithmetic challenges due to the inherent imprecision of floating-point numbers. A solution is to handle currency in its smallest unit (e.g., cents for US currency, or weapons in Team Fortress 2), stored as integers. This allows precise calculations without [cumbersome conversions](https://gist.github.com/juliarose/f2b5aaa2c71b90d536668e0143d16936), ensuring predictable outcomes. Additionally, this crate offers a container for floating-point currencies when needed.
+Fractional currencies pose arithmetic challenges due to the inherent imprecision of floating-point numbers. A solution is to handle currency in its smallest unit (e.g., cents for US currency, or weapons in Team Fortress 2), stored as integers. This allows precise calculations without [cumbersome conversions](https://gist.github.com/juliarose/f2b5aaa2c71b90d536668e0143d16936), ensuring predictable outcomes. 
 
 ## Installation
 
@@ -101,21 +101,19 @@ Due to the vast size of 64-bit integers, worries about reaching their bounds are
 ```rust 
 use tf2_price::{Currencies, Currency, refined};
 
-// Let's say a Golden Pan is selling for 3000 keys.
+// Let's say, hypothetically, a Golden Pan is selling for 3000 keys.
 let golden_pan = Currencies {
     keys: 3000,
     weapons: 0,
 };
 // And the price of a key is 50 refined.
-let key_price_weapons = refined!(50); // 900
+let key_price_weapons = refined!(50);
 // And we convert the price of the Golden Pan into weapons.
-let golden_pan_weapons = golden_pan.to_weapons(
-    key_price_weapons
-); // 2700000
+let golden_pan_weapons = golden_pan.to_weapons(key_price_weapons);
 // And take how many times this number fits into the max value.
 let num_golden_pans = Currency::MAX / golden_pan_weapons;
 
-// It would be enough weapons to buy over 3 trillion Golden Pans.
+// It would be enough to buy over 3 trillion Golden Pans in weapons.
 assert_eq!(num_golden_pans, 3_416_063_717_353);
 
 let currencies = Currencies {
@@ -123,7 +121,7 @@ let currencies = Currencies {
     weapons: golden_pan_weapons,
 };
 
-// We can multiply the number of Golden Pans by the price of one.
+// We can multiply the number of Golden Pans by its price in weapons.
 assert!(currencies.checked_mul(num_golden_pans).is_some());
 // But if we try to multiply by one more, it will overflow.
 assert!(currencies.checked_mul(num_golden_pans + 1).is_none());
@@ -135,7 +133,8 @@ assert_eq!(currencies.weapons, Currency::MAX);
 
 ### Floating Point Precision
 
-To store original floating point numbers from responses, use `FloatCurrencies` as a container. However, it's advised not to use it for calculations or comparisons. This crate provides utilities for converting floats to integers based on use-case ([saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic), [checked](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/checked-and-unchecked)).
+To store floating point numbers from responses, use `FloatCurrencies` as a container. However, it's advised not to use it for calculations or comparisons. This crate provides utilities for converting floats to integers based on use-case ([saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic), [checked](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/checked-and-unchecked)).
+
 ```rust
 use tf2_price::{Currencies, FloatCurrencies, Currency};
 
