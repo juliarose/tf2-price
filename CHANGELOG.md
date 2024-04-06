@@ -17,6 +17,7 @@
 
 ### Added
 - `checked_get_weapons_from_metal_float` helper method.
+- `checked_from_weapons` for `Currencies`.
 - `metal!` macro.
 - `Hash` derive for `Currencies` and `USDCurrencies`.
 - `FromStr` implementations for `Currencies` and `FloatCurrencies`.

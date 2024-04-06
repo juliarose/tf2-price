@@ -2,7 +2,6 @@ use crate::helpers;
 use crate::types::Currency;
 use std::fmt;
 use std::cmp::{Ord, Ordering};
-use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 use auto_ops::impl_op_ex;
 
 /// For storing cash values.
@@ -11,7 +10,7 @@ use auto_ops::impl_op_ex;
 pub struct USDCurrencies {
     /// Cash value in cents.
     #[cfg_attr(feature = "serde", serde(default))]
-    #[cfg_attr(feature = "serde", serde(with = "helpers::cents"))]
+    #[cfg_attr(feature = "serde", serde(with = "crate::serializers::cents"))]
     pub usd: Currency,
 }
 
@@ -155,53 +154,29 @@ impl_op_ex!(/ |currencies: &USDCurrencies, num: f32| -> USDCurrencies {
     }
 });
 
-impl AddAssign<USDCurrencies> for USDCurrencies {
-    fn add_assign(&mut self, other: Self) {
-        self.usd = self.usd.saturating_add(other.usd);
-    }
-}
+impl_op_ex!(+= |a: &mut USDCurrencies, b: &USDCurrencies| { 
+    a.usd = a.usd.saturating_add(b.usd);
+});
 
-impl AddAssign<&USDCurrencies> for USDCurrencies {
-    fn add_assign(&mut self, other: &Self) {
-        self.usd = self.usd.saturating_add(other.usd);
-    }
-}
+impl_op_ex!(-= |a: &mut USDCurrencies, b: &USDCurrencies| { 
+    a.usd = a.usd.saturating_sub(b.usd);
+});
 
-impl SubAssign<USDCurrencies> for USDCurrencies {
-    fn sub_assign(&mut self, other: Self) {
-        self.usd = self.usd.saturating_sub(other.usd);
-    }
-}
+impl_op_ex!(*= |a: &mut USDCurrencies, b: Currency| { 
+    a.usd = a.usd.saturating_mul(b);
+});
 
-impl SubAssign<&USDCurrencies> for USDCurrencies {
-    fn sub_assign(&mut self, other: &Self) {
-        self.usd = self.usd.saturating_sub(other.usd);
-    }
-}
+impl_op_ex!(*= |a: &mut USDCurrencies, b: f32| { 
+    a.usd = (a.usd as f32 * b).round() as Currency;
+});
 
-impl MulAssign<Currency> for USDCurrencies {
-    fn mul_assign(&mut self, other: Currency) {
-        self.usd = self.usd.saturating_mul(other);
-    }
-}
+impl_op_ex!(/= |a: &mut USDCurrencies, b: Currency| { 
+    a.usd = a.usd.saturating_div(b);
+});
 
-impl MulAssign<f32> for USDCurrencies {
-    fn mul_assign(&mut self, other: f32) {
-        self.usd = (self.usd as f32 * other).round() as Currency;
-    }
-}
-
-impl DivAssign<Currency> for USDCurrencies {
-    fn div_assign(&mut self, other: Currency) {
-        self.usd = self.usd.saturating_div(other);
-    }
-}
-
-impl DivAssign<f32> for USDCurrencies {
-    fn div_assign(&mut self, other: f32) {
-        self.usd = (self.usd as f32 / other).round() as Currency;
-    }
-}
+impl_op_ex!(/= |a: &mut USDCurrencies, b: f32| { 
+    a.usd = (a.usd as f32 / b).round() as Currency;
+});
 
 #[cfg(test)]
 mod tests {

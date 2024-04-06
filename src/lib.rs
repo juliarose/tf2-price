@@ -54,6 +54,8 @@ mod float_currencies;
 mod rounding;
 mod constants;
 mod usd_currencies;
+#[cfg(feature = "serde")]
+mod serializers;
 
 pub use usd_currencies::USDCurrencies;
 pub use currencies::Currencies;

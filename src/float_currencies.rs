@@ -5,7 +5,6 @@ use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL};
 use crate::Currencies;
 use std::fmt;
 use std::cmp::{Ord, Ordering};
-use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 use auto_ops::impl_op_ex;
 
 /// For storing floating point values of currencies. This is useful for retaining the original 
@@ -286,99 +285,47 @@ impl_op_ex!(/ |currencies: &FloatCurrencies, num: f32| -> FloatCurrencies {
     }
 });
 
-impl AddAssign<FloatCurrencies> for FloatCurrencies {
-    fn add_assign(&mut self, other: Self) {
-        self.keys += other.keys;
-        self.metal += other.metal;
-    }
-}
+impl_op_ex!(+= |a: &mut FloatCurrencies, b: &FloatCurrencies| { 
+    a.keys += b.keys;
+    a.metal += b.metal;
+});
 
-impl AddAssign<&FloatCurrencies> for FloatCurrencies {
-    fn add_assign(&mut self, other: &Self) {
-        self.keys += other.keys;
-        self.metal += other.metal;
-    }
-}
+impl_op_ex!(-= |a: &mut FloatCurrencies, b: &FloatCurrencies| { 
+    a.keys -= b.keys;
+    a.metal -= b.metal;
+});
 
-impl SubAssign<FloatCurrencies> for FloatCurrencies {
-    fn sub_assign(&mut self, other: Self) {
-        self.keys -= other.keys;
-        self.metal -= other.metal;
-    }
-}
+impl_op_ex!(+= |a: &mut FloatCurrencies, b: &Currencies| { 
+    a.keys += b.keys as f32;
+    // Convert the value in weapons to a value in refined before applying the operation.
+    a.metal += helpers::get_metal_float_from_weapons(b.weapons);
+});
 
-impl SubAssign<&FloatCurrencies> for FloatCurrencies {
-    fn sub_assign(&mut self, other: &Self) {
-        self.keys -= other.keys;
-        self.metal-= other.metal;
-    }
-}
+impl_op_ex!(-= |a: &mut FloatCurrencies, b: &Currencies| { 
+    a.keys -= b.keys as f32;
+    // Convert the value in weapons to a value in refined before applying the operation.
+    a.metal -= helpers::get_metal_float_from_weapons(b.weapons);
+});
 
-// Operations for non-float currencies
+impl_op_ex!(*= |a: &mut FloatCurrencies, b: Currency| { 
+    a.keys *= b as f32;
+    a.metal *= b as f32;
+});
 
-impl AddAssign<Currencies> for FloatCurrencies {
-    fn add_assign(&mut self, other: Currencies) {
-        self.keys += other.keys as f32;
-        // The float value is a value in weapons, but we need to convert it to a float value in
-        // refined before applying the operation.
-        self.metal += helpers::get_metal_float_from_weapons(other.weapons);
-    }
-}
+impl_op_ex!(/= |a: &mut FloatCurrencies, b: Currency| { 
+    a.keys /= b as f32;
+    a.metal /= b as f32;
+});
 
-impl AddAssign<&Currencies> for FloatCurrencies {
-    fn add_assign(&mut self, other: &Currencies) {
-        self.keys += other.keys as f32;
-        // The float value is a value in weapons, but we need to convert it to a float value in
-        // refined before applying the operation.
-        self.metal += helpers::get_metal_float_from_weapons(other.weapons);
-    }
-}
+impl_op_ex!(*= |a: &mut FloatCurrencies, b: f32| { 
+    a.keys *= b;
+    a.metal *= b;
+});
 
-impl SubAssign<Currencies> for FloatCurrencies {
-    fn sub_assign(&mut self, other: Currencies) {
-        self.keys -= other.keys as f32;
-        // The float value is a value in weapons, but we need to convert it to a float value in
-        // refined before applying the operation.
-        self.metal -= helpers::get_metal_float_from_weapons(other.weapons);
-    }
-}
-
-impl SubAssign<&Currencies> for FloatCurrencies {
-    fn sub_assign(&mut self, other: &Currencies) {
-        self.keys -= other.keys as f32;
-        // The float value is a value in weapons, but we need to convert it to a float value in
-        // refined before applying the operation.
-        self.metal -= helpers::get_metal_float_from_weapons(other.weapons);
-    }
-}
-
-impl MulAssign<Currency> for FloatCurrencies {
-    fn mul_assign(&mut self, other: Currency) {
-        self.keys *= other as f32;
-        self.metal *= other as f32;
-    }
-}
-
-impl MulAssign<f32> for FloatCurrencies {
-    fn mul_assign(&mut self, other: f32) {
-        self.keys *= other;
-        self.metal *= other;
-    }
-}
-
-impl DivAssign<Currency> for FloatCurrencies {
-    fn div_assign(&mut self, other: Currency) {
-        self.keys /= other as f32;
-        self.metal /= other as f32;
-    }
-}
-
-impl DivAssign<f32> for FloatCurrencies {
-    fn div_assign(&mut self, other: f32) {
-        self.keys /= other;
-        self.metal /= other;
-    }
-}
+impl_op_ex!(/= |a: &mut FloatCurrencies, b: f32| { 
+    a.keys /= b;
+    a.metal /= b;
+});
 
 impl TryFrom<&str> for FloatCurrencies {
     type Error = ParseError;
@@ -586,6 +533,23 @@ mod tests {
     }
     
     #[test]
+    fn currencies_added_borrwed() {
+        assert_eq!(
+            FloatCurrencies {
+                keys: 10.0,
+                metal: 10.0,
+            } + &FloatCurrencies {
+                keys: 5.0,
+                metal: 5.0,
+            },
+            FloatCurrencies {
+                keys: 15.0,
+                metal: 15.0,
+            },
+        );
+    }
+    
+    #[test]
     fn currencies_subtracted() {
         assert_eq!(
             FloatCurrencies {
@@ -603,7 +567,24 @@ mod tests {
     }
     
     #[test]
-    fn currencies_multiplied_by_metal() {
+    fn currencies_subtracted_borrowed() {
+        assert_eq!(
+            FloatCurrencies {
+                keys: 10.0,
+                metal: 10.0,
+            } - &FloatCurrencies {
+                keys: 5.0,
+                metal: 5.0,
+            },
+            FloatCurrencies {
+                keys: 5.0,
+                metal: 5.0,
+            },
+        );
+    }
+    
+    #[test]
+    fn currencies_multiplied_by_currency() {
         assert_eq!(
             FloatCurrencies {
                 keys: 10.0,
@@ -617,7 +598,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_divided_by_metal() {
+    fn currencies_divided_by_currency() {
         assert_eq!(
             FloatCurrencies {
                 keys: 10.0,
@@ -824,7 +805,7 @@ mod tests {
     }
     
     #[test]
-    fn checked_to_metal() {
+    fn checked_to_weapons() {
         assert_eq!(
             FloatCurrencies {
                 keys: Currency::MAX as f32,
@@ -835,7 +816,7 @@ mod tests {
     }
     
     #[test]
-    fn checked_to_metal_correct_value() {
+    fn checked_to_weapons_correct_value() {
         assert_eq!(
             FloatCurrencies {
                 keys: 10.0,

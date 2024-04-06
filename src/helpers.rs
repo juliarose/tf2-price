@@ -24,47 +24,6 @@ pub fn checked_to_metal(
     metal.checked_add(keys.checked_mul(key_price)?)
 }
 
-/// Deserializes float weapon values as weapons.
-#[cfg(feature = "serde")]
-pub fn metal_deserializer<'de, D>(deserializer: D) -> Result<Currency, D::Error>
-where
-    D: serde::Deserializer<'de>
-{
-    use serde::Deserialize;
-    
-    // get the metal value as a float e.g. 2.55 ref
-    let metal_refined_float = f32::deserialize(deserializer)?;
-    // will fit it into the nearest weapon value
-    let metal = (metal_refined_float * ONE_REF_FLOAT).round() as Currency;
-    
-    Ok(metal)
-}
-
-/// Serialzies and deserializes cents.
-#[cfg(feature = "serde")]
-pub mod cents {
-    use serde::{Serializer, Deserialize, Deserializer};
-    use crate::types::Currency;
-    use super::cents_to_dollars;
-    
-    pub fn serialize<S>(value: &Currency, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer
-    {
-        serializer.serialize_f32(cents_to_dollars(*value))
-    }
-    
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Currency, D::Error>
-    where
-        D: Deserializer<'de>
-    {
-        let usd = f32::deserialize(deserializer)?;
-        let cents = (usd * 100.0).round() as Currency;
-        
-        Ok(cents)
-    }
-}
-
 /// Converts cents to dollars.
 pub fn cents_to_dollars(cents: Currency) -> f32 {
     (cents as f32) / 100.0

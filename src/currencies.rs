@@ -5,7 +5,6 @@ use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL};
 use crate::{FloatCurrencies, Rounding};
 use std::fmt;
 use std::cmp::{Ord, Ordering};
-use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 use auto_ops::impl_op_ex;
 
 /// For storing item currencies values.
@@ -20,7 +19,7 @@ pub struct Currencies {
     /// `ONE_SCRAP`, and `ONE_WEAPON` constants to perform arithmatic.
     #[cfg_attr(feature = "serde", serde(default))]
     #[cfg_attr(feature = "serde", serde(rename = "metal"))]
-    #[cfg_attr(feature = "serde", serde(deserialize_with = "helpers::metal_deserializer"))]
+    #[cfg_attr(feature = "serde", serde(deserialize_with = "crate::serializers::metal_deserializer"))]
     pub weapons: Currency,
 }
 
@@ -82,6 +81,33 @@ impl Currencies {
             keys: weapons.saturating_div(key_price_weapons),
             weapons: weapons % key_price_weapons,
         }
+    }
+    
+    /// Converts a weapon value into the appropriate number of keys and weapons using the given 
+    /// key price (represented as weapons).
+    /// 
+    /// Checks for safe conversion.
+    /// 
+    /// # Examples
+    /// ```
+    /// use tf2_price::{Currencies, refined};
+    /// 
+    /// let key_price = refined!(60);
+    /// let currencies = Currencies::from_weapons(refined!(80), key_price);
+    /// 
+    /// assert_eq!(currencies, Currencies { keys: 1, weapons: refined!(20) });
+    /// ```
+    pub fn checked_from_weapons(
+        weapons: Currency,
+        key_price_weapons: Currency,
+    ) -> Option<Self> {
+        let keys = weapons.checked_div(key_price_weapons)?;
+        let weapons = weapons.checked_rem(key_price_weapons)?;
+        
+        Some(Self {
+            keys,
+            weapons,
+        })
     }
     
     /// Converts from [`FloatCurrencies`] using the given key price (represented as weapons).
@@ -425,61 +451,35 @@ impl_op_ex!(/ |currencies: &Currencies, num: f32| -> Currencies {
     }
 });
 
-impl AddAssign<Currencies> for Currencies {
-    fn add_assign(&mut self, other: Self) {
-        self.keys = self.keys.saturating_add(other.keys);
-        self.weapons = self.weapons.saturating_add(other.weapons);
-    }
-}
+impl_op_ex!(+= |a: &mut Currencies, b: &Currencies| { 
+    a.keys = a.keys.saturating_add(b.keys);
+    a.weapons = a.weapons.saturating_add(b.weapons);
+});
 
-impl AddAssign<&Currencies> for Currencies {
-    fn add_assign(&mut self, other: &Self) {
-        self.keys = self.keys.saturating_add(other.keys);
-        self.weapons = self.weapons.saturating_add(other.weapons);
-    }
-}
+impl_op_ex!(-= |a: &mut Currencies, b: &Currencies| { 
+    a.keys = a.keys.saturating_sub(b.keys);
+    a.weapons = a.weapons.saturating_sub(b.weapons);
+});
 
-impl SubAssign<Currencies> for Currencies {
-    fn sub_assign(&mut self, other: Self) {
-        self.keys = self.keys.saturating_sub(other.keys);
-        self.weapons = self.weapons.saturating_sub(other.weapons);
-    }
-}
+impl_op_ex!(*= |currencies: &mut Currencies, num: Currency| {
+    currencies.keys = currencies.keys.saturating_mul(num);
+    currencies.weapons = currencies.weapons.saturating_mul(num);
+});
 
-impl SubAssign<&Currencies> for Currencies {
-    fn sub_assign(&mut self, other: &Self) {
-        self.keys = self.keys.saturating_sub(other.keys);
-        self.weapons = self.weapons.saturating_sub(other.weapons);
-    }
-}
+impl_op_ex!(/= |currencies: &mut Currencies, num: Currency| {
+    currencies.keys = currencies.keys.saturating_div(num);
+    currencies.weapons = currencies.weapons.saturating_div(num);
+});
 
-impl MulAssign<Currency> for Currencies {
-    fn mul_assign(&mut self, other: Currency) {
-        self.keys = self.keys.saturating_mul(other);
-        self.weapons = self.weapons.saturating_mul(other);
-    }
-}
+impl_op_ex!(*= |currencies: &mut Currencies, num: f32| {
+    currencies.keys = (currencies.keys as f32 * num).round() as Currency;
+    currencies.weapons = (currencies.weapons as f32 * num).round() as Currency;
+});
 
-impl MulAssign<f32> for Currencies {
-    fn mul_assign(&mut self, other: f32) {
-        self.keys = (self.keys as f32 * other).round() as Currency;
-        self.weapons = (self.weapons as f32 * other).round() as Currency;
-    }
-}
-
-impl DivAssign<Currency> for Currencies {
-    fn div_assign(&mut self, other: Currency) {
-        self.keys = self.keys.saturating_div(other);
-        self.weapons = self.weapons.saturating_div(other);
-    }
-}
-
-impl DivAssign<f32> for Currencies {
-    fn div_assign(&mut self, other: f32) {
-        self.keys = (self.keys as f32 / other).round() as Currency;
-        self.weapons = (self.weapons as f32 / other).round() as Currency;
-    }
-}
+impl_op_ex!(/= |currencies: &mut Currencies, num: f32| {
+    currencies.keys = (currencies.keys as f32 / num).round() as Currency;
+    currencies.weapons = (currencies.weapons as f32 / num).round() as Currency;
+});
 
 impl TryFrom<&str> for Currencies {
     type Error = ParseError;
@@ -689,6 +689,23 @@ mod tests {
     }
     
     #[test]
+    fn currencies_added_borrowed() {
+        assert_eq!(
+            Currencies {
+                keys: 10,
+                weapons: refined!(10),
+            } + &Currencies {
+                keys: 5,
+                weapons: refined!(5),
+            },
+            Currencies {
+                keys: 15,
+                weapons: refined!(15),
+            },
+        );
+    }
+    
+    #[test]
     fn currencies_subtracted() {
         assert_eq!(
             Currencies {
@@ -706,7 +723,24 @@ mod tests {
     }
     
     #[test]
-    fn currencies_multiplied_by_metal() {
+    fn currencies_subtracted_borrowed() {
+        assert_eq!(
+            Currencies {
+                keys: 10,
+                weapons: refined!(10),
+            } - &Currencies {
+                keys: 5,
+                weapons: refined!(5),
+            },
+            Currencies {
+                keys: 5,
+                weapons: refined!(5),
+            },
+        );
+    }
+    
+    #[test]
+    fn currencies_multiplied_by_currency() {
         assert_eq!(
             Currencies {
                 keys: 10,
@@ -734,7 +768,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_divided_by_metal() {
+    fn currencies_divided_by_currency() {
         assert_eq!(
             Currencies {
                 keys: 10,
@@ -762,7 +796,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_mul_assign_metal() {
+    fn currencies_mul_assign_currency() {
         let mut currencies = Currencies {
             keys: 10,
             weapons: refined!(10),
@@ -798,7 +832,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_div_assign_metal() {
+    fn currencies_div_assign_currency() {
         let mut currencies = Currencies {
             keys: 10,
             weapons: refined!(10),
@@ -842,6 +876,14 @@ mod tests {
     }
     
     #[test]
+    fn parses_currencies_from_string_case_insensitive() {
+        let currencies = Currencies::try_from("2 KeYs, 23.44 ReF").unwrap();
+        
+        assert_eq!(currencies.keys, 2);
+        assert_eq!(currencies.weapons, 422);
+    }
+    
+    #[test]
     fn parses_currencies_from_string_only_keys() {
         let currencies = Currencies::try_from("1 key").unwrap();
         
@@ -855,6 +897,14 @@ mod tests {
         
         assert_eq!(currencies.keys, 0);
         assert_eq!(currencies.weapons, refined!(2));
+    }
+    
+    #[test]
+    fn parses_empty_currencies() {
+        let currencies = Currencies::try_from("0 keys, 0 ref").unwrap();
+        
+        assert_eq!(currencies.keys, 0);
+        assert_eq!(currencies.weapons, 0);
     }
     
     #[test]
@@ -873,7 +923,15 @@ mod tests {
     }
     
     #[test]
-    fn gets_correct_value_from_metal() {
+    fn prints_huge_currencies() {
+        assert_eq!(Currencies {
+            keys: 1000000,
+            weapons: 1000000,
+        }.to_string(), "1000000 keys, 55555.55 ref");
+    }
+    
+    #[test]
+    fn gets_correct_value_from_weapons() {
         assert_eq!(
             Currencies::from_weapons(9, 10),
             Currencies {
@@ -884,7 +942,7 @@ mod tests {
     }
     
     #[test]
-    fn gets_correct_value_from_metal_with_keys() {
+    fn gets_correct_value_from_weapons_with_keys() {
         assert_eq!(
             Currencies::from_weapons(10, 10),
             Currencies {
@@ -895,7 +953,7 @@ mod tests {
     }
     
     #[test]
-    fn gets_correct_value_from_metal_with_keys_and_metal() {
+    fn gets_correct_value_from_weapons_with_keys_and_weapons() {
         assert_eq!(
             Currencies::from_weapons(11, 10),
             Currencies {
@@ -947,7 +1005,7 @@ mod tests {
     }
     
     #[test]
-    fn formats_currencies_with_no_metal() {
+    fn formats_currencies_with_no_weapons() {
         let currencies = Currencies {
             keys: 2,
             weapons: 0,
@@ -957,7 +1015,7 @@ mod tests {
     }
     
     #[test]
-    fn converts_to_metal() {
+    fn converts_to_weapons() {
         let currencies = Currencies {
             keys: 1,
             weapons: refined!(23) + scrap!(4),
@@ -968,7 +1026,7 @@ mod tests {
     }
     
     #[test]
-    fn rounds_metal_down() {
+    fn rounds_weapons_down() {
         let currencies = Currencies {
             keys: 1,
             weapons: refined!(23) + scrap!(4) + 1,
@@ -978,7 +1036,7 @@ mod tests {
     }
     
     #[test]
-    fn rounds_metal_down_refined() {
+    fn rounds_weapons_down_refined() {
         let currencies = Currencies {
             keys: 1,
             weapons: refined!(23) + scrap!(4),
@@ -988,7 +1046,7 @@ mod tests {
     }
     
     #[test]
-    fn rounds_metal_up_refined_negative() {
+    fn rounds_weapons_up_refined_negative() {
         let currencies = Currencies {
             keys: 1,
             weapons: -refined!(23) + scrap!(1),
@@ -998,7 +1056,7 @@ mod tests {
     }
     
     #[test]
-    fn rounds_metal_up_refined_negative_whole_value() {
+    fn rounds_weapons_up_refined_negative_whole_value() {
         let currencies = Currencies {
             keys: 1,
             weapons: -refined!(23),
@@ -1008,7 +1066,7 @@ mod tests {
     }
     
     #[test]
-    fn rounds_metal_down_refined_negative() {
+    fn rounds_weapons_down_refined_negative() {
         let currencies = Currencies {
             keys: 1,
             weapons: -refined!(23) + scrap!(8),
@@ -1018,7 +1076,7 @@ mod tests {
     }
     
     #[test]
-    fn rounds_metal_down_refined_negative_whole_value() {
+    fn rounds_weapons_down_refined_negative_whole_value() {
         let currencies = Currencies {
             keys: 1,
             weapons: -refined!(23),
@@ -1028,7 +1086,7 @@ mod tests {
     }
     
     #[test]
-    fn rounds_metal_down_refined_whole_value() {
+    fn rounds_weapons_down_refined_whole_value() {
         let currencies = Currencies {
             keys: 1,
             weapons: refined!(23),
@@ -1038,7 +1096,7 @@ mod tests {
     }
     
     #[test]
-    fn rounds_metal_up_refined() {
+    fn rounds_weapons_up_refined() {
         let currencies = Currencies {
             keys: 1,
             weapons: refined!(23) + scrap!(4),
@@ -1048,7 +1106,7 @@ mod tests {
     }
     
     #[test]
-    fn rounds_metal_up_refined_whole_value() {
+    fn rounds_weapons_up_refined_whole_value() {
         let currencies = Currencies {
             keys: 1,
             weapons: refined!(23),
@@ -1058,7 +1116,7 @@ mod tests {
     }
     
     #[test]
-    fn rounds_metal_refined_down_correctly() {
+    fn rounds_weapons_refined_down_correctly() {
         let currencies = Currencies {
             keys: 1,
             weapons: refined!(23) + scrap!(3),
@@ -1068,7 +1126,7 @@ mod tests {
     }
     
     #[test]
-    fn rounds_metal_refined_down_correctly_whole_value() {
+    fn rounds_weapons_refined_down_correctly_whole_value() {
         let currencies = Currencies {
             keys: 1,
             weapons: refined!(23),
@@ -1078,7 +1136,7 @@ mod tests {
     }
     
     #[test]
-    fn rounds_metal_refined_up_correctly() {
+    fn rounds_weapons_refined_up_correctly() {
         let currencies = Currencies {
             keys: 1,
             weapons: refined!(23) + scrap!(5),
@@ -1088,7 +1146,7 @@ mod tests {
     }
     
     #[test]
-    fn rounds_metal_up() {
+    fn rounds_weapons_up() {
         let currencies = Currencies {
             keys: 1,
             weapons: refined!(23) + scrap!(4) + 1,
@@ -1146,7 +1204,7 @@ mod tests {
     }
     
     #[test]
-    fn to_metal_with_negative_keys() {
+    fn to_weapons_with_negative_keys() {
         let key_price_weapons = refined!(10);
         let currencies = Currencies {
             keys: -10,
@@ -1191,7 +1249,7 @@ mod tests {
     }
     
     #[test]
-    fn to_metal_saturating_integer_bounds() {
+    fn to_weapons_saturating_integer_bounds() {
         let key_price_weapons = refined!(50);
         
         assert_eq!(
@@ -1257,7 +1315,7 @@ mod tests {
     }
     
     #[test]
-    fn checked_to_metal() {
+    fn checked_to_weapons() {
         assert_eq!(
             Currencies {
                 keys: Currency::MAX,
@@ -1268,7 +1326,7 @@ mod tests {
     }
     
     #[test]
-    fn checked_to_metal_correct_value() {
+    fn checked_to_weapons_correct_value() {
         assert_eq!(
             Currencies {
                 keys: 10,
