@@ -8,12 +8,12 @@ Fractional currencies pose arithmetic challenges due to the inherent imprecision
 
 ### With Serde
 ```
-tf2-price = { version = "0.12.0", features = ["serde"] }
+tf2-price = { version = "0.13.1", features = ["serde"] }
 ```
 
 ### Without Serde
 ```
-tf2-price = "0.12.0"
+tf2-price = "0.13.1"
 ```
 
 ## Usage
