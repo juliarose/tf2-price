@@ -4,8 +4,6 @@ Utilities for Team Fortress 2 item pricing. Lightweight with [only one required 
 
 Fractional currencies pose arithmetic challenges due to the inherent imprecision of floating-point numbers. A solution is to handle currency in its smallest unit (e.g., cents for US currency, or weapons in Team Fortress 2), stored as integers. This allows precise calculations without [cumbersome conversions](https://gist.github.com/juliarose/f2b5aaa2c71b90d536668e0143d16936), ensuring predictable outcomes. Additionally, this crate offers a container for floating-point currencies when needed.
 
-In release builds in Rust, integers pose the risk of [overflowing](https://en.wikipedia.org/wiki/Integer_overflow). While, this behaviour is [not considered unsafe](https://doc.rust-lang.org/reference/behavior-not-considered-unsafe.html#integer-overflow), it is problematic. This crate uses [saturating arithmetic](https://en.wikipedia.org/wiki/Saturation_arithmetic) for integer arithmetic and also provides methods for checking for overflow.
-
 ## Installation
 
 ### With Serde
@@ -96,6 +94,8 @@ assert_eq!(
 );
 ```
 
+In release builds in Rust, integers pose the risk of [overflowing](https://en.wikipedia.org/wiki/Integer_overflow). While, this behaviour is [not considered unsafe](https://doc.rust-lang.org/reference/behavior-not-considered-unsafe.html#integer-overflow), it is problematic. This crate uses [saturating arithmetic](https://en.wikipedia.org/wiki/Saturation_arithmetic) for integer arithmetic and also provides methods for checking for overflow.
+
 Due to the vast size of 64-bit integers, worries about reaching their bounds are generally unnecessary. To give a practical example:
 
 ```rust 
@@ -117,16 +117,20 @@ let num_golden_pans = Currency::MAX / golden_pan_weapons;
 
 // It would be enough weapons to buy over 3 trillion Golden Pans.
 assert_eq!(num_golden_pans, 3_416_063_717_353);
+
+let currencies = Currencies {
+    keys: 0,
+    weapons: golden_pan_weapons,
+};
+
 // We can multiply the number of Golden Pans by the price of one.
-assert!(Currencies {
-    keys: 0,
-    weapons: golden_pan_weapons,
-}.checked_mul(num_golden_pans).is_some());
+assert!(currencies.checked_mul(num_golden_pans).is_some());
 // But if we try to multiply by one more, it will overflow.
-assert!(Currencies {
-    keys: 0,
-    weapons: golden_pan_weapons,
-}.checked_mul(num_golden_pans + 1).is_none());
+assert!(currencies.checked_mul(num_golden_pans + 1).is_none());
+// Now we do the same multiplication but without checking.
+let currencies = currencies * (num_golden_pans + 1);
+// The result will be the max value rather than wrapping around.
+assert_eq!(currencies.weapons, Currency::MAX);
 ```
 
 ### Floating Point Precision
