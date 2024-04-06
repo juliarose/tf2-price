@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.13.0 (2024-04-03)
+## 0.13.1 (2024-04-06)
+
+### Fixed
+- Readme displaying the wrong version.
+
+## 0.13.0 (2024-04-06)
 
 ### Changed
 - **MAJOR CHANGE:** Renamed `ListingCurrencies` to `FloatCurrencies`. Both `keys` and `metal` fields are now defined as `f32`. This makes more sense as this is generally used as a container type for holding original values from responses. `FloatCurrencies` should generally be converted to `Currencies` in order to perform arithmetic.
