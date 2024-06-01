@@ -6,16 +6,9 @@ Fractional currencies pose arithmetic challenges due to the inherent imprecision
 
 Metal values are stored as weapons. For example, 1.33 refined is stored as 24 weapons. With weapons rather than scrap we are able to express more precise values (buying and selling MvM parts often requires precision in weapons). Values lower than a weapon are almost never used in practice and are not supported unless using `FloatCurrencies`.
 
-## Installation
-
-### With Serde
+## Installation with Serde
 ```
 tf2-price = { version = "0.13.2", features = ["serde"] }
-```
-
-### Without Serde
-```
-tf2-price = "0.13.2"
 ```
 
 ## Usage
