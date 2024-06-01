@@ -521,7 +521,11 @@ impl std::str::FromStr for Currencies {
     }
 }
 
-/// Results in error if [`FloatCurrencies`] contains a fractional key value.
+/// Converts [`FloatCurrencies`] to [`Currencies`].
+/// 
+/// # Errors
+/// - [`FloatCurrencies`] contains a fractional key value.
+/// - [`FloatCurrencies`] contains a value that is out of bounds.
 impl TryFrom<FloatCurrencies> for Currencies {
     type Error = TryFromFloatCurrenciesError;
     
@@ -548,7 +552,11 @@ impl TryFrom<FloatCurrencies> for Currencies {
     }
 }
 
-/// Results in error if [`FloatCurrencies`] contains a fractional key value.
+/// Converts [`FloatCurrencies`] to [`Currencies`].
+/// 
+/// # Errors
+/// - [`FloatCurrencies`] contains a fractional key value.
+/// - [`FloatCurrencies`] contains a value that is out of bounds.
 impl TryFrom<&FloatCurrencies> for Currencies {
     type Error = TryFromFloatCurrenciesError;
     

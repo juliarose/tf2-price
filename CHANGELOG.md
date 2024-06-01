@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.2 (2024-05-19)
+
+### Changed
+- Updated readme to be a bit easier to understand.
+- Adding missing comment about overflows for `TryFrom<FloatCurrencies>` for `Currencies`.
+
 ## 0.13.1 (2024-04-06)
 
 ### Fixed
