@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.13.2 (2024-05-19)
+## 0.13.2 (2024-06-01)
 
 ### Changed
 - Updated readme to be a bit easier to understand.
