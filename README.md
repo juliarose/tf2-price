@@ -38,7 +38,7 @@ let currencies = Currencies::from_weapons(total, key_price_weapons);
 
 ### Arithmetic
 
-In release builds in Rust, integers pose the risk of [overflowing](https://en.wikipedia.org/wiki/Integer_overflow). While, this behavior is [not considered unsafe](https://doc.rust-lang.org/reference/behavior-not-considered-unsafe.html#integer-overflow), it is problematic. This crate uses [saturating arithmetic](https://en.wikipedia.org/wiki/Saturation_arithmetic) for integer arithmetic and also provides methods for checking for overflow (using methods such as [`checked_from_weapons`](https://docs.rs/tf2-price/latest/tf2_price/struct.Currencies.html#method.checked_from_weapons)). Any method which is fallible will check for overflows.
+In release builds, integers pose the risk of [overflowing](https://en.wikipedia.org/wiki/Integer_overflow). While this behavior is [not considered unsafe](https://doc.rust-lang.org/reference/behavior-not-considered-unsafe.html#integer-overflow), it is problematic. This crate uses [saturating arithmetic](https://en.wikipedia.org/wiki/Saturation_arithmetic) for integer arithmetic and also provides methods for checking for overflow (using methods such as [`checked_from_weapons`](https://docs.rs/tf2-price/latest/tf2_price/struct.Currencies.html#method.checked_from_weapons)).
 
 ```rust
 use tf2_price::{Currencies, Currency};

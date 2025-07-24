@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.3 (2025-07-23)
+
+### Changed
+- Updated readme and documentation.
+
 ## 0.13.2 (2024-06-01)
 
 ### Changed
