@@ -37,7 +37,7 @@ impl fmt::Display for TryFromFloatCurrenciesError {
     }
 }
 
-/// An error occurred parsing a string into a currency.
+/// An error occurred parsing a currency from a string.
 #[derive(Debug)]
 pub enum ParseError {
     /// String was invalid.
@@ -56,11 +56,7 @@ pub enum ParseError {
     ParseFloat(ParseFloatError),
 }
 
-impl std::error::Error for ParseError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-}
+impl std::error::Error for ParseError {}
 
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

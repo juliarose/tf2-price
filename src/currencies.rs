@@ -47,14 +47,7 @@ impl Ord for Currencies {
 }
 
 impl Currencies {
-    /// Creates a new [`Currencies`] with `0` keys and `0` weapons.
-    /// 
-    /// # Examples
-    /// ```
-    /// use tf2_price::Currencies;
-    /// 
-    /// let currencies = Currencies::new();
-    /// ```
+    /// Creates a new [`Currencies`].
     pub fn new() -> Self {
         Self::default()
     }
@@ -259,16 +252,13 @@ impl Currencies {
         helpers::checked_to_metal(self.weapons, self.keys, key_price)
     }
     
-    /// Checks if the currencies do contain any value.
+    /// Checks if the currencies do not contain any value.
     /// 
     /// # Examples
     /// ```
     /// use tf2_price::Currencies;
     /// 
-    /// assert!(Currencies {
-    ///     keys: 0,
-    ///     weapons: 0,
-    /// }.is_empty());
+    /// assert!(Currencies { keys: 0, weapons: 0 }.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
         self.keys == 0 && self.weapons == 0
@@ -309,13 +299,7 @@ impl Currencies {
     ///     weapons: refined!(60),
     /// }.neaten(key_price_weapons);
     /// 
-    /// assert_eq!(
-    ///     currencies,
-    ///     Currencies {
-    ///         keys: 2,
-    ///         weapons: refined!(10),
-    ///     },
-    /// );
+    /// assert_eq!(currencies, Currencies { keys: 2, weapons: refined!(10) });
     /// ```
     pub fn neaten(&self, key_price_weapons: Currency) -> Self {
         Self::from_weapons(self.to_weapons(key_price_weapons), key_price_weapons)
@@ -334,15 +318,9 @@ impl Currencies {
     /// };
     /// 
     /// // We have at least 50 keys and 30 refined.
-    /// assert!(currencies.can_afford(&Currencies {
-    ///     keys: 50,
-    ///     weapons: refined!(30),
-    /// }));
+    /// assert!(currencies.can_afford(&Currencies { keys: 50, weapons: refined!(30) }));
     /// // Not enough metal - we can't afford this.
-    /// assert!(!currencies.can_afford(&Currencies {
-    ///     keys: 50,
-    ///     weapons: refined!(100)
-    /// }));
+    /// assert!(!currencies.can_afford(&Currencies { keys: 50, weapons: refined!(100) }));
     /// ```
     pub fn can_afford(&self, other: &Self) -> bool {
         self.keys >= other.keys && self.weapons >= other.weapons

@@ -67,15 +67,7 @@ impl Ord for FloatCurrencies {
 impl Eq for FloatCurrencies {}
 
 impl FloatCurrencies {
-    /// Creates a new [`FloatCurrencies`] with `0` keys and `0` metal. Same as
-    /// `FloatCurrencies::default()`.
-    /// 
-    /// # Examples
-    /// ```
-    /// use tf2_price::FloatCurrencies;
-    /// 
-    /// let currencies = FloatCurrencies::new();
-    /// ```
+    /// Creates a new [`FloatCurrencies`].
     pub fn new() -> Self {
         Self::default()
     }
@@ -121,14 +113,12 @@ impl FloatCurrencies {
     /// use tf2_price::{Currency, FloatCurrencies, refined};
     /// 
     /// let key_price_weapons = refined!(50);
+    /// let currencies = FloatCurrencies {
+    ///     keys: Currency::MAX as f32 + 1.0,
+    ///     metal: 0.0,
+    /// };
     /// 
-    /// assert_eq!(
-    ///     FloatCurrencies {
-    ///         keys: Currency::MAX as f32 + 1.0,
-    ///         metal: 0.0,
-    ///     }.checked_to_weapons(key_price_weapons),
-    ///     None,
-    /// );
+    /// assert!(currencies.checked_to_weapons(key_price_weapons).is_none());
     /// ```
     pub fn checked_to_weapons(
         &self,

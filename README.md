@@ -1,18 +1,20 @@
 # tf2-price
 
-Utilities for Team Fortress 2 item pricing.
-
-To avoid issues with [floating point arithmetic](https://en.wikipedia.org/wiki/Floating-point_arithmetic#Accuracy_problems), values are stored as 64-bit integers. For metal, this means using the lowest denomination of currency, which is weapons rather than scrap.
+Provides utilities for Team Fortress 2 item pricing.
 
 ## Installation with Serde
+
 ```toml
 [dependencies]
-tf2-price = { version = "0.13.2", features = ["serde"] }
+tf2-price = { version = "0.13", features = ["serde"] }
 ```
 
 ## Usage
 
 ### Basic Usage
+
+To avoid issues with [floating point arithmetic](https://en.wikipedia.org/wiki/Floating-point_arithmetic#Accuracy_problems), values are stored as 64-bit integers. For metal, this means using the lowest denomination of currency which is weapons.
+
 ```rust
 use tf2_price::{Currencies, metal};
 
@@ -22,14 +24,9 @@ let currencies = Currencies {
 };
 
 // String conversions.
-assert_eq!(
-    format!("Selling for {currencies}."),
-    "Selling for 5 keys, 1.33 ref.",
-);
-assert_eq!(
-    "5 keys, 1.33 ref".parse::<Currencies>().unwrap(),
-    currencies,
-);
+println!("Selling for {currencies}."); // Selling for 5 keys, 1.33 ref.
+
+let currencies = "5 keys, 1.33 ref".parse::<Currencies>().unwrap();
 
 // Key price stored as weapons.
 let key_price_weapons = metal!(50);
@@ -40,6 +37,9 @@ let currencies = Currencies::from_weapons(total, key_price_weapons);
 ```
 
 ### Arithmetic
+
+In release builds in Rust, integers pose the risk of [overflowing](https://en.wikipedia.org/wiki/Integer_overflow). While, this behavior is [not considered unsafe](https://doc.rust-lang.org/reference/behavior-not-considered-unsafe.html#integer-overflow), it is problematic. This crate uses [saturating arithmetic](https://en.wikipedia.org/wiki/Saturation_arithmetic) for integer arithmetic and also provides methods for checking for overflow (using methods such as [`checked_from_weapons`](https://docs.rs/tf2-price/latest/tf2_price/struct.Currencies.html#method.checked_from_weapons)). Any method which is fallible will check for overflows.
+
 ```rust
 use tf2_price::{Currencies, Currency};
 
@@ -61,7 +61,19 @@ let with_weapons = golden_pan + Currencies {
 }; // Currencies { keys: 3000, weapons: 2 }
 ```
 
-In release builds in Rust, integers pose the risk of [overflowing](https://en.wikipedia.org/wiki/Integer_overflow). While, this behavior is [not considered unsafe](https://doc.rust-lang.org/reference/behavior-not-considered-unsafe.html#integer-overflow), it is problematic. This crate uses [saturating arithmetic](https://en.wikipedia.org/wiki/Saturation_arithmetic) for integer arithmetic and also provides methods for checking for overflow (using methods such as [`checked_from_weapons`](https://docs.rs/tf2-price/latest/tf2_price/struct.Currencies.html#method.checked_from_weapons)). Any method which is fallible will check for overflows.
+### Serialization
+
+While `Currencies` uses `weapons` as the unit for metal, it is converted to and from `metal` when serialized for compatibility with APIs.
+
+```rust
+use tf2_price::{Currencies, metal};
+    
+let json = r#"{"keys":5,"metal":2.33}"#;
+let currencies: Currencies = serde_json::from_str(json).unwrap();
+
+assert_eq!(currencies, Currencies { keys: 5, weapons: metal!(2.33) });
+assert_eq!(json, serde_json::to_string(&currencies).unwrap());
+```
 
 ### Floating Point Precision
 
@@ -91,20 +103,6 @@ assert!(Currencies::try_from(FloatCurrencies {
     keys: Currency::MAX as f32 * 2.0,
     metal: 0.0,
 }).is_err());
-```
-
-### Serialization
-
-While `Currencies` uses `weapons` as the unit for metal, it is converted to and from `metal` when serialized for compatibility with APIs.
-
-```rust
-use tf2_price::{Currencies, metal};
-    
-let json = r#"{"keys":5,"metal":2.33}"#;
-let currencies: Currencies = serde_json::from_str(json).unwrap();
-
-assert_eq!(currencies, Currencies { keys: 5, weapons: metal!(2.33) });
-assert_eq!(json, serde_json::to_string(&currencies).unwrap());
 ```
 
 ## License

@@ -1,8 +1,6 @@
-//! # tf2-price
+//! Provides utilities for Team Fortress 2 item pricing.
 //! 
-//! Utilities for Team Fortress 2 item pricing.
-//! 
-//! ## Usage
+//! # Usage
 //!
 //! ```
 //! use tf2_price::{Currencies, ONE_REF, scrap};
@@ -12,23 +10,23 @@
 //!     weapons: scrap!(5),
 //! };
 //! 
+//! // add keys
+//! currencies.keys += 5;
+//! assert_eq!(currencies, Currencies { keys: 10, weapons: 10 });
+//! 
+//! // add metal - this value is represented as the number of weapons
+//! currencies.weapons += ONE_REF * 5;
+//! assert_eq!(currencies, Currencies { keys: 10, weapons: 100 });
+//! 
 //! // add another currencies
 //! currencies += Currencies {
 //!     keys: 2,
 //!     weapons: 0,
 //! };
-//! assert_eq!(currencies, Currencies { keys: 7, weapons: 10 });
-//! 
-//! // add keys
-//! currencies.keys += 5;
-//! assert_eq!(currencies, Currencies { keys: 12, weapons: 10 });
-//! 
-//! // add metal - this value is represented as the number of weapons
-//! currencies.weapons += ONE_REF * 5;
 //! assert_eq!(currencies, Currencies { keys: 12, weapons: 100 });
 //! ```
 //! 
-//! ## Conventions
+//! # Conventions
 //! 
 //! Metal values are represented as weapons, the smallest unit of currency. To ensure accurate
 //! accounting, utilize the provided macros and constants. For instance, by using the [`ONE_SCRAP`]
@@ -38,10 +36,11 @@
 //! 
 //! In addition, all key values in methods are represented as values in weapons.
 //! 
-//! Arithmetic operations employ saturating operations, preventing overflow. Adding two currencies
-//! each containing [i64::MAX] will yield [i64::MAX] instead of wrapping around. Although values
-//! are stored as 64-bit integers and typically won't overflow with reasonable numbers, checked
-//! methods are provided for overflow checking if needed.
+//! Arithmetic operations employ
+//! [saturating operations](https://en.wikipedia.org/wiki/Saturation_arithmetic),
+//! preventing overflow. Adding two currencies that exceed [i64::MAX] will yield [i64::MAX] instead
+//! of wrapping around. Although values are stored as 64-bit integers and typically won't overflow
+//! with reasonable numbers, checked methods are provided for overflow checking if needed.
 
 #![warn(missing_docs)]
 
