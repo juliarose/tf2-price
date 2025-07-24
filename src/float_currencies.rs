@@ -7,8 +7,8 @@ use std::fmt;
 use std::cmp::{Ord, Ordering};
 use auto_ops::impl_op_ex;
 
-/// For storing floating point values of currencies. This is useful for retaining the original 
-/// values from responses. Convert to [`Currencies`] to perform precise arithmetical operations or 
+/// For storing floating point values of currencies. This is useful for retaining the original
+/// values from responses. Convert to [`Currencies`] to perform precise arithmetical operations or
 /// comparisons.
 /// 
 /// # Examples
@@ -35,8 +35,8 @@ pub struct FloatCurrencies {
     /// Amount of keys.
     #[cfg_attr(feature = "serde", serde(default))]
     pub keys: f32,
-    /// Amount of metal expressed as a float e.g. "1.33 ref". Unlike [`Currencies`], this 
-    /// **is not** represented as weapons. This is meant to retain the original values from 
+    /// Amount of metal expressed as a float e.g. "1.33 ref". Unlike [`Currencies`], this
+    /// **is not** represented as weapons. This is meant to retain the original values from
     /// responses.
     #[cfg_attr(feature = "serde", serde(default))]
     pub metal: f32,
@@ -67,7 +67,7 @@ impl Ord for FloatCurrencies {
 impl Eq for FloatCurrencies {}
 
 impl FloatCurrencies {
-    /// Creates a new [`FloatCurrencies`] with `0` keys and `0` metal. Same as 
+    /// Creates a new [`FloatCurrencies`] with `0` keys and `0` metal. Same as
     /// `FloatCurrencies::default()`.
     /// 
     /// # Examples
@@ -80,7 +80,7 @@ impl FloatCurrencies {
         Self::default()
     }
     
-    /// Converts currencies to a value in weapons using the given key price (represented as 
+    /// Converts currencies to a value in weapons using the given key price (represented as
     /// weapons). Rounds float conversions.
     /// 
     /// This method is [saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic).
@@ -107,12 +107,12 @@ impl FloatCurrencies {
         helpers::get_weapons_from_metal_float(self.metal).saturating_add(keys_weapons)
     }
     
-    /// Converts currencies to a value in weapons using the given key price (represented as 
+    /// Converts currencies to a value in weapons using the given key price (represented as
     /// weapons).
     /// 
     /// Checks for safe conversion.
     /// 
-    /// In cases where the result overflows or underflows beyond the limit for 
+    /// In cases where the result overflows or underflows beyond the limit for
     /// [`Currency`], `None` is returned. Currencies containing NaN or Infinity values will also
     /// return `None`.
     /// 

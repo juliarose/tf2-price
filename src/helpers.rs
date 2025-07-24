@@ -14,7 +14,7 @@ pub fn to_metal(
 }
 
 /// Converts currencies to a metal value using the given key price (represented as weapons).
-/// In cases where the result overflows or underflows beyond the limit for [`Currency`], `None` 
+/// In cases where the result overflows or underflows beyond the limit for [`Currency`], `None`
 /// is returned.
 pub fn checked_to_metal(
     metal: Currency,
@@ -50,7 +50,7 @@ pub fn pluralize_float<'a>(
     }
 }
 
-/// Prints a float as either an integer if it contains no fractional values or with 2 decimal 
+/// Prints a float as either an integer if it contains no fractional values or with 2 decimal
 /// places if it does.
 pub fn print_float(amount: f32) -> String {
     if amount.fract() == 0.0 {

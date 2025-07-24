@@ -15,8 +15,9 @@ pub struct Currencies {
     /// Amount of keys.
     #[cfg_attr(feature = "serde", serde(default))]
     pub keys: Currency,
-    /// Amount of metal expressed as weapons. It's recommended to use the `ONE_REF`, `ONE_REC`, 
-    /// `ONE_SCRAP`, and `ONE_WEAPON` constants to perform arithmatic.
+    /// Amount of metal expressed as weapons. It's recommended to use the
+    /// [`ONE_REF`](crate::ONE_REF), [`ONE_REC`](crate::ONE_REC), [`ONE_SCRAP`](crate::ONE_SCRAP),
+    /// and [`ONE_WEAPON`](crate::ONE_WEAPON) constants to perform arithmetic.
     #[cfg_attr(feature = "serde", serde(default))]
     #[cfg_attr(feature = "serde", serde(rename = "metal"))]
     #[cfg_attr(feature = "serde", serde(deserialize_with = "crate::serializers::metal_deserializer"))]
@@ -46,7 +47,7 @@ impl Ord for Currencies {
 }
 
 impl Currencies {
-    /// Creates a new [`Currencies`] with `0` keys and `0` weapons. Same as `Currencies::default()`.
+    /// Creates a new [`Currencies`] with `0` keys and `0` weapons.
     /// 
     /// # Examples
     /// ```
@@ -58,7 +59,7 @@ impl Currencies {
         Self::default()
     }
     
-    /// Converts a weapon value into the appropriate number of keys and weapons using the given 
+    /// Converts a weapon value into the appropriate number of keys and weapons using the given
     /// key price (represented as weapons).
     /// 
     /// This method is [saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic).
@@ -83,7 +84,7 @@ impl Currencies {
         }
     }
     
-    /// Converts a weapon value into the appropriate number of keys and weapons using the given 
+    /// Converts a weapon value into the appropriate number of keys and weapons using the given
     /// key price (represented as weapons).
     /// 
     /// Checks for safe conversion.
@@ -180,7 +181,7 @@ impl Currencies {
         key_price_weapons: Currency,
     ) -> Option<Self> {
         // Convert the integer part of the keys value.
-        // Using trunc() is OK here in the event that keys is Infinity or NaN, the output will be 
+        // Using trunc() is OK here in the event that keys is Infinity or NaN, the output will be
         // the same value.
         let keys = helpers::strict_f32_to_currency(currencies.keys.trunc())?;
         // Take the remainder of the keys value.
@@ -195,7 +196,7 @@ impl Currencies {
         })
     }
     
-    /// Converts an f32 key value into `Currencies` using the given key price (represented as 
+    /// Converts an f32 key value into `Currencies` using the given key price (represented as
     /// weapons).
     /// 
     /// # Examples
@@ -273,7 +274,7 @@ impl Currencies {
         self.keys == 0 && self.weapons == 0
     }
     
-    /// Rounds the weapon value using the given rounding method. Returns a new `Currencies` 
+    /// Rounds the weapon value using the given rounding method. Returns a new `Currencies`
     /// rather than mutating the original in-place.
     /// 
     /// # Examples
@@ -293,7 +294,7 @@ impl Currencies {
         self
     }
     
-    /// Neatens currencies. If the `weapons` value is over `key_price_weapons`, the `weapons` 
+    /// Neatens currencies. If the `weapons` value is over `key_price_weapons`, the `weapons`
     /// value will be converted to `keys`, with the remainder remaining as `weapons`.
     /// 
     /// This method is [saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic).
@@ -320,7 +321,7 @@ impl Currencies {
         Self::from_weapons(self.to_weapons(key_price_weapons), key_price_weapons)
     }
     
-    /// Checks whether the currencies have enough `keys` and `weapons` to afford the `other` 
+    /// Checks whether the currencies have enough `keys` and `weapons` to afford the `other`
     /// currencies. This is simply `self.keys >= other.keys && self.weapons >= other.weapons`.
     /// 
     /// # Examples
@@ -347,7 +348,7 @@ impl Currencies {
         self.keys >= other.keys && self.weapons >= other.weapons
     }
     
-    /// Checked integer multiplication. Computes `self * rhs` for each field, returning `None` if 
+    /// Checked integer multiplication. Computes `self * rhs` for each field, returning `None` if
     /// overflow occurred.
     /// 
     /// # Examples
@@ -369,7 +370,7 @@ impl Currencies {
         Some(Self { keys, weapons })
     }
     
-    /// Checked integer division. Computes `self / rhs`, returning `None` if `rhs == 0` or the 
+    /// Checked integer division. Computes `self / rhs`, returning `None` if `rhs == 0` or the
     /// division results in overflow.
     pub fn checked_div(&self, rhs: Currency) -> Option<Self> {
         let keys = self.keys.checked_div(rhs)?;
@@ -395,7 +396,7 @@ impl Currencies {
     }
 }
 
-/// Comparison with [`FloatCurrencies`] will fail if [`FloatCurrencies`] has a fractional key 
+/// Comparison with [`FloatCurrencies`] will fail if [`FloatCurrencies`] has a fractional key
 /// value.
 impl PartialEq<FloatCurrencies> for Currencies {
     fn eq(&self, other: &FloatCurrencies) -> bool {

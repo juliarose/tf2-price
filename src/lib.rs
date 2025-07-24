@@ -30,17 +30,17 @@
 //! 
 //! ## Conventions
 //! 
-//! Metal values are represented as weapons, the smallest unit of currency. To ensure accurate 
-//! accounting, utilize the provided macros and constants. For instance, by using the `ONE_SCRAP` 
-//! constant or the `scrap!(1)` macro, one scrap will be added to the weapons field. To convert 
-//! floating point refined values into weapons, use the `metal!` macro e.g. `metal!(1.33)` 
+//! Metal values are represented as weapons, the smallest unit of currency. To ensure accurate
+//! accounting, utilize the provided macros and constants. For instance, by using the [`ONE_SCRAP`]
+//! constant or the [`scrap`] macro, one scrap will be added to the weapons field. To convert
+//! floating point refined values into weapons, use the [`metal`] macro e.g. `metal!(1.33)`
 //! converts into 24 weapons.
 //! 
 //! In addition, all key values in methods are represented as values in weapons.
 //! 
-//! Arithmetic operations employ saturating operations, preventing overflow. Adding two currencies 
-//! each containing [i64::MAX] will yield [i64::MAX] instead of wrapping around. Although values 
-//! are stored as 64-bit integers and typically won't overflow with reasonable numbers, checked 
+//! Arithmetic operations employ saturating operations, preventing overflow. Adding two currencies
+//! each containing [i64::MAX] will yield [i64::MAX] instead of wrapping around. Although values
+//! are stored as 64-bit integers and typically won't overflow with reasonable numbers, checked
 //! methods are provided for overflow checking if needed.
 
 #![warn(missing_docs)]

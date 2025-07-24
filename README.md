@@ -1,13 +1,12 @@
 # tf2-price
 
-Utilities for Team Fortress 2 item pricing. Lightweight with [only one required dependency](https://github.com/juliarose/tf2-price/tree/main/Cargo.toml).
+Utilities for Team Fortress 2 item pricing.
 
-Fractional currencies pose arithmetic challenges due to the inherent imprecision of floating-point numbers. A solution is to handle currency in its smallest unit (e.g., cents for US currency, or weapons in Team Fortress 2), stored as integers. This allows precise calculations without [cumbersome conversions](https://gist.github.com/juliarose/f2b5aaa2c71b90d536668e0143d16936), ensuring predictable outcomes.
-
-Metal values are stored as weapons. For example, 1.33 refined is stored as 24 weapons. With weapons rather than scrap we are able to express more precise values (buying and selling MvM parts often requires precision in weapons). Values lower than a weapon are almost never used in practice and are not supported unless using `FloatCurrencies`.
+To avoid issues with [floating point arithmetic](https://en.wikipedia.org/wiki/Floating-point_arithmetic#Accuracy_problems), values are stored as 64-bit integers. For metal, this means using the lowest denomination of currency, which is weapons rather than scrap.
 
 ## Installation with Serde
-```
+```toml
+[dependencies]
 tf2-price = { version = "0.13.2", features = ["serde"] }
 ```
 
@@ -15,17 +14,13 @@ tf2-price = { version = "0.13.2", features = ["serde"] }
 
 ### Basic Usage
 ```rust
-use tf2_price::{Currencies, metal, ONE_REF, ONE_REC};
+use tf2_price::{Currencies, metal};
 
 let currencies = Currencies {
     keys: 5,
     weapons: metal!(1.33), // 24 weapons.
 };
 
-// 1.33 refined or 24 weapons.
-assert_eq!(currencies.weapons, 24);
-assert_eq!(currencies.weapons, ONE_REF + ONE_REC);
-assert_eq!(currencies.weapons, metal!(1.33));
 // String conversions.
 assert_eq!(
     format!("Selling for {currencies}."),
@@ -39,16 +34,9 @@ assert_eq!(
 // Key price stored as weapons.
 let key_price_weapons = metal!(50);
 // Conversion to a single total.
-let total = currencies.to_weapons(key_price_weapons);
-
-// 5 (keys) * 50 (key price) * 18 (one ref) = 4500
-// 4500 + 24 (weapons) = 4524
-assert_eq!(total, 4524);
-assert_eq!(
-    // Convert total back into keys + weapons.
-    Currencies::from_weapons(total, key_price_weapons),
-    currencies,
-);
+let total = currencies.to_weapons(key_price_weapons); // 4524 weapons.
+// Convert total back into keys + weapons.
+let currencies = Currencies::from_weapons(total, key_price_weapons);
 ```
 
 ### Arithmetic
@@ -60,38 +48,20 @@ let golden_pan = Currencies {
     weapons: 0,
 };
 
-assert_eq!(
-    // Multiply by an integer.
-    golden_pan * 2,
-    Currencies {
-        keys: 6000,
-        weapons: 0,
-    },
-);
-assert_eq!(
-    // Multiply by a floating point number.
-    golden_pan * 2.5,
-    Currencies {
-        keys: 7500,
-        weapons: 0,
-    },
-);
-assert_eq!(
-    // Add another currencies.
-    golden_pan + Currencies {
-        keys: 0,
-        weapons: 2,
-    },
-    Currencies {
-        keys: 3000,
-        weapons: 2,
-    },
-);
+// Multiply by an integer.
+let doubled = golden_pan * 2; // Currencies { keys: 6000, weapons: 0 }
+
+// Multiply by a floating point number.
+let multiplied = golden_pan * 2.5; // Currencies { keys: 7500, weapons: 0 }
+
+// Add another currencies.
+let with_weapons = golden_pan + Currencies {
+    keys: 0,
+    weapons: 2,
+}; // Currencies { keys: 3000, weapons: 2 }
 ```
 
-In release builds in Rust, integers pose the risk of [overflowing](https://en.wikipedia.org/wiki/Integer_overflow). While, this behaviour is [not considered unsafe](https://doc.rust-lang.org/reference/behavior-not-considered-unsafe.html#integer-overflow), it is problematic. This crate uses [saturating arithmetic](https://en.wikipedia.org/wiki/Saturation_arithmetic) for integer arithmetic and also provides methods for checking for overflow (using methods such as [`checked_from_weapons`](https://docs.rs/tf2-price/latest/tf2_price/struct.Currencies.html#method.checked_from_weapons)). Any method which is fallible will check for overflows.
-
-Due to the vast size of 64-bit integers (max value 9,223,372,036,854,775,807), worries about reaching their bounds are generally unnecessary.
+In release builds in Rust, integers pose the risk of [overflowing](https://en.wikipedia.org/wiki/Integer_overflow). While, this behavior is [not considered unsafe](https://doc.rust-lang.org/reference/behavior-not-considered-unsafe.html#integer-overflow), it is problematic. This crate uses [saturating arithmetic](https://en.wikipedia.org/wiki/Saturation_arithmetic) for integer arithmetic and also provides methods for checking for overflow (using methods such as [`checked_from_weapons`](https://docs.rs/tf2-price/latest/tf2_price/struct.Currencies.html#method.checked_from_weapons)). Any method which is fallible will check for overflows.
 
 ### Floating Point Precision
 
@@ -110,13 +80,7 @@ let float_currencies = FloatCurrencies {
 // Converting to Currencies (checks for safe conversion).
 let currencies = Currencies::try_from(float_currencies).unwrap();
 
-assert_eq!(
-    currencies,
-    Currencies {
-        keys: 1,
-        metal: 24,
-    },
-);
+assert_eq!(currencies, Currencies { keys: 1, metal: 24 });
 // Fails if the key value holds a fractional number.
 assert!(Currencies::try_from(FloatCurrencies {
     keys: 1.5,
@@ -130,23 +94,17 @@ assert!(Currencies::try_from(FloatCurrencies {
 ```
 
 ### Serialization
+
+While `Currencies` uses `weapons` as the unit for metal, it is converted to and from `metal` when serialized for compatibility with APIs.
+
 ```rust
 use tf2_price::{Currencies, metal};
     
 let json = r#"{"keys":5,"metal":2.33}"#;
 let currencies: Currencies = serde_json::from_str(json).unwrap();
 
-assert_eq!(
-    currencies,
-    Currencies {
-        keys: 5,
-        weapons: metal!(2.33),
-    },
-);
-assert_eq!(
-    json,
-    serde_json::to_string(&currencies).unwrap(),
-);
+assert_eq!(currencies, Currencies { keys: 5, weapons: metal!(2.33) });
+assert_eq!(json, serde_json::to_string(&currencies).unwrap());
 ```
 
 ## License
