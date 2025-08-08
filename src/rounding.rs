@@ -1,5 +1,6 @@
+
 /// Rounding methods for metal values.
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Copy, Default)]
 pub enum Rounding {
     /// Rounds up to the nearest scrap.
     UpScrap,
@@ -12,5 +13,6 @@ pub enum Rounding {
     /// Rounds down to the nearest refined.
     DownRefined,
     /// No rounding.
+    #[default]
     None,
 }

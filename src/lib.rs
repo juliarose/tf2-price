@@ -3,27 +3,27 @@
 //! # Usage
 //!
 //! ```
-//! use tf2_price::{Currencies, ONE_REF, scrap};
+//! use tf2_price::{Currencies, ref_to_weps};
 //! 
 //! let mut currencies = Currencies {
 //!     keys: 5,
-//!     weapons: scrap!(5),
+//!     weapons: ref_to_weps!(1.33), // 1.33 refined metal
 //! };
 //! 
 //! // add keys
 //! currencies.keys += 5;
-//! assert_eq!(currencies, Currencies { keys: 10, weapons: 10 });
+//! assert_eq!(currencies, Currencies { keys: 10, weapons: 24 });
 //! 
 //! // add metal - this value is represented as the number of weapons
-//! currencies.weapons += ONE_REF * 5;
-//! assert_eq!(currencies, Currencies { keys: 10, weapons: 100 });
+//! currencies.weapons += ref_to_weps!(0.33);
+//! assert_eq!(currencies, Currencies { keys: 10, weapons: 30 });
 //! 
 //! // add another currencies
 //! currencies += Currencies {
 //!     keys: 2,
 //!     weapons: 0,
 //! };
-//! assert_eq!(currencies, Currencies { keys: 12, weapons: 100 });
+//! assert_eq!(currencies, Currencies { keys: 12, weapons: 30 });
 //! ```
 //! 
 //! # Conventions
@@ -67,44 +67,46 @@ pub use helpers::{
 pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
 
 #[cfg(not(feature = "b32"))]
-/// Generates value for metal.
+/// Converts a refined metal value into weapons. While this method is convenient, keep in mind that
+/// macros in Rust can increase compilation time and binary size, so don't overuse them. Prefer
+/// using the constants provided from this crate.
+/// 
+/// # Examples
+/// ```
+/// use tf2_price::ref_to_weps;
+/// 
+/// assert_eq!(ref_to_weps!(1.0), 18);
+/// assert_eq!(ref_to_weps!(1), 18);
+/// assert_eq!(ref_to_weps!(1.05), 19);
+/// assert_eq!(ref_to_weps!(1.11), 20);
+/// assert_eq!(ref_to_weps!(1.77), 32);
+/// ```
 #[macro_export]
-macro_rules! metal {
+macro_rules! ref_to_weps {
     ( $a:expr ) => {
         ($a as f32 * 18.0_f32).round() as i64
     }
 }
 
 #[cfg(feature = "b32")]
-/// Generates value for metal.
+/// Converts a refined metal value into weapons. While this method is convenient, keep in mind that
+/// macros in Rust can increase compilation time and binary size, so don't overuse them. Prefer
+/// using the constants provided from this crate.
+/// 
+/// # Examples
+/// ```
+/// use tf2_price::ref_to_weps;
+/// 
+/// assert_eq!(ref_to_weps!(1.0), 18);
+/// assert_eq!(ref_to_weps!(1), 18);
+/// assert_eq!(ref_to_weps!(1.05), 19);
+/// assert_eq!(ref_to_weps!(1.11), 20);
+/// assert_eq!(ref_to_weps!(1.77), 32);
+/// ```
 #[macro_export]
-macro_rules! metal {
+macro_rules! ref_to_weps {
     ( $a:expr ) => {
         ($a as f32 * 18.0_f32).round() as i32
-    }
-}
-
-/// Generates value for refined metal.
-#[macro_export]
-macro_rules! refined {
-    ( $a:expr ) => {
-        $a * 18
-    }
-}
-
-/// Generates value for reclaimed metal.
-#[macro_export]
-macro_rules! reclaimed {
-    ( $a:expr ) => {
-        $a * 6
-    }
-}
-
-/// Generates value for scrap metal.
-#[macro_export]
-macro_rules! scrap {
-    ( $a:expr ) => {
-        $a * 2
     }
 }
 
@@ -114,12 +116,12 @@ mod tests {
     
     #[test]
     fn metal_macro() {
-        assert_eq!(metal!(1.0), 18);
-        assert_eq!(metal!(1), 18);
-        assert_eq!(metal!(1.05), 19);
-        assert_eq!(metal!(1.11), 20);
-        assert_eq!(metal!(1.77), 32);
-        assert_eq!(metal!(1.99), 36);
-        assert_eq!(metal!(50.66), 912);
+        assert_eq!(ref_to_weps!(1.0), 18);
+        assert_eq!(ref_to_weps!(1), 18);
+        assert_eq!(ref_to_weps!(1.05), 19);
+        assert_eq!(ref_to_weps!(1.11), 20);
+        assert_eq!(ref_to_weps!(1.77), 32);
+        assert_eq!(ref_to_weps!(1.99), 36);
+        assert_eq!(ref_to_weps!(50.66), 912);
     }
 }

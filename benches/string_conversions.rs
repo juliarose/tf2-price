@@ -1,11 +1,11 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use tf2_price::{Currencies, refined, scrap};
+use tf2_price::{Currencies, ref_to_weps};
 
 fn criterion_benchmark(c: &mut Criterion) {
     let currencies_str_keys_and_ref = "12 keys, 23.33 ref";
     let currencies_keys_and_ref = Currencies {
         keys: 12, 
-        weapons: refined!(23) + scrap!(3),
+        weapons: ref_to_weps!(23.33),
     };
     let curencies_keys = Currencies {
         keys: 12,

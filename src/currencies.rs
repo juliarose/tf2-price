@@ -59,20 +59,22 @@ impl Currencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currencies, refined};
+    /// use tf2_price::{Currencies, ref_to_weps};
     /// 
-    /// let key_price = refined!(60);
-    /// let currencies = Currencies::from_weapons(refined!(80), key_price);
+    /// let key_price_weapons = ref_to_weps!(60);
+    /// let currencies = Currencies::from_weapons(ref_to_weps!(80), key_price_weapons);
     /// 
-    /// assert_eq!(currencies, Currencies { keys: 1, weapons: refined!(20) });
+    /// assert_eq!(currencies, Currencies { keys: 1, weapons: ref_to_weps!(20) });
     /// ```
     pub fn from_weapons(
         weapons: Currency,
         key_price_weapons: Currency,
     ) -> Self {
         Self {
-            // Will be 0 if weapons is 30 and key price is 32 (rounds down)
+            // Division drops the remainder.
+            // This is essentially flooring the value.
             keys: weapons.saturating_div(key_price_weapons),
+            // The remainder is the weapons value.
             weapons: weapons % key_price_weapons,
         }
     }
@@ -84,12 +86,12 @@ impl Currencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currencies, refined};
+    /// use tf2_price::{Currencies, ref_to_weps};
     /// 
-    /// let key_price = refined!(60);
-    /// let currencies = Currencies::from_weapons(refined!(80), key_price);
+    /// let key_price_weapons = ref_to_weps!(60);
+    /// let currencies = Currencies::from_weapons(ref_to_weps!(80), key_price_weapons);
     /// 
-    /// assert_eq!(currencies, Currencies { keys: 1, weapons: refined!(20) });
+    /// assert_eq!(currencies, Currencies { keys: 1, weapons: ref_to_weps!(20) });
     /// ```
     pub fn checked_from_weapons(
         weapons: Currency,
@@ -110,9 +112,9 @@ impl Currencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currencies, FloatCurrencies, refined};
+    /// use tf2_price::{Currencies, FloatCurrencies, ref_to_weps};
     /// 
-    /// let key_price_weapons = refined!(60);
+    /// let key_price_weapons = ref_to_weps!(60);
     /// let float_currencies = FloatCurrencies { keys: 1.5, metal: 0.0 };
     /// let currencies = Currencies::from_float_currencies_with(
     ///     float_currencies,
@@ -120,7 +122,7 @@ impl Currencies {
     /// );
     /// 
     /// assert_eq!(currencies.keys, 1);
-    /// assert_eq!(currencies.weapons, refined!(30));
+    /// assert_eq!(currencies.weapons, ref_to_weps!(30));
     /// ```
     pub fn from_float_currencies_with(
         currencies: FloatCurrencies,
@@ -143,9 +145,9 @@ impl Currencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currencies, FloatCurrencies, Currency, refined};
+    /// use tf2_price::{Currencies, FloatCurrencies, Currency, ref_to_weps};
     /// 
-    /// let key_price_weapons = refined!(60);
+    /// let key_price_weapons = ref_to_weps!(60);
     /// let float_currencies = FloatCurrencies {
     ///     keys: 1.5,
     ///     metal: 0.0,
@@ -156,8 +158,14 @@ impl Currencies {
     /// ).unwrap();
     /// 
     /// assert_eq!(currencies.keys, 1);
-    /// assert_eq!(currencies.weapons, refined!(30));
+    /// assert_eq!(currencies.weapons, ref_to_weps!(30));
+    /// ```
     /// 
+    /// Attempt to convert where the keys value is out of bounds.
+    /// ```
+    /// use tf2_price::{Currencies, FloatCurrencies, Currency, ref_to_weps};
+    /// 
+    /// let key_price_weapons = ref_to_weps!(60);
     /// let float_currencies = FloatCurrencies {
     ///     keys: Currency::MAX as f32 * 2.0,
     ///     metal: 0.0,
@@ -167,6 +175,7 @@ impl Currencies {
     ///     key_price_weapons,
     /// );
     /// 
+    /// // None, as the keys value is out of bounds.
     /// assert!(currencies.is_none());
     /// ```
     pub fn try_from_float_currencies_with(
@@ -174,8 +183,8 @@ impl Currencies {
         key_price_weapons: Currency,
     ) -> Option<Self> {
         // Convert the integer part of the keys value.
-        // Using trunc() is OK here in the event that keys is Infinity or NaN, the output will be
-        // the same value.
+        // Using trunc() is OK here in the event that keys is Infinity or NaN, the output is the
+        // same value.
         let keys = helpers::strict_f32_to_currency(currencies.keys.trunc())?;
         // Take the remainder of the keys value.
         let keys_weapons_float = (currencies.keys.fract() * key_price_weapons as f32).round();
@@ -194,13 +203,13 @@ impl Currencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currencies, FloatCurrencies, refined};
+    /// use tf2_price::{Currencies, FloatCurrencies, ref_to_weps};
     /// 
-    /// let key_price = refined!(60);
+    /// let key_price = ref_to_weps!(60);
     /// let currencies = Currencies::from_keys_f32(1.5, key_price);
     /// 
     /// assert_eq!(currencies.keys, 1);
-    /// assert_eq!(currencies.weapons, refined!(30));
+    /// assert_eq!(currencies.weapons, ref_to_weps!(30));
     /// ```
     pub fn from_keys_f32(
         keys: f32,
@@ -218,18 +227,18 @@ impl Currencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currencies, refined};
+    /// use tf2_price::{Currencies, ref_to_weps};
     /// 
-    /// let key_price = refined!(50);
+    /// let key_price = ref_to_weps!(50);
     /// let currencies = Currencies {
     ///     keys: 1,
-    ///     weapons: refined!(10),
+    ///     weapons: ref_to_weps!(10),
     /// };
     /// 
-    /// assert_eq!(currencies.to_weapons(key_price), refined!(60));
+    /// assert_eq!(currencies.to_weapons(key_price), ref_to_weps!(60));
     /// ```
-    pub fn to_weapons(&self, key_price: Currency) -> Currency {
-        helpers::to_metal(self.weapons, self.keys, key_price)
+    pub fn to_weapons(&self, key_price_weapons: Currency) -> Currency {
+        helpers::to_metal(self.weapons, self.keys, key_price_weapons)
     }
     
     /// Converts currencies to a weapon value using the given key price (represented as weapons).
@@ -238,18 +247,18 @@ impl Currencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currencies, Currency, refined};
+    /// use tf2_price::{Currencies, Currency, ref_to_weps};
     /// 
-    /// let key_price_weapons = refined!(50);
+    /// let key_price_weapons = ref_to_weps!(50);
     /// let currencies = Currencies {
     ///     keys: Currency::MAX,
-    ///     weapons: refined!(10),
+    ///     weapons: ref_to_weps!(10),
     /// };
     /// 
     /// assert!(currencies.checked_to_weapons(key_price_weapons).is_none());
     /// ```
-    pub fn checked_to_weapons(&self, key_price: Currency) -> Option<Currency> {
-        helpers::checked_to_metal(self.weapons, self.keys, key_price)
+    pub fn checked_to_weapons(&self, key_price_weapons: Currency) -> Option<Currency> {
+        helpers::checked_to_metal(self.weapons, self.keys, key_price_weapons)
     }
     
     /// Checks if the currencies do not contain any value.
@@ -269,15 +278,15 @@ impl Currencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currencies, Rounding, refined, scrap};
+    /// use tf2_price::{Currencies, Rounding, ref_to_weps};
     /// 
     /// let currencies = Currencies {
     ///     keys: 0,
-    ///     weapons: refined!(1) + scrap!(3),
+    ///     weapons: ref_to_weps!(1.33),
     /// };
     /// 
-    /// assert_eq!(currencies.round(&Rounding::Refined).weapons, refined!(1));
-    /// assert_eq!(currencies.round(&Rounding::UpRefined).weapons, refined!(2));
+    /// assert_eq!(currencies.round(&Rounding::Refined).weapons, ref_to_weps!(1));
+    /// assert_eq!(currencies.round(&Rounding::UpRefined).weapons, ref_to_weps!(2));
     /// ```
     pub fn round(mut self, rounding: &Rounding) -> Self {
         self.weapons = helpers::round_metal(self.weapons, rounding);
@@ -291,15 +300,15 @@ impl Currencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currencies, refined};
+    /// use tf2_price::{Currencies, ref_to_weps};
     /// 
-    /// let key_price_weapons = refined!(50);
+    /// let key_price_weapons = ref_to_weps!(50);
     /// let currencies = Currencies {
     ///     keys: 1,
-    ///     weapons: refined!(60),
+    ///     weapons: ref_to_weps!(60),
     /// }.neaten(key_price_weapons);
     /// 
-    /// assert_eq!(currencies, Currencies { keys: 2, weapons: refined!(10) });
+    /// assert_eq!(currencies, Currencies { keys: 2, weapons: ref_to_weps!(10) });
     /// ```
     pub fn neaten(&self, key_price_weapons: Currency) -> Self {
         Self::from_weapons(self.to_weapons(key_price_weapons), key_price_weapons)
@@ -310,17 +319,17 @@ impl Currencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currencies, refined};
+    /// use tf2_price::{Currencies, ref_to_weps};
     /// 
     /// let currencies = Currencies {
     ///     keys: 100,
-    ///     weapons: refined!(30),
+    ///     weapons: ref_to_weps!(30),
     /// };
     /// 
     /// // We have at least 50 keys and 30 refined.
-    /// assert!(currencies.can_afford(&Currencies { keys: 50, weapons: refined!(30) }));
+    /// assert!(currencies.can_afford(&Currencies { keys: 50, weapons: ref_to_weps!(30) }));
     /// // Not enough metal - we can't afford this.
-    /// assert!(!currencies.can_afford(&Currencies { keys: 50, weapons: refined!(100) }));
+    /// assert!(!currencies.can_afford(&Currencies { keys: 50, weapons: ref_to_weps!(100) }));
     /// ```
     pub fn can_afford(&self, other: &Self) -> bool {
         self.keys >= other.keys && self.weapons >= other.weapons
@@ -628,18 +637,18 @@ impl serde::Serialize for Currencies {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{refined, scrap};
+    use crate::ref_to_weps;
 
     #[test]
     fn currencies_equal() {
         assert_eq!(
             Currencies {
                 keys: 2,
-                weapons: refined!(23) + scrap!(4),
+                weapons: ref_to_weps!(23.44),
             },
             Currencies {
                 keys: 2,
-                weapons: refined!(23) + scrap!(4),
+                weapons: ref_to_weps!(23.44),
             },
         );
     }
@@ -649,11 +658,11 @@ mod tests {
         assert_ne!(
             Currencies {
                 keys: 2,
-                weapons: refined!(23) + scrap!(4),
+                weapons: ref_to_weps!(23.44),
             },
             Currencies {
                 keys: 2,
-                weapons: refined!(23),
+                weapons: ref_to_weps!(23),
             },
         );
     }
@@ -663,14 +672,14 @@ mod tests {
         assert_eq!(
             Currencies {
                 keys: 10,
-                weapons: refined!(10),
+                weapons: ref_to_weps!(23),
             } + Currencies {
                 keys: 5,
-                weapons: refined!(5),
+                weapons: ref_to_weps!(5),
             },
             Currencies {
                 keys: 15,
-                weapons: refined!(15),
+                weapons: ref_to_weps!(28),
             },
         );
     }
@@ -680,14 +689,14 @@ mod tests {
         assert_eq!(
             Currencies {
                 keys: 10,
-                weapons: refined!(10),
+                weapons: ref_to_weps!(10),
             } + &Currencies {
                 keys: 5,
-                weapons: refined!(5),
+                weapons: ref_to_weps!(5),
             },
             Currencies {
                 keys: 15,
-                weapons: refined!(15),
+                weapons: ref_to_weps!(15),
             },
         );
     }
@@ -697,14 +706,14 @@ mod tests {
         assert_eq!(
             Currencies {
                 keys: 10,
-                weapons: refined!(10),
+                weapons: ref_to_weps!(10),
             } - Currencies {
                 keys: 5,
-                weapons: refined!(5),
+                weapons: ref_to_weps!(5),
             },
             Currencies {
                 keys: 5,
-                weapons: refined!(5),
+                weapons: ref_to_weps!(5),
             },
         );
     }
@@ -714,14 +723,14 @@ mod tests {
         assert_eq!(
             Currencies {
                 keys: 10,
-                weapons: refined!(10),
+                weapons: ref_to_weps!(10),
             } - &Currencies {
                 keys: 5,
-                weapons: refined!(5),
+                weapons: ref_to_weps!(5),
             },
             Currencies {
                 keys: 5,
-                weapons: refined!(5),
+                weapons: ref_to_weps!(5),
             },
         );
     }
@@ -731,11 +740,11 @@ mod tests {
         assert_eq!(
             Currencies {
                 keys: 10,
-                weapons: refined!(10),
+                weapons: ref_to_weps!(10),
             } * 5,
             Currencies {
                 keys: 50,
-                weapons: refined!(50),
+                weapons: ref_to_weps!(50),
             },
         );
     }
@@ -745,11 +754,11 @@ mod tests {
         assert_eq!(
             Currencies {
                 keys: 10,
-                weapons: refined!(10),
+                weapons: ref_to_weps!(10),
             } / 2.5,
             Currencies {
                 keys: 4,
-                weapons: refined!(4),
+                weapons: ref_to_weps!(4),
             },
         );
     }
@@ -759,11 +768,11 @@ mod tests {
         assert_eq!(
             Currencies {
                 keys: 10,
-                weapons: refined!(10),
+                weapons: ref_to_weps!(10),
             } / 5,
             Currencies {
                 keys: 2,
-                weapons: refined!(2),
+                weapons: ref_to_weps!(2),
             },
         );
     }
@@ -773,11 +782,11 @@ mod tests {
         assert_eq!(
             Currencies {
                 keys: 10,
-                weapons: refined!(10),
+                weapons: ref_to_weps!(10),
             } * 2.5,
             Currencies {
                 keys: 25,
-                weapons: refined!(25),
+                weapons: ref_to_weps!(25),
             },
         );
     }
@@ -786,7 +795,7 @@ mod tests {
     fn currencies_mul_assign_currency() {
         let mut currencies = Currencies {
             keys: 10,
-            weapons: refined!(10),
+            weapons: ref_to_weps!(10),
         };
         
         currencies *= 2;
@@ -795,7 +804,7 @@ mod tests {
             currencies,
             Currencies {
                 keys: 20,
-                weapons: refined!(20),
+                weapons: ref_to_weps!(20),
             },
         );
     }
@@ -804,7 +813,7 @@ mod tests {
     fn currencies_mul_assign_f32() {
         let mut currencies = Currencies {
             keys: 10,
-            weapons: refined!(10),
+            weapons: ref_to_weps!(10),
         };
         
         currencies *= 2.5;
@@ -813,7 +822,7 @@ mod tests {
             currencies,
             Currencies {
                 keys: 25,
-                weapons: refined!(25),
+                weapons: ref_to_weps!(25),
             },
         );
     }
@@ -822,7 +831,7 @@ mod tests {
     fn currencies_div_assign_currency() {
         let mut currencies = Currencies {
             keys: 10,
-            weapons: refined!(10),
+            weapons: ref_to_weps!(10),
         };
         
         currencies /= 2;
@@ -831,7 +840,7 @@ mod tests {
             currencies,
             Currencies {
                 keys: 5,
-                weapons: refined!(5),
+                weapons: ref_to_weps!(5),
             },
         );
     }
@@ -840,7 +849,7 @@ mod tests {
     fn currencies_div_assign_f32() {
         let mut currencies = Currencies {
             keys: 10,
-            weapons: refined!(10),
+            weapons: ref_to_weps!(10),
         };
         
         currencies /= 2.5;
@@ -849,7 +858,7 @@ mod tests {
             currencies,
             Currencies {
                 keys: 4,
-                weapons: refined!(4),
+                weapons: ref_to_weps!(4),
             },
         );
     }
@@ -883,7 +892,7 @@ mod tests {
         let currencies = Currencies::try_from("2 ref").unwrap();
         
         assert_eq!(currencies.keys, 0);
-        assert_eq!(currencies.weapons, refined!(2));
+        assert_eq!(currencies.weapons, ref_to_weps!(2));
     }
     
     #[test]
@@ -965,7 +974,7 @@ mod tests {
     fn formats_currencies() {
         let currencies = Currencies {
             keys: 2,
-            weapons: refined!(23) + scrap!(4),
+            weapons: ref_to_weps!(23.44),
         };
         
         assert_eq!(format!("{currencies}"), "2 keys, 23.44 ref");
@@ -975,7 +984,7 @@ mod tests {
     fn formats_currencies_singular() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23) + scrap!(4),
+            weapons: ref_to_weps!(23.44),
         };
         
         assert_eq!(format!("{currencies}"), "1 key, 23.44 ref");
@@ -985,7 +994,7 @@ mod tests {
     fn formats_currencies_with_no_trailing_decimal_places() {
         let currencies = Currencies {
             keys: 2,
-            weapons: refined!(23),
+            weapons: ref_to_weps!(23),
         };
         
         assert_eq!(format!("{currencies}"), "2 keys, 23 ref");
@@ -1005,7 +1014,7 @@ mod tests {
     fn converts_to_weapons() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23) + scrap!(4),
+            weapons: ref_to_weps!(23.44),
         };
         let value = currencies.to_weapons(422);
         
@@ -1016,7 +1025,7 @@ mod tests {
     fn rounds_weapons_down() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23) + scrap!(4) + 1,
+            weapons: ref_to_weps!(23.44) + 1,
         };
         
         assert_eq!(currencies.round(&Rounding::DownScrap).weapons, 422);
@@ -1026,117 +1035,117 @@ mod tests {
     fn rounds_weapons_down_refined() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23) + scrap!(4),
+            weapons: ref_to_weps!(23.44),
         };
         
-        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, refined!(23));
+        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, ref_to_weps!(23));
     }
     
     #[test]
     fn rounds_weapons_up_refined_negative() {
         let currencies = Currencies {
             keys: 1,
-            weapons: -refined!(23) + scrap!(1),
+            weapons: -ref_to_weps!(22.88),
         };
         
-        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, -refined!(22));
+        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, -ref_to_weps!(22));
     }
     
     #[test]
     fn rounds_weapons_up_refined_negative_whole_value() {
         let currencies = Currencies {
             keys: 1,
-            weapons: -refined!(23),
+            weapons: -ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, -refined!(23));
+        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, -ref_to_weps!(23));
     }
     
     #[test]
     fn rounds_weapons_down_refined_negative() {
         let currencies = Currencies {
             keys: 1,
-            weapons: -refined!(23) + scrap!(8),
+            weapons: -ref_to_weps!(22.88),
         };
         
-        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, -refined!(23));
+        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, -ref_to_weps!(23));
     }
     
     #[test]
     fn rounds_weapons_down_refined_negative_whole_value() {
         let currencies = Currencies {
             keys: 1,
-            weapons: -refined!(23),
+            weapons: -ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, -refined!(23));
+        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, -ref_to_weps!(23));
     }
     
     #[test]
     fn rounds_weapons_down_refined_whole_value() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23),
+            weapons: ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, refined!(23));
+        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, ref_to_weps!(23));
     }
     
     #[test]
     fn rounds_weapons_up_refined() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23) + scrap!(4),
+            weapons: ref_to_weps!(23.44),
         };
         
-        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, refined!(24));
+        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, ref_to_weps!(24));
     }
     
     #[test]
     fn rounds_weapons_up_refined_whole_value() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23),
+            weapons: ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, refined!(23));
+        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, ref_to_weps!(23));
     }
     
     #[test]
     fn rounds_weapons_refined_down_correctly() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23) + scrap!(3),
+            weapons: ref_to_weps!(23.44),
         };
         
-        assert_eq!(currencies.round(&Rounding::Refined).weapons, refined!(23));
+        assert_eq!(currencies.round(&Rounding::Refined).weapons, ref_to_weps!(23));
     }
     
     #[test]
     fn rounds_weapons_refined_down_correctly_whole_value() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23),
+            weapons: ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(&Rounding::Refined).weapons, refined!(23));
+        assert_eq!(currencies.round(&Rounding::Refined).weapons, ref_to_weps!(23));
     }
     
     #[test]
     fn rounds_weapons_refined_up_correctly() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23) + scrap!(5),
+            weapons: ref_to_weps!(23.55),
         };
         
-        assert_eq!(currencies.round(&Rounding::Refined).weapons, refined!(24));
+        assert_eq!(currencies.round(&Rounding::Refined).weapons, ref_to_weps!(24));
     }
     
     #[test]
     fn rounds_weapons_up() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23) + scrap!(4) + 1,
+            weapons: ref_to_weps!(23.44) + 1,
         };
         
         assert_eq!(currencies.round(&Rounding::UpScrap).weapons, 424);
@@ -1146,14 +1155,14 @@ mod tests {
     fn neatens() {
         let currenices = Currencies {
             keys: 1,
-            weapons: refined!(110),
+            weapons: ref_to_weps!(110),
         };
         
         assert_eq!(
-            currenices.neaten(refined!(50)),
+            currenices.neaten(ref_to_weps!(50)),
             Currencies {
                 keys: 3,
-                weapons: refined!(10),
+                weapons: ref_to_weps!(10),
             },
         );
     }
@@ -1162,14 +1171,14 @@ mod tests {
     fn neatens_negative() {
         let currencies = Currencies {
             keys: 1,
-            weapons: -refined!(110),
+            weapons: -ref_to_weps!(110),
         };
         
         assert_eq!(
-            currencies.neaten(refined!(50)),
+            currencies.neaten(ref_to_weps!(50)),
             Currencies {
                 keys: -1,
-                weapons: -refined!(10),
+                weapons: -ref_to_weps!(10),
             },
         );
     }
@@ -1178,21 +1187,21 @@ mod tests {
     fn neatens_negative_result_should_be_positive() {
         let currencies = Currencies {
             keys: 2,
-            weapons: -refined!(60),
+            weapons: -ref_to_weps!(60),
         };
         
         assert_eq!(
-            currencies.neaten(refined!(50)),
+            currencies.neaten(ref_to_weps!(50)),
             Currencies {
                 keys: 0,
-                weapons: refined!(40),
+                weapons: ref_to_weps!(40),
             },
         );
     }
     
     #[test]
     fn to_weapons_with_negative_keys() {
-        let key_price_weapons = refined!(10);
+        let key_price_weapons = ref_to_weps!(10);
         let currencies = Currencies {
             keys: -10,
             // 2 keys of metal, so the total should be -8 keys
@@ -1237,7 +1246,7 @@ mod tests {
     
     #[test]
     fn to_weapons_saturating_integer_bounds() {
-        let key_price_weapons = refined!(50);
+        let key_price_weapons = ref_to_weps!(50);
         
         assert_eq!(
             Currencies {
@@ -1331,7 +1340,7 @@ mod tests {
         };
         let currencies = Currencies::try_from(float_currencies).unwrap();
         
-        assert_eq!(currencies.weapons, refined!(1) + scrap!(3));
+        assert_eq!(currencies.weapons, ref_to_weps!(1.33));
     }
     
     #[test]
@@ -1407,7 +1416,7 @@ mod tests {
 #[cfg(test)]
 mod tests_serde {
     use super::*;
-    use crate::{refined, scrap};
+    use crate::ref_to_weps;
     use serde_json::{self, json, Value};
     use assert_json_diff::assert_json_eq;
     
@@ -1415,7 +1424,7 @@ mod tests_serde {
     fn correct_json_format() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23) + scrap!(4),
+            weapons: ref_to_weps!(23.44),
         };
         let currencies_json = serde_json::to_string(&currencies).unwrap();
         let actual: Value = serde_json::from_str(&currencies_json).unwrap();
@@ -1435,7 +1444,7 @@ mod tests_serde {
             currencies,
             Currencies {
                 keys: 1,
-                weapons: refined!(23) + scrap!(4),
+                weapons: ref_to_weps!(23.44),
             },
         );
     }
@@ -1448,7 +1457,7 @@ mod tests_serde {
             currencies,
             Currencies {
                 keys: 0,
-                weapons: refined!(23) + scrap!(4),
+                weapons: ref_to_weps!(23.44),
             },
         );
     }
@@ -1474,7 +1483,7 @@ mod tests_serde {
             currencies,
             Currencies {
                 keys: 1,
-                weapons: refined!(23) + 3,
+                weapons: ref_to_weps!(23) + 3,
             },
         );
     }
@@ -1483,7 +1492,7 @@ mod tests_serde {
     fn serializes_currencies() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23) + scrap!(4)
+            weapons: ref_to_weps!(23.44),
         };
         let currencies_json = serde_json::to_string(&currencies).unwrap();
         let actual: Value = serde_json::from_str(&currencies_json).unwrap();
@@ -1499,7 +1508,7 @@ mod tests_serde {
     fn serializes_currencies_whole_numbers_have_no_decimals() {
         let currencies = Currencies {
             keys: 1,
-            weapons: refined!(23)
+            weapons: ref_to_weps!(23)
         };
         let currencies_json = serde_json::to_string(&currencies).unwrap();
         let actual: Value = serde_json::from_str(&currencies_json).unwrap();

@@ -8,9 +8,9 @@ use crate::Rounding;
 pub fn to_metal(
     metal: Currency,
     keys: Currency,
-    key_price: Currency,
+    key_price_weapons: Currency,
 ) -> Currency {
-    keys.saturating_mul(key_price).saturating_add(metal)
+    keys.saturating_mul(key_price_weapons).saturating_add(metal)
 }
 
 /// Converts currencies to a metal value using the given key price (represented as weapons).
@@ -19,9 +19,9 @@ pub fn to_metal(
 pub fn checked_to_metal(
     metal: Currency,
     keys: Currency,
-    key_price: Currency,
+    key_price_weapons: Currency,
 ) -> Option<Currency> {
-    metal.checked_add(keys.checked_mul(key_price)?)
+    metal.checked_add(keys.checked_mul(key_price_weapons)?)
 }
 
 /// Pluralizes a value using an integer as the test.
@@ -45,7 +45,7 @@ pub fn pluralize_float<'a>(
 ) -> &'a str {
     if amount == 1.0 {
         singular
-    } else {
+    } else{
         plural
     }
 }
@@ -155,11 +155,11 @@ pub fn parse_currency_from_string(
 ) -> Result<(Currency, Currency), ParseError> {
     let (keys, metal) = parse_currencies(string)?;
     let keys = keys
-        .map(|s| s.parse::<Currency>())
+        .map(str::parse::<Currency>)
         .transpose()?
         .unwrap_or_default();
     let metal = metal
-        .map(|s| s.parse::<f32>())
+        .map(str::parse::<f32>)
         .transpose()?
         // Convert the metal value to a weapon value.
         .map(get_weapons_from_metal_float)
@@ -187,64 +187,48 @@ pub fn parse_float_from_string(
 
 /// Rounds a metal value.
 pub fn round_metal(metal: Currency, rounding: &Rounding) -> Currency {
-    if metal == 0 {
-        return metal;
-    }
+    // Remainder for refined rounding.
+    let remainder = metal % ONE_REF;
     
     match *rounding {
-        Rounding::UpScrap => if metal % 2 != 0{
+        // No rounding needed if the metal value is an even number.
+        Rounding::UpScrap if metal % 2 != 0 => {
             metal + 1
-        } else {
-            // No rounding needed if the metal value is an even number.
-            metal
         },
-        Rounding::DownScrap => if metal % 2 != 0 {
+        // No rounding needed if the metal value is an even number.
+        Rounding::DownScrap if metal % 2 != 0 => {
             metal - 1
-        } else {
-            // No rounding needed if the metal value is an even number.
-            metal
         },
         Rounding::Refined => {
             let value = metal + ONE_REF / 2;
             
             value - (value % ONE_REF)
         },
-        Rounding::UpRefined => {
-            let remainder = metal % ONE_REF;
-            
-            if remainder != 0 {
-                if metal > 0 {
-                    metal - (remainder + -ONE_REF)
-                } else {
-                    metal - remainder
-                }
+        // Only apply rounding if there is a remainder.
+        Rounding::UpRefined if remainder != 0 => {
+            if metal > 0 {
+                metal - (remainder + -ONE_REF)
             } else {
-                metal
+                metal - remainder
             }
         },
-        Rounding::DownRefined => {
-            let remainder = metal % ONE_REF;
-            
-            if remainder != 0 {
-                if metal > 0 {
-                    metal - remainder
-                } else {
-                    metal - (remainder + ONE_REF)
-                }
+        // Only apply rounding if there is a remainder.
+        Rounding::DownRefined if remainder != 0 => {
+            if metal > 0 {
+                metal - remainder
             } else {
-                metal
+                metal - (remainder + ONE_REF)
             }
         },
-        Rounding::None => {
-            metal
-        },
+        // No rounding or already rounded.
+        _ => metal,
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::scrap;
+    use crate::ref_to_weps;
     
     #[test]
     fn converts_strict_f32_to_currency() {
@@ -263,7 +247,7 @@ mod tests {
     
     #[test]
     fn converts_from_metal_float() {
-        assert_eq!(scrap!(3), get_weapons_from_metal_float(0.33));
+        assert_eq!(ref_to_weps!(0.33), get_weapons_from_metal_float(0.33));
     }
     
     #[test]

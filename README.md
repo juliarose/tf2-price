@@ -16,22 +16,21 @@ tf2-price = { version = "0.13", features = ["serde"] }
 To avoid issues with [floating point arithmetic](https://en.wikipedia.org/wiki/Floating-point_arithmetic#Accuracy_problems), values are stored as 64-bit integers. For metal, this means using the lowest denomination of currency which is weapons.
 
 ```rust
-use tf2_price::{Currencies, metal};
+use tf2_price::{Currencies, ref_to_weps};
 
 let currencies = Currencies {
-    keys: 5,
-    weapons: metal!(1.33), // 24 weapons.
+    keys: 1,
+    weapons: ref_to_weps!(1.33), // 24 weapons.
 };
 
 // String conversions.
-println!("Selling for {currencies}."); // Selling for 5 keys, 1.33 ref.
+println!("Selling for {currencies}."); // Selling for 1 key, 1.33 ref.
 
-let currencies = "5 keys, 1.33 ref".parse::<Currencies>().unwrap();
-
+let currencies = "1 key, 1.33 ref".parse::<Currencies>().unwrap();
 // Key price stored as weapons.
-let key_price_weapons = metal!(50);
+let key_price_weapons = ref_to_weps!(50);
 // Conversion to a single total.
-let total = currencies.to_weapons(key_price_weapons); // 4524 weapons.
+let total = currencies.to_weapons(key_price_weapons); // 924 weapons.
 // Convert total back into keys + weapons.
 let currencies = Currencies::from_weapons(total, key_price_weapons);
 ```
@@ -47,13 +46,10 @@ let golden_pan = Currencies {
     keys: 3000,
     weapons: 0,
 };
-
 // Multiply by an integer.
 let doubled = golden_pan * 2; // Currencies { keys: 6000, weapons: 0 }
-
 // Multiply by a floating point number.
 let multiplied = golden_pan * 2.5; // Currencies { keys: 7500, weapons: 0 }
-
 // Add another currencies.
 let with_weapons = golden_pan + Currencies {
     keys: 0,
@@ -63,33 +59,32 @@ let with_weapons = golden_pan + Currencies {
 
 ### Serialization
 
-While `Currencies` uses `weapons` as the unit for metal, it is converted to and from `metal` when serialized for compatibility with APIs.
+While `Currencies` uses `weapons` as the unit for metal, it is converted to and from `"metal"` when serialized for compatibility with APIs.
 
 ```rust
-use tf2_price::{Currencies, metal};
+use tf2_price::{Currencies, ref_to_weps};
     
 let json = r#"{"keys":5,"metal":2.33}"#;
 let currencies: Currencies = serde_json::from_str(json).unwrap();
 
-assert_eq!(currencies, Currencies { keys: 5, weapons: metal!(2.33) });
+assert_eq!(currencies, Currencies { keys: 5, weapons: ref_to_weps!(2.33) });
 assert_eq!(json, serde_json::to_string(&currencies).unwrap());
 ```
 
 ### Floating Point Precision
 
-To store floating point numbers from responses, use `FloatCurrencies` as a container. However, it's advised not to use it for calculations or comparisons. This crate provides utilities for converting floats to integers based on use-case ([saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic), [checked](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/checked-and-unchecked)).
+This crate provides a container for floating-point currencies and utilities for conversion to integers based on use-case ([saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic), [checked](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/checked-and-unchecked)). It's advisable to use `FloatCurrencies` when parsing or receiving data from an external source to preserve precision, then convert to `Currencies` for arithmetic and comparision operations.
 
 ```rust
 use tf2_price::{Currencies, FloatCurrencies, Currency};
 
-// To preserve original values, use FloatCurrencies.
 let float_currencies = FloatCurrencies {
     keys: 1.0,
     // Unlike Currencies, metal is not counted in weapons.
     // 1.33 means 1.33 refined.
     metal: 1.33,
 };
-// Converting to Currencies (checks for safe conversion).
+// Checks for safe conversion.
 let currencies = Currencies::try_from(float_currencies).unwrap();
 
 assert_eq!(currencies, Currencies { keys: 1, metal: 24 });

@@ -1,7 +1,7 @@
 [package]
 name = "tf2-price"
 description = "Utilities for Team Fortress 2 item pricing."
-version = "0.13.3"
+version = "0.13.4"
 edition = "2021"
 # MSRV
 rust-version = "1.60.0"

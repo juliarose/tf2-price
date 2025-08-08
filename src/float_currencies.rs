@@ -13,7 +13,7 @@ use auto_ops::impl_op_ex;
 /// 
 /// # Examples
 /// ```
-/// use tf2_price::{FloatCurrencies, Currencies, metal, refined};
+/// use tf2_price::{FloatCurrencies, Currencies, ref_to_weps};
 /// 
 /// let float_currencies = FloatCurrencies {
 ///     keys: 1.0,
@@ -22,11 +22,7 @@ use auto_ops::impl_op_ex;
 /// let mut currencies = Currencies::try_from(float_currencies).unwrap();
 /// 
 /// assert_eq!(currencies.keys, 1);
-/// assert_eq!(currencies.weapons, metal!(1.33));
-/// 
-/// currencies.weapons += refined!(1);
-/// 
-/// assert_eq!(currencies.weapons, metal!(2.33));
+/// assert_eq!(currencies.weapons, ref_to_weps!(1.33));
 /// ```
 #[derive(Debug, Default, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -79,16 +75,16 @@ impl FloatCurrencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{FloatCurrencies, refined};
+    /// use tf2_price::{FloatCurrencies, ref_to_weps};
     /// 
-    /// let key_price_weapons = refined!(50);
+    /// let key_price_weapons = ref_to_weps!(50);
     /// let currencies = FloatCurrencies {
     ///     keys: 1.0,
     ///     metal: 5.0,
     /// };
     /// 
     /// // 1.0 * 50 refined + 5 refined = 55 refined
-    /// assert_eq!(currencies.to_weapons(key_price_weapons), refined!(55));
+    /// assert_eq!(currencies.to_weapons(key_price_weapons), ref_to_weps!(55));
     /// ```
     pub fn to_weapons(
         &self,
@@ -110,9 +106,9 @@ impl FloatCurrencies {
     /// 
     /// # Examples
     /// ```
-    /// use tf2_price::{Currency, FloatCurrencies, refined};
+    /// use tf2_price::{Currency, FloatCurrencies, ref_to_weps};
     /// 
-    /// let key_price_weapons = refined!(50);
+    /// let key_price_weapons = ref_to_weps!(50);
     /// let currencies = FloatCurrencies {
     ///     keys: Currency::MAX as f32 + 1.0,
     ///     metal: 0.0,
@@ -444,7 +440,7 @@ impl serde::Serialize for FloatCurrencies {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{refined, scrap};
+    use crate::ref_to_weps;
     
     #[test]
     fn to_weapons_correct() {
@@ -620,7 +616,7 @@ mod tests {
             },
             Currencies {
                 keys: 1,
-                weapons: refined!(1) + scrap!(3),
+                weapons: ref_to_weps!(1.33),
             },
         );
     }
@@ -636,7 +632,7 @@ mod tests {
             currencies,
             Currencies {
                 keys: 10,
-                weapons: refined!(10),
+                weapons: ref_to_weps!(10),
             },
         );
     }
@@ -680,13 +676,13 @@ mod tests {
         let currencies = Currencies::from_float_currencies_with(FloatCurrencies {
             keys: 2.5,
             metal: 10.0,
-        }, refined!(10));
+        }, ref_to_weps!(10));
         
         assert_eq!(
             currencies,
             Currencies {
                 keys: 2,
-                weapons: refined!(15),
+                weapons: ref_to_weps!(15),
             },
         );
     }
@@ -696,13 +692,13 @@ mod tests {
         let currencies = Currencies::from_float_currencies_with(FloatCurrencies {
             keys: 2.5,
             metal: -10.0,
-        }, refined!(10));
+        }, ref_to_weps!(10));
         
         assert_eq!(
             currencies,
             Currencies {
                 keys: 2,
-                weapons: refined!(-5),
+                weapons: ref_to_weps!(-5),
             },
         );
     }
@@ -794,7 +790,7 @@ mod tests {
                 keys: 10.0,
                 metal: 5.0,
             }.checked_to_weapons(10),
-            Some(100 + refined!(5)),
+            Some(100 + ref_to_weps!(5)),
         );
     }
 }

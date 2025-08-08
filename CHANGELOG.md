@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.14.0 (2025-08-06)
+
+### Added
+- `Hash` and `Default` derives for `Rounding`.
+
+### Fixed
+- Missing `weapons` suffix for some key price arguments.
+- An issue where deserializing float metal values could overflow the `Currency` when deserializing `Currencies`.
+
+### Changed
+- Renamed `weapons!` macro to `ref_to_weps!`.
+- Precision of deserialization for `weapons` for `Currencies` from `f32` to `f64`.
+- Updated documentation.
+
+### Removed
+- `refined!`, `reclaimed!`, and `scrap!` macros. Use `ONE_REF`, `ONE_REC`, and `ONE_SCRAP` constants instead.
+
 ## 0.13.3 (2025-07-23)
 
 ### Changed
