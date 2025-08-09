@@ -29,18 +29,14 @@
 //! # Conventions
 //! 
 //! Metal values are represented as weapons, the smallest unit of currency. To ensure accurate
-//! accounting, utilize the provided macros and constants. For instance, by using the [`ONE_SCRAP`]
-//! constant or the [`scrap`] macro, one scrap will be added to the weapons field. To convert
-//! floating point refined values into weapons, use the [`metal`] macro e.g. `metal!(1.33)`
-//! converts into 24 weapons.
-//! 
-//! In addition, all key values in methods are represented as values in weapons.
+//! accounting, utilize the provided constants. To convert floating point refined values into
+//! weapons, use the [`ref_to_weps`] macro e.g. `ref_to_weps!(1.33)` converts into 24 weapons.
 //! 
 //! Arithmetic operations employ
 //! [saturating operations](https://en.wikipedia.org/wiki/Saturation_arithmetic),
 //! preventing overflow. Adding two currencies that exceed [i64::MAX] will yield [i64::MAX] instead
-//! of wrapping around. Although values are stored as 64-bit integers and typically won't overflow
-//! with reasonable numbers, checked methods are provided for overflow checking if needed.
+//! of wrapping around. You can also utilize the `checked_*` methods if checking for overflow is
+//! needed.
 
 #![warn(missing_docs)]
 
@@ -71,6 +67,8 @@ pub use constants::{ONE_REF, ONE_REC, ONE_SCRAP, ONE_WEAPON};
 /// macros in Rust can increase compilation time and binary size, so don't overuse them. Prefer
 /// using the constants provided from this crate.
 /// 
+/// The algorithm for this macro is simply `($a as f32 * 18.0_f32).round() as i64`.
+/// 
 /// # Examples
 /// ```
 /// use tf2_price::ref_to_weps;
@@ -92,6 +90,8 @@ macro_rules! ref_to_weps {
 /// Converts a refined metal value into weapons. While this method is convenient, keep in mind that
 /// macros in Rust can increase compilation time and binary size, so don't overuse them. Prefer
 /// using the constants provided from this crate.
+/// 
+/// The algorithm for this macro is simply `($a as f32 * 18.0_f32).round() as i32`.
 /// 
 /// # Examples
 /// ```

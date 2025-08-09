@@ -73,7 +73,7 @@ assert_eq!(json, serde_json::to_string(&currencies).unwrap());
 
 ### Floating Point Precision
 
-This crate provides a container for floating-point currencies and utilities for conversion to integers based on use-case ([saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic), [checked](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/checked-and-unchecked)). It's advisable to use `FloatCurrencies` when parsing or receiving data from an external source to preserve precision, then convert to `Currencies` for arithmetic and comparision operations.
+This crate provides a container for floating-point currencies and utilities for conversion to integers based on use-case ([saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic), [checked](https://doc.rust-lang.org/book/ch03-02-data-types.html#integer-overflow)). It's advisable to use `FloatCurrencies` when parsing or receiving data from an external source to preserve precision, then convert to `Currencies` for arithmetic and comparision operations.
 
 ```rust
 use tf2_price::{Currencies, FloatCurrencies, Currency};

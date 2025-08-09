@@ -13,6 +13,7 @@
 - Renamed `weapons!` macro to `ref_to_weps!`.
 - Precision of deserialization for `weapons` for `Currencies` from `f32` to `f64`.
 - Updated documentation.
+- `round` for `Currencies` now accepts owned `Rounding` as it implements `Copy`. 
 
 ### Removed
 - `refined!`, `reclaimed!`, and `scrap!` macros. Use `ONE_REF`, `ONE_REC`, and `ONE_SCRAP` constants instead.

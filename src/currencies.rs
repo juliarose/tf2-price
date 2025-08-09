@@ -285,16 +285,15 @@ impl Currencies {
     ///     weapons: ref_to_weps!(1.33),
     /// };
     /// 
-    /// assert_eq!(currencies.round(&Rounding::Refined).weapons, ref_to_weps!(1));
-    /// assert_eq!(currencies.round(&Rounding::UpRefined).weapons, ref_to_weps!(2));
+    /// assert_eq!(currencies.round(Rounding::Refined).weapons, ref_to_weps!(1));
+    /// assert_eq!(currencies.round(Rounding::UpRefined).weapons, ref_to_weps!(2));
     /// ```
-    pub fn round(mut self, rounding: &Rounding) -> Self {
+    pub fn round(mut self, rounding: Rounding) -> Self {
         self.weapons = helpers::round_metal(self.weapons, rounding);
         self
     }
     
-    /// Neatens currencies. If the `weapons` value is over `key_price_weapons`, the `weapons`
-    /// value will be converted to `keys`, with the remainder remaining as `weapons`.
+    /// Neatens currencies. This converts the `weapons` over the `key_price_weapons` into `keys`.
     /// 
     /// This method is [saturating](https://en.wikipedia.org/wiki/Saturation_arithmetic).
     /// 
@@ -1028,7 +1027,7 @@ mod tests {
             weapons: ref_to_weps!(23.44) + 1,
         };
         
-        assert_eq!(currencies.round(&Rounding::DownScrap).weapons, 422);
+        assert_eq!(currencies.round(Rounding::DownScrap).weapons, 422);
     }
     
     #[test]
@@ -1038,7 +1037,7 @@ mod tests {
             weapons: ref_to_weps!(23.44),
         };
         
-        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, ref_to_weps!(23));
+        assert_eq!(currencies.round(Rounding::DownRefined).weapons, ref_to_weps!(23));
     }
     
     #[test]
@@ -1048,7 +1047,7 @@ mod tests {
             weapons: -ref_to_weps!(22.88),
         };
         
-        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, -ref_to_weps!(22));
+        assert_eq!(currencies.round(Rounding::UpRefined).weapons, -ref_to_weps!(22));
     }
     
     #[test]
@@ -1058,7 +1057,7 @@ mod tests {
             weapons: -ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, -ref_to_weps!(23));
+        assert_eq!(currencies.round(Rounding::UpRefined).weapons, -ref_to_weps!(23));
     }
     
     #[test]
@@ -1068,7 +1067,7 @@ mod tests {
             weapons: -ref_to_weps!(22.88),
         };
         
-        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, -ref_to_weps!(23));
+        assert_eq!(currencies.round(Rounding::DownRefined).weapons, -ref_to_weps!(23));
     }
     
     #[test]
@@ -1078,7 +1077,7 @@ mod tests {
             weapons: -ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, -ref_to_weps!(23));
+        assert_eq!(currencies.round(Rounding::DownRefined).weapons, -ref_to_weps!(23));
     }
     
     #[test]
@@ -1088,7 +1087,7 @@ mod tests {
             weapons: ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, ref_to_weps!(23));
+        assert_eq!(currencies.round(Rounding::DownRefined).weapons, ref_to_weps!(23));
     }
     
     #[test]
@@ -1098,7 +1097,7 @@ mod tests {
             weapons: ref_to_weps!(23.44),
         };
         
-        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, ref_to_weps!(24));
+        assert_eq!(currencies.round(Rounding::UpRefined).weapons, ref_to_weps!(24));
     }
     
     #[test]
@@ -1108,7 +1107,7 @@ mod tests {
             weapons: ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, ref_to_weps!(23));
+        assert_eq!(currencies.round(Rounding::UpRefined).weapons, ref_to_weps!(23));
     }
     
     #[test]
@@ -1118,7 +1117,7 @@ mod tests {
             weapons: ref_to_weps!(23.44),
         };
         
-        assert_eq!(currencies.round(&Rounding::Refined).weapons, ref_to_weps!(23));
+        assert_eq!(currencies.round(Rounding::Refined).weapons, ref_to_weps!(23));
     }
     
     #[test]
@@ -1128,7 +1127,7 @@ mod tests {
             weapons: ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(&Rounding::Refined).weapons, ref_to_weps!(23));
+        assert_eq!(currencies.round(Rounding::Refined).weapons, ref_to_weps!(23));
     }
     
     #[test]
@@ -1138,7 +1137,7 @@ mod tests {
             weapons: ref_to_weps!(23.55),
         };
         
-        assert_eq!(currencies.round(&Rounding::Refined).weapons, ref_to_weps!(24));
+        assert_eq!(currencies.round(Rounding::Refined).weapons, ref_to_weps!(24));
     }
     
     #[test]
@@ -1148,7 +1147,7 @@ mod tests {
             weapons: ref_to_weps!(23.44) + 1,
         };
         
-        assert_eq!(currencies.round(&Rounding::UpScrap).weapons, 424);
+        assert_eq!(currencies.round(Rounding::UpScrap).weapons, 424);
     }
     
     #[test]

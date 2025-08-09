@@ -186,11 +186,11 @@ pub fn parse_float_from_string(
 }
 
 /// Rounds a metal value.
-pub fn round_metal(metal: Currency, rounding: &Rounding) -> Currency {
+pub fn round_metal(metal: Currency, rounding: Rounding) -> Currency {
     // Remainder for refined rounding.
     let remainder = metal % ONE_REF;
     
-    match *rounding {
+    match rounding {
         // No rounding needed if the metal value is an even number.
         Rounding::UpScrap if metal % 2 != 0 => {
             metal + 1
