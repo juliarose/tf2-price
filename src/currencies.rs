@@ -684,41 +684,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_added_borrowed() {
-        assert_eq!(
-            Currencies {
-                keys: 10,
-                weapons: ref_to_weps!(10),
-            } + Currencies {
-                keys: 5,
-                weapons: ref_to_weps!(5),
-            },
-            Currencies {
-                keys: 15,
-                weapons: ref_to_weps!(15),
-            },
-        );
-    }
-    
-    #[test]
     fn currencies_subtracted() {
-        assert_eq!(
-            Currencies {
-                keys: 10,
-                weapons: ref_to_weps!(10),
-            } - Currencies {
-                keys: 5,
-                weapons: ref_to_weps!(5),
-            },
-            Currencies {
-                keys: 5,
-                weapons: ref_to_weps!(5),
-            },
-        );
-    }
-    
-    #[test]
-    fn currencies_subtracted_borrowed() {
         assert_eq!(
             Currencies {
                 keys: 10,

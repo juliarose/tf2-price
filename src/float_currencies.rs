@@ -501,41 +501,7 @@ mod tests {
     }
     
     #[test]
-    fn currencies_added_borrwed() {
-        assert_eq!(
-            FloatCurrencies {
-                keys: 10.0,
-                metal: 10.0,
-            } + FloatCurrencies {
-                keys: 5.0,
-                metal: 5.0,
-            },
-            FloatCurrencies {
-                keys: 15.0,
-                metal: 15.0,
-            },
-        );
-    }
-    
-    #[test]
     fn currencies_subtracted() {
-        assert_eq!(
-            FloatCurrencies {
-                keys: 10.0,
-                metal: 10.0,
-            } - FloatCurrencies {
-                keys: 5.0,
-                metal: 5.0,
-            },
-            FloatCurrencies {
-                keys: 5.0,
-                metal: 5.0,
-            },
-        );
-    }
-    
-    #[test]
-    fn currencies_subtracted_borrowed() {
         assert_eq!(
             FloatCurrencies {
                 keys: 10.0,
@@ -754,9 +720,11 @@ mod tests {
     
     #[test]
     fn sorts() {
-        let mut currencies = [FloatCurrencies { keys: 2.0, metal: 4.0 },
+        let mut currencies = [
+            FloatCurrencies { keys: 2.0, metal: 4.0 },
             FloatCurrencies { keys: 0.0, metal: 2.0 },
-            FloatCurrencies { keys: 10.0, metal: 4.0 }];
+            FloatCurrencies { keys: 10.0, metal: 4.0 },
+        ];
         
         // lowest to highest
         currencies.sort();
