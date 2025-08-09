@@ -689,7 +689,7 @@ mod tests {
             Currencies {
                 keys: 10,
                 weapons: ref_to_weps!(10),
-            } + &Currencies {
+            } + Currencies {
                 keys: 5,
                 weapons: ref_to_weps!(5),
             },
@@ -723,7 +723,7 @@ mod tests {
             Currencies {
                 keys: 10,
                 weapons: ref_to_weps!(10),
-            } - &Currencies {
+            } - Currencies {
                 keys: 5,
                 weapons: ref_to_weps!(5),
             },
@@ -1228,17 +1228,15 @@ mod tests {
     
     #[test]
     fn sorts() {
-        let mut currencies = vec![
-            Currencies { keys: 2, weapons: 4 },
+        let mut currencies = [Currencies { keys: 2, weapons: 4 },
             Currencies { keys: 0, weapons: 2 },
-            Currencies { keys: 10, weapons: 4 },
-        ];
+            Currencies { keys: 10, weapons: 4 }];
         
         // lowest to highest
         currencies.sort();
         
         assert_eq!(
-            *currencies.iter().rev().next().unwrap(),
+            *currencies.iter().next_back().unwrap(),
             Currencies { keys: 10, weapons: 4 },
         );
     }

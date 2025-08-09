@@ -17,11 +17,11 @@ fn criterion_benchmark(c: &mut Criterion) {
     ));
     
     c.bench_function("to string keys and ref", |b| b.iter(||
-        format!("{}", currencies_keys_and_ref)
+        format!("{currencies_keys_and_ref}")
     ));
     
     c.bench_function("to string keys", |b| b.iter(||
-        format!("{}", curencies_keys)
+        format!("{curencies_keys}")
     ));
 }
 

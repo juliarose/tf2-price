@@ -24,10 +24,10 @@ impl fmt::Display for TryFromFloatCurrenciesError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TryFromFloatCurrenciesError::Fractional { fract } => {
-                write!(f, "Currencies contains fractional value: {}", fract)
+                write!(f, "Currencies contains fractional value: {fract}")
             }
             TryFromFloatCurrenciesError::OutOfBounds { value } => {
-                write!(f, "Conversion of {} was out of integer bounds", value)
+                write!(f, "Conversion of {value} was out of integer bounds")
             }
         }
     }
@@ -62,8 +62,8 @@ impl fmt::Display for ParseError {
             ParseError::MissingCurrencyName => write!(f, "Expected a currency name, but none was found"),
             ParseError::UnexpectedToken => write!(f, "Unexpected token"),
             ParseError::InvalidCurrencyName => write!(f, "Invalid currency name"),
-            ParseError::ParseInt(e) => write!(f, "{}", e),
-            ParseError::ParseFloat(e) => write!(f, "{}", e),
+            ParseError::ParseInt(e) => write!(f, "{e}"),
+            ParseError::ParseFloat(e) => write!(f, "{e}"),
         }
     }
 }

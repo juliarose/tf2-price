@@ -506,7 +506,7 @@ mod tests {
             FloatCurrencies {
                 keys: 10.0,
                 metal: 10.0,
-            } + &FloatCurrencies {
+            } + FloatCurrencies {
                 keys: 5.0,
                 metal: 5.0,
             },
@@ -540,7 +540,7 @@ mod tests {
             FloatCurrencies {
                 keys: 10.0,
                 metal: 10.0,
-            } - &FloatCurrencies {
+            } - FloatCurrencies {
                 keys: 5.0,
                 metal: 5.0,
             },
@@ -754,17 +754,15 @@ mod tests {
     
     #[test]
     fn sorts() {
-        let mut currencies = vec![
-            FloatCurrencies { keys: 2.0, metal: 4.0 },
+        let mut currencies = [FloatCurrencies { keys: 2.0, metal: 4.0 },
             FloatCurrencies { keys: 0.0, metal: 2.0 },
-            FloatCurrencies { keys: 10.0, metal: 4.0 },
-        ];
+            FloatCurrencies { keys: 10.0, metal: 4.0 }];
         
         // lowest to highest
         currencies.sort();
         
         assert_eq!(
-            *currencies.iter().rev().next().unwrap(),
+            *currencies.iter().next_back().unwrap(),
             FloatCurrencies {
                 keys: 10.0,
                 metal: 4.0,
