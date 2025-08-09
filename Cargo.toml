@@ -12,6 +12,7 @@ keywords = ["tf2", "steam"]
 readme = "README.md"
 
 [dependencies]
+# Version locked for stability.
 auto_ops = "=0.3.0"
 serde = { version = "^1.0", features = ["derive"], optional = true }
 

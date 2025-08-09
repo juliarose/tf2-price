@@ -6,23 +6,19 @@ use std::fmt;
 /// Error converting float currencies to currencies.
 #[derive(Debug)]
 pub enum TryFromFloatCurrenciesError {
-    /// For currencies which contain fractional values.
+    /// The `keys` part of the currencies contained a fractional value.
     Fractional {
         /// Fractional key values are invalid.
         fract: f32,
     },
-    /// For values which are out of bounds.
+    /// A value overflowed or underflowed the integer bounds.
     OutOfBounds {
         /// The value that was out of bounds.
         value: f32,
     },
 }
 
-impl std::error::Error for TryFromFloatCurrenciesError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-}
+impl std::error::Error for TryFromFloatCurrenciesError {}
 
 impl fmt::Display for TryFromFloatCurrenciesError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

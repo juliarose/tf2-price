@@ -192,33 +192,25 @@ pub fn round_metal(metal: Currency, rounding: Rounding) -> Currency {
     
     match rounding {
         // No rounding needed if the metal value is an even number.
-        Rounding::UpScrap if metal % 2 != 0 => {
-            metal + 1
-        },
+        Rounding::UpScrap if metal % 2 != 0 => metal + 1,
         // No rounding needed if the metal value is an even number.
-        Rounding::DownScrap if metal % 2 != 0 => {
-            metal - 1
-        },
+        Rounding::DownScrap if metal % 2 != 0 => metal - 1,
         Rounding::Refined => {
-            let value = metal + ONE_REF / 2;
+            let value = metal + (ONE_REF / 2);
             
             value - (value % ONE_REF)
         },
-        // Only apply rounding if there is a remainder.
-        Rounding::UpRefined if remainder != 0 => {
-            if metal > 0 {
-                metal - (remainder + -ONE_REF)
-            } else {
-                metal - remainder
-            }
+        // No rounding needed if there is no remainder.
+        Rounding::UpRefined if remainder != 0 => if metal > 0 {
+            metal - (remainder + -ONE_REF)
+        } else {
+            metal - remainder
         },
-        // Only apply rounding if there is a remainder.
-        Rounding::DownRefined if remainder != 0 => {
-            if metal > 0 {
-                metal - remainder
-            } else {
-                metal - (remainder + ONE_REF)
-            }
+        // No rounding needed if there is no remainder.
+        Rounding::DownRefined if remainder != 0 => if metal > 0 {
+            metal - remainder
+        } else {
+            metal - (remainder + ONE_REF)
         },
         // No rounding or already rounded.
         _ => metal,
