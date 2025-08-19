@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use tf2_price::{Currencies, ref_to_weps};
+use tf2_price::{Currencies, FloatCurrencies, ref_to_weps};
 
 fn criterion_benchmark(c: &mut Criterion) {
     let currencies_str_keys_and_ref = "12 keys, 23.33 ref";
@@ -10,6 +10,10 @@ fn criterion_benchmark(c: &mut Criterion) {
     let curencies_keys = Currencies {
         keys: 12,
         weapons: 0,
+    };
+    let float_currencies = FloatCurrencies {
+        keys: 12.0,
+        metal: 23.33,
     };
     
     c.bench_function("from string keys and ref", |b| b.iter(||
@@ -22,6 +26,10 @@ fn criterion_benchmark(c: &mut Criterion) {
     
     c.bench_function("to string keys", |b| b.iter(||
         format!("{curencies_keys}")
+    ));
+    
+    c.bench_function("float to string keys and ref", |b| b.iter(||
+        format!("{float_currencies}")
     ));
 }
 

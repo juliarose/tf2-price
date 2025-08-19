@@ -6,7 +6,7 @@ Provides utilities for Team Fortress 2 item pricing.
 
 ```toml
 [dependencies]
-tf2-price = { version = "~0.14", features = ["serde"] }
+tf2-price = { version = "0.14.0", features = ["serde"] }
 ```
 
 ## Usage

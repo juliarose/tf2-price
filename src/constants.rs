@@ -11,7 +11,7 @@ pub const ONE_REF: Currency = 18;
 /// Value for one refined metal as a float.
 pub const ONE_REF_FLOAT: f32 = 18.0;
 /// Value for one refined metal as a float (64 bits).
-#[cfg(feature = "serde")]
+#[cfg(feature = "serde")] // Only used in deserialization.
 pub const ONE_REF_FLOAT_64: f64 = 18.0;
 
 /// Symbol for one key.

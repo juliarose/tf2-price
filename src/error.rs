@@ -34,7 +34,7 @@ impl fmt::Display for TryFromFloatCurrenciesError {
 }
 
 /// An error occurred parsing a currency from a string.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseError {
     /// String was invalid.
     NoCurrenciesDetected,
@@ -43,9 +43,15 @@ pub enum ParseError {
     /// A currency name was expected, but none was found.
     MissingCurrencyName,
     /// An unexpected element was found.
-    UnexpectedToken,
+    UnexpectedToken {
+        /// The span of the unexpected token.
+        span: std::ops::Range<usize>,
+    },
     /// An invalid currency name was found.
-    InvalidCurrencyName,
+    InvalidCurrencyName {
+        /// The span of the invalid currency name.
+        span: std::ops::Range<usize>,
+    },
     /// A string failed to parse to an integer.
     ParseInt(ParseIntError),
     /// A string failed to parse to a float.
@@ -60,8 +66,12 @@ impl fmt::Display for ParseError {
             ParseError::NoCurrenciesDetected => write!(f, "No currencies could be parsed from string"),
             ParseError::MissingCount => write!(f, "Expected a number, but none was found"),
             ParseError::MissingCurrencyName => write!(f, "Expected a currency name, but none was found"),
-            ParseError::UnexpectedToken => write!(f, "Unexpected token"),
-            ParseError::InvalidCurrencyName => write!(f, "Invalid currency name"),
+            ParseError::UnexpectedToken {
+                span
+            } => write!(f, "Unexpected token at {}", span.start),
+            ParseError::InvalidCurrencyName {
+                span
+            } => write!(f, "Invalid currency name at index {}", span.start),
             ParseError::ParseInt(e) => write!(f, "{e}"),
             ParseError::ParseFloat(e) => write!(f, "{e}"),
         }

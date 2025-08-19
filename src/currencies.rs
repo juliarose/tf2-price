@@ -1,7 +1,7 @@
+use crate::constants::ONE_REF;
+use crate::error::{ParseError, TryFromFloatCurrenciesError};
 use crate::helpers;
 use crate::types::Currency;
-use crate::error::{ParseError, TryFromFloatCurrenciesError};
-use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL};
 use crate::{FloatCurrencies, Rounding};
 use std::fmt;
 use std::cmp::{Ord, Ordering};
@@ -26,7 +26,7 @@ pub struct Currencies {
 
 impl Currencies {
     /// Creates a new [`Currencies`].
-    #[inline(always)]
+    #[inline] // no change
     pub fn new() -> Self {
         Self::default()
     }
@@ -45,7 +45,7 @@ impl Currencies {
     /// 
     /// assert_eq!(currencies, Currencies { keys: 1, weapons: ref_to_weps!(20) });
     /// ```
-    #[inline(always)] // -77.764% improvement
+    #[inline] // -77.764% improvement
     pub fn from_weapons(
         weapons: Currency,
         key_price_weapons: Currency,
@@ -107,7 +107,7 @@ impl Currencies {
         currencies: FloatCurrencies,
         key_price_weapons: Currency,
     ) -> Self {
-        let keys_weapons = ((currencies.keys.fract()) * key_price_weapons as f32).round();
+        let keys_weapons = (currencies.keys.fract() * key_price_weapons as f32).round();
         let weapons = helpers::get_weapons_from_metal_float(currencies.metal);
         
         Self {
@@ -155,7 +155,7 @@ impl Currencies {
     /// // None, as the keys value is out of bounds.
     /// assert!(currencies.is_none());
     /// ```
-    #[inline] // -92.206% improvement
+    #[inline] // -94.380% improvement
     pub fn try_from_float_currencies_with(
         currencies: FloatCurrencies,
         key_price_weapons: Currency,
@@ -165,10 +165,10 @@ impl Currencies {
         // same value.
         let keys = helpers::strict_f32_to_currency(currencies.keys.trunc())?;
         // Take the remainder of the keys value.
-        let keys_weapons_float = (currencies.keys.fract() * key_price_weapons as f32).round();
-        let keys_weapons = helpers::strict_f32_to_currency(keys_weapons_float)?;
+        let keys_weapons = (currencies.keys.fract() * key_price_weapons as f32).round();
         // Convert the metal value to weapon, add the weapons from the remainder.
-        let weapons = helpers::checked_get_weapons_from_metal_float(currencies.metal)?.checked_add(keys_weapons)?;
+        let weapons = helpers::checked_get_weapons_from_metal_float(currencies.metal)?
+            .checked_add(helpers::strict_f32_to_currency(keys_weapons)?)?;
         
         Some(Self {
             keys,
@@ -189,6 +189,7 @@ impl Currencies {
     /// assert_eq!(currencies.keys, 1);
     /// assert_eq!(currencies.weapons, ref_to_weps!(30));
     /// ```
+    #[inline] // -86.743% improvement
     pub fn from_keys_f32(
         keys: f32,
         key_price_weapons: Currency,
@@ -215,7 +216,7 @@ impl Currencies {
     /// 
     /// assert_eq!(currencies.to_weapons(key_price), ref_to_weps!(60));
     /// ```
-    #[inline(always)] // -86.377% improvement
+    #[inline] // -83.139% improvement
     pub fn to_weapons(&self, key_price_weapons: Currency) -> Currency {
         helpers::to_metal(self.weapons, self.keys, key_price_weapons)
     }
@@ -236,6 +237,7 @@ impl Currencies {
     /// 
     /// assert!(currencies.checked_to_weapons(key_price_weapons).is_none());
     /// ```
+    #[inline] // -72.083% improvement
     pub fn checked_to_weapons(&self, key_price_weapons: Currency) -> Option<Currency> {
         helpers::checked_to_metal(self.weapons, self.keys, key_price_weapons)
     }
@@ -248,7 +250,7 @@ impl Currencies {
     /// 
     /// assert!(Currencies { keys: 0, weapons: 0 }.is_empty());
     /// ```
-    #[inline]
+    #[inline] // no change
     pub fn is_empty(&self) -> bool {
         self.keys == 0 && self.weapons == 0
     }
@@ -265,13 +267,41 @@ impl Currencies {
     ///     weapons: ref_to_weps!(1.33),
     /// };
     /// 
-    /// assert_eq!(currencies.round(Rounding::Refined).weapons, ref_to_weps!(1));
-    /// assert_eq!(currencies.round(Rounding::UpRefined).weapons, ref_to_weps!(2));
+    /// assert_eq!(currencies.round(&Rounding::Refined).weapons, ref_to_weps!(1));
+    /// assert_eq!(currencies.round(&Rounding::UpRefined).weapons, ref_to_weps!(2));
     /// ```
-    #[inline] // -72.528% improvement
-    pub fn round(mut self, rounding: Rounding) -> Self {
-        self.weapons = helpers::round_metal(self.weapons, rounding);
-        self
+    pub fn round(&self, rounding: &Rounding) -> Self {
+        let mut new_currencies = *self;
+        let weapons = self.weapons;
+        // Remainder for refined &Rounding.
+        let remainder = weapons % ONE_REF;
+        
+        new_currencies.weapons = match rounding {
+            // No rounding needed if the metal value is an even number.
+            Rounding::UpScrap if weapons % 2 != 0 => weapons + 1,
+            // No rounding needed if the metal value is an even number.
+            Rounding::DownScrap if weapons % 2 != 0 => weapons - 1,
+            Rounding::Refined => {
+                let value = weapons + (ONE_REF / 2);
+                
+                value - (value % ONE_REF)
+            },
+            // No rounding needed if there is no remainder.
+            Rounding::UpRefined if remainder != 0 => if weapons > 0 {
+                weapons - (remainder + -ONE_REF)
+            } else {
+                weapons - remainder
+            },
+            // No rounding needed if there is no remainder.
+            Rounding::DownRefined if remainder != 0 => if weapons > 0 {
+                weapons - remainder
+            } else {
+                weapons - (remainder + ONE_REF)
+            },
+            // No rounding or already rounded.
+            _ => weapons,
+        };
+        new_currencies
     }
     
     /// Neatens currencies. This converts the `weapons` over the `key_price_weapons` into `keys`.
@@ -290,6 +320,7 @@ impl Currencies {
     /// 
     /// assert_eq!(currencies, Currencies { keys: 2, weapons: ref_to_weps!(10) });
     /// ```
+    #[inline] // -74.605% improvement
     pub fn neaten(&self, key_price_weapons: Currency) -> Self {
         Self::from_weapons(self.to_weapons(key_price_weapons), key_price_weapons)
     }
@@ -311,7 +342,7 @@ impl Currencies {
     /// // Not enough metal - we can't afford this.
     /// assert!(!currencies.can_afford(&Currencies { keys: 50, weapons: ref_to_weps!(100) }));
     /// ```
-    #[inline(always)]
+    #[inline] // no change
     pub fn can_afford(&self, other: &Self) -> bool {
         self.keys >= other.keys && self.weapons >= other.weapons
     }
@@ -331,7 +362,7 @@ impl Currencies {
     /// // Overflows, returns None.
     /// assert!(currencies.checked_mul(5).is_none());
     /// ```
-    #[inline]
+    #[inline] // -50.427% improvement
     pub fn checked_mul(&self, rhs: Currency) -> Option<Self> {
         Some(Self {
             keys: self.keys.checked_mul(rhs)?,
@@ -341,7 +372,7 @@ impl Currencies {
     
     /// Checked integer division. Computes `self / rhs`, returning `None` if `rhs == 0` or the
     /// division results in overflow.
-    #[inline]
+    #[inline] // -74.997% improvement
     pub fn checked_div(&self, rhs: Currency) -> Option<Self> {
         Some(Self {
             keys: self.keys.checked_div(rhs)?,
@@ -350,7 +381,7 @@ impl Currencies {
     }
     
     /// Adds currencies. `None` if the result overflows integer bounds.
-    #[inline]
+    #[inline] // -55.690% improvement
     pub fn checked_add(&self, other: Self) -> Option<Self> {
         Some(Self {
             keys: self.keys.checked_add(other.keys)?,
@@ -359,7 +390,7 @@ impl Currencies {
     }
     
     /// Subtracts currencies. `None` if the result overflows integer bounds.
-    #[inline]
+    #[inline] // -48.582% improvement
     pub fn checked_sub(&self, other: Self) -> Option<Self> {
         Some(Self {
             keys: self.keys.checked_sub(other.keys)?,
@@ -371,6 +402,7 @@ impl Currencies {
 impl PartialEq<FloatCurrencies> for Currencies {
     /// Comparison with [`FloatCurrencies`] will fail if [`FloatCurrencies`] has a fractional key
     /// value.
+    #[inline]
     fn eq(&self, other: &FloatCurrencies) -> bool {
         if let Some(weapons) = helpers::checked_get_weapons_from_metal_float(other.metal) {
             other.keys.fract() == 0.0 &&
@@ -479,6 +511,7 @@ impl_op_ex!(/= |currencies: &mut Currencies, num: f32| {
 impl TryFrom<&str> for Currencies {
     type Error = ParseError;
     
+    #[inline]
     fn try_from(string: &str) -> Result<Self, Self::Error>  {
         string.parse::<Self>()
     }
@@ -487,6 +520,7 @@ impl TryFrom<&str> for Currencies {
 impl TryFrom<&String> for Currencies {
     type Error = ParseError;
     
+    #[inline]
     fn try_from(string: &String) -> Result<Self, Self::Error> {
         Self::try_from(string.as_str())
     }
@@ -495,6 +529,7 @@ impl TryFrom<&String> for Currencies {
 impl TryFrom<String> for Currencies {
     type Error = ParseError;
     
+    #[inline]
     fn try_from(string: String) -> Result<Self, Self::Error> {
         Self::try_from(string.as_str())
     }
@@ -503,6 +538,7 @@ impl TryFrom<String> for Currencies {
 impl std::str::FromStr for Currencies {
     type Err = ParseError;
     
+    #[inline]
     fn from_str(string: &str) -> Result<Self, Self::Err> {
         let (
             keys,
@@ -564,31 +600,36 @@ impl TryFrom<&FloatCurrencies> for Currencies {
 
 impl fmt::Display for Currencies {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // Either both keys and metal are non-zero or both are zero.
-        if (self.keys != 0 && self.weapons != 0) || self.is_empty() {
-            write!(
-                f,
-                "{} {}, {} {}",
-                self.keys,
-                helpers::pluralize(self.keys, KEY_SYMBOL, KEYS_SYMBOL),
-                helpers::get_metal_float_from_weapons(self.weapons),
-                METAL_SYMBOL,
-            )
+        fn format_keys(f: &mut fmt::Formatter, keys: Currency) -> fmt::Result {
+            if keys == 1 {
+                write!(f, "1 key")
+            } else {
+                write!(f, "{keys} keys")
+            }
+        }
+        
+        fn format_metal(f: &mut fmt::Formatter, weapons: Currency) -> fmt::Result {
+            let int = weapons / ONE_REF;
+            let frac = (weapons.abs() % ONE_REF) * 100 / ONE_REF;
+            
+            if frac == 0 {
+                write!(f, "{int} ref")
+            } else {
+                write!(f, "{int}.{frac:02} ref")
+            }
+        }
+        
+        if self.is_empty() {
+            write!(f, "0 keys, 0 ref")
+        } else if self.keys != 0 && self.weapons != 0 {
+            format_keys(f, self.keys)?;
+            write!(f, ", ")?;
+            format_metal(f, self.weapons)
         } else if self.keys != 0 {
-            write!(
-                f,
-                "{} {}",
-                self.keys,
-                helpers::pluralize(self.keys, KEY_SYMBOL, KEYS_SYMBOL),
-            )
+            format_keys(f, self.keys)
         } else {
             // It can be assumed that metal is not zero.
-            write!(
-                f,
-                "{} {}",
-                helpers::get_metal_float_from_weapons(self.weapons),
-                METAL_SYMBOL,
-            )
+            format_metal(f, self.weapons)
         }
     }
 }
@@ -599,15 +640,39 @@ impl<'de> serde::Deserialize<'de> for Currencies {
     where
         D: serde::Deserializer<'de>,
     {
-        use serde::de::Error;
-        
-        let currencies = Self::deserialize(deserializer)?;
-        
-        if currencies.keys == 0 && currencies.weapons == 0 {
-            return Err(D::Error::custom("Does not contain values for keys or metal"));
+        fn clamp_f32(f: f32) -> Currency {
+            (f * crate::constants::ONE_REF_FLOAT)
+                .round()
+                .clamp(Currency::MIN as f32, Currency::MAX as f32) as Currency
         }
         
-        Ok(currencies)
+        #[derive(serde::Deserialize)]
+        struct CurrenciesHelper {
+            #[serde(default)]
+            keys: Option<Currency>,
+            #[serde(default)]
+            metal: Option<f32>,
+        }
+        
+        match CurrenciesHelper::deserialize(deserializer)? {
+            CurrenciesHelper {
+                keys: None,
+                metal: None,
+            } => {
+                Err(serde::de::Error::custom("At least one of 'keys' or 'metal' must be present"))
+            },
+            CurrenciesHelper {
+                keys,
+                metal,
+            } => {
+                Ok(Currencies {
+                    keys: keys.unwrap_or(0),
+                    weapons: metal
+                        .map(clamp_f32)
+                        .unwrap_or(0),
+                })
+            },
+        }
     }
 }
 
@@ -889,6 +954,19 @@ mod tests {
     }
     
     #[test]
+    fn parses_currencies_checks_span() {
+        let s = "2 keys, 3 what";
+        
+        if let Err(ParseError::InvalidCurrencyName { span, .. }) = s.parse::<Currencies>() {
+            assert_eq!(span.start, 10);
+            assert_eq!(span.end, 14);
+            assert_eq!(&s[span.start..span.end], "what");
+        } else {
+            panic!("Expected ParseError");
+        }
+    }
+    
+    #[test]
     fn prints_empty_currencies() {
         assert_eq!(Currencies::default().to_string(), "0 keys, 0 ref");
     }
@@ -1003,7 +1081,7 @@ mod tests {
             weapons: ref_to_weps!(23.44) + 1,
         };
         
-        assert_eq!(currencies.round(Rounding::DownScrap).weapons, 422);
+        assert_eq!(currencies.round(&Rounding::DownScrap).weapons, 422);
     }
     
     #[test]
@@ -1013,7 +1091,7 @@ mod tests {
             weapons: ref_to_weps!(23.44),
         };
         
-        assert_eq!(currencies.round(Rounding::DownRefined).weapons, ref_to_weps!(23));
+        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, ref_to_weps!(23));
     }
     
     #[test]
@@ -1023,7 +1101,7 @@ mod tests {
             weapons: -ref_to_weps!(22.88),
         };
         
-        assert_eq!(currencies.round(Rounding::UpRefined).weapons, -ref_to_weps!(22));
+        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, -ref_to_weps!(22));
     }
     
     #[test]
@@ -1033,7 +1111,7 @@ mod tests {
             weapons: -ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(Rounding::UpRefined).weapons, -ref_to_weps!(23));
+        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, -ref_to_weps!(23));
     }
     
     #[test]
@@ -1043,7 +1121,7 @@ mod tests {
             weapons: -ref_to_weps!(22.88),
         };
         
-        assert_eq!(currencies.round(Rounding::DownRefined).weapons, -ref_to_weps!(23));
+        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, -ref_to_weps!(23));
     }
     
     #[test]
@@ -1053,7 +1131,7 @@ mod tests {
             weapons: -ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(Rounding::DownRefined).weapons, -ref_to_weps!(23));
+        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, -ref_to_weps!(23));
     }
     
     #[test]
@@ -1063,7 +1141,7 @@ mod tests {
             weapons: ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(Rounding::DownRefined).weapons, ref_to_weps!(23));
+        assert_eq!(currencies.round(&Rounding::DownRefined).weapons, ref_to_weps!(23));
     }
     
     #[test]
@@ -1073,7 +1151,7 @@ mod tests {
             weapons: ref_to_weps!(23.44),
         };
         
-        assert_eq!(currencies.round(Rounding::UpRefined).weapons, ref_to_weps!(24));
+        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, ref_to_weps!(24));
     }
     
     #[test]
@@ -1083,7 +1161,7 @@ mod tests {
             weapons: ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(Rounding::UpRefined).weapons, ref_to_weps!(23));
+        assert_eq!(currencies.round(&Rounding::UpRefined).weapons, ref_to_weps!(23));
     }
     
     #[test]
@@ -1093,7 +1171,7 @@ mod tests {
             weapons: ref_to_weps!(23.44),
         };
         
-        assert_eq!(currencies.round(Rounding::Refined).weapons, ref_to_weps!(23));
+        assert_eq!(currencies.round(&Rounding::Refined).weapons, ref_to_weps!(23));
     }
     
     #[test]
@@ -1103,7 +1181,7 @@ mod tests {
             weapons: ref_to_weps!(23),
         };
         
-        assert_eq!(currencies.round(Rounding::Refined).weapons, ref_to_weps!(23));
+        assert_eq!(currencies.round(&Rounding::Refined).weapons, ref_to_weps!(23));
     }
     
     #[test]
@@ -1113,7 +1191,7 @@ mod tests {
             weapons: ref_to_weps!(23.55),
         };
         
-        assert_eq!(currencies.round(Rounding::Refined).weapons, ref_to_weps!(24));
+        assert_eq!(currencies.round(&Rounding::Refined).weapons, ref_to_weps!(24));
     }
     
     #[test]
@@ -1123,7 +1201,7 @@ mod tests {
             weapons: ref_to_weps!(23.44) + 1,
         };
         
-        assert_eq!(currencies.round(Rounding::UpScrap).weapons, 424);
+        assert_eq!(currencies.round(&Rounding::UpScrap).weapons, 424);
     }
     
     #[test]
@@ -1438,6 +1516,19 @@ mod tests_serde {
     #[test]
     fn deserializes_currencies_with_no_metal() {
         let currencies: Currencies = serde_json::from_str(r#"{"keys":5}"#).unwrap();
+        
+        assert_eq!(
+            currencies,
+            Currencies {
+                keys: 5,
+                weapons: 0,
+            },
+        );
+    }
+    
+    #[test]
+    fn deserializes_currencies_with_extra_fieldl() {
+        let currencies: Currencies = serde_json::from_str(r#"{"hats":1,"keys":5}"#).unwrap();
         
         assert_eq!(
             currencies,

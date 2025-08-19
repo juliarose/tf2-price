@@ -1,7 +1,6 @@
 use crate::helpers;
 use crate::types::Currency;
 use crate::error::ParseError;
-use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL};
 use crate::Currencies;
 use std::fmt;
 use std::cmp::{Ord, Ordering};
@@ -303,6 +302,7 @@ impl_op_ex!(/= |a: &mut FloatCurrencies, b: f32| {
 impl TryFrom<&str> for FloatCurrencies {
     type Error = ParseError;
     
+    #[inline]
     fn try_from(string: &str) -> Result<Self, Self::Error>  {
         string.parse::<Self>()
     }
@@ -311,22 +311,25 @@ impl TryFrom<&str> for FloatCurrencies {
 impl TryFrom<&String> for FloatCurrencies {
     type Error = ParseError;
     
+    #[inline]
     fn try_from(string: &String) -> Result<Self, Self::Error> {
-        string.parse::<Self>()
+        Self::try_from(string.as_str())
     }
 }
 
 impl TryFrom<String> for FloatCurrencies {
     type Error = ParseError;
     
+    #[inline]
     fn try_from(string: String) -> Result<Self, Self::Error> {
-        string.parse::<Self>()
+        Self::try_from(string.as_str())
     }
 }
 
 impl std::str::FromStr for FloatCurrencies {
     type Err = ParseError;
     
+    #[inline]
     fn from_str(string: &str) -> Result<Self, Self::Err> {
         let (keys, metal) = helpers::parse_float_from_string(string)?;
         
@@ -356,31 +359,42 @@ impl From<&Currencies> for FloatCurrencies {
 
 impl fmt::Display for FloatCurrencies {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // Either both keys and metal are non-zero or both are zero.
-        if (self.keys != 0.0 && self.metal != 0.0) || self.is_empty() {
-            write!(
-                f,
-                "{} {}, {} {}",
-                helpers::print_float(self.keys),
-                helpers::pluralize_float(self.keys, KEY_SYMBOL, KEYS_SYMBOL),
-                helpers::print_float(self.metal),
-                METAL_SYMBOL,
-            )
+        fn print_keys(f: &mut fmt::Formatter, keys: f32) -> fmt::Result {
+            if keys == 1.0 {
+                write!(f, "1 key")
+            } else {
+                if keys.fract() == 0.0 {
+                    write!(f, "{}", keys as Currency)?;
+                } else {
+                    write!(f, "{keys:.2}")?;
+                }
+                
+                write!(f, " keys")
+            }
+        }
+        
+        fn print_metal(f: &mut fmt::Formatter, metal: f32) -> fmt::Result {
+            let int = metal as Currency;
+            let frac = ((metal - int as f32) * 100.0).round() as u8;
+            
+            if frac == 0 {
+                write!(f, "{int} ref")
+            } else {
+                write!(f, "{int}.{frac:02} ref")
+            }
+        }
+        
+        if self.is_empty() {
+            write!(f, "0 keys, 0 ref")
+        } else if self.keys != 0.0 && self.metal != 0.0  {
+            print_keys(f, self.keys)?;
+            write!(f, ", ")?;
+            print_metal(f, self.metal)
         } else if self.keys != 0.0 {
-            write!(
-                f,
-                "{} {}",
-                helpers::print_float(self.keys),
-                helpers::pluralize_float(self.keys, KEY_SYMBOL, KEYS_SYMBOL),
-            )
+            print_keys(f, self.keys)
         } else {
             // It can be assumed that metal is not zero.
-            write!(
-                f,
-                "{} {}",
-                helpers::print_float(self.metal),
-                METAL_SYMBOL,
-            )
+            print_metal(f, self.metal)
         }
     }
 }
@@ -393,21 +407,42 @@ impl<'de> serde::Deserialize<'de> for FloatCurrencies {
     {
         use serde::de::Error;
         
-        let currencies = Self::deserialize(deserializer)?;
-        
-        if currencies.keys.is_nan() {
-            return Err(D::Error::custom("Keys is NaN"));
+        #[derive(serde::Deserialize)]
+        struct CurrenciesHelper {
+            #[serde(default)]
+            keys: Option<f32>,
+            #[serde(default)]
+            metal: Option<f32>,
         }
         
-        if currencies.metal.is_nan() {
-            return Err(D::Error::custom("Metal is NaN"));
+        match CurrenciesHelper::deserialize(deserializer)? {
+            CurrenciesHelper {
+                keys: None,
+                metal: None,
+            } => {
+                Err(serde::de::Error::custom("At least one of 'keys' or 'metal' must be present"))
+            },
+            CurrenciesHelper {
+                keys,
+                metal,
+            } => {
+                let keys = keys.unwrap_or(0.0);
+                let metal = metal.unwrap_or(0.0);
+                
+                if keys.is_nan() {
+                    return Err(D::Error::custom("Keys is NaN"));
+                }
+                
+                if metal.is_nan() {
+                    return Err(D::Error::custom("Metal is NaN"));
+                }
+                
+                Ok(FloatCurrencies {
+                    keys,
+                    metal,
+                })
+            },
         }
-        
-        if currencies.keys == 0.0 && currencies.metal == 0.0 {
-            return Err(D::Error::custom("Does not contain values for keys or metal"));
-        }
-        
-        Ok(currencies)
     }
 }
 

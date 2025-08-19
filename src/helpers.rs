@@ -1,11 +1,10 @@
 use crate::error::ParseError;
 use crate::types::Currency;
-use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, ONE_REF, ONE_REF_FLOAT};
-use crate::Rounding;
+use crate::constants::{KEYS_SYMBOL, KEY_SYMBOL, METAL_SYMBOL, ONE_REF_FLOAT};
 
 /// Converts currencies to a metal value using the given key price (represented as weapons). This
 /// method is saturating.
-#[inline(always)]
+#[inline]
 pub fn to_metal(
     metal: Currency,
     keys: Currency,
@@ -17,7 +16,7 @@ pub fn to_metal(
 /// Converts currencies to a metal value using the given key price (represented as weapons).
 /// In cases where the result overflows or underflows beyond the limit for [`Currency`], `None`
 /// is returned.
-#[inline(always)]
+#[inline]
 pub fn checked_to_metal(
     metal: Currency,
     keys: Currency,
@@ -26,50 +25,15 @@ pub fn checked_to_metal(
     metal.checked_add(keys.checked_mul(key_price_weapons)?)
 }
 
-/// Pluralizes a value using an integer as the test.
-pub fn pluralize<'a>(
-    amount: Currency,
-    singular: &'a str,
-    plural: &'a str,
-) -> &'a str {
-    if amount == 1 {
-        singular
-    } else {
-        plural
-    }
-}
-
-/// Pluralizes a value using a float as the test.
-pub fn pluralize_float<'a>(
-    amount: f32,
-    singular: &'a str,
-    plural: &'a str,
-) -> &'a str {
-    if amount == 1.0 {
-        singular
-    } else{
-        plural
-    }
-}
-
-/// Prints a float as either an integer if it contains no fractional values or with 2 decimal
-/// places if it does.
-pub fn print_float(amount: f32) -> String {
-    if amount.fract() == 0.0 {
-        (amount.round() as Currency).to_string()
-    } else {
-        format!("{amount:.2}")
-    }
-}
-
 /// Converts a value in weapons into its float value.
 ///
 /// # Examples
 /// ```
 /// assert_eq!(tf2_price::get_metal_float_from_weapons(6), 0.33);
 /// ```
-pub fn get_metal_float_from_weapons(value: Currency) -> f32 {
-    f32::trunc((value as f32 / ONE_REF_FLOAT) * 100.0) / 100.0
+#[inline]
+pub fn get_metal_float_from_weapons(weapons: Currency) -> f32 {
+    f32::trunc((weapons as f32 / ONE_REF_FLOAT) * 100.0) / 100.0
 }
 
 /// Converts a float value into a metal value (represented as weapons).
@@ -78,6 +42,7 @@ pub fn get_metal_float_from_weapons(value: Currency) -> f32 {
 /// ```
 /// assert_eq!(tf2_price::get_weapons_from_metal_float(0.33), 6);
 /// ```
+#[inline]
 pub fn get_weapons_from_metal_float(value: f32) -> Currency {
     (value * ONE_REF_FLOAT).round() as Currency
 }
@@ -98,24 +63,20 @@ pub fn checked_get_weapons_from_metal_float(value: f32) -> Option<Currency> {
 /// Converts an `f32` into a `Currency` safely.
 #[inline]
 pub fn strict_f32_to_currency(value: f32) -> Option<Currency> {
-    // We don't want to allow NaN or infinite values.
-    if value.is_nan() || value.is_infinite() {
-        return None
+    let as_currency = value as Currency;
+    
+    if 
+        // We don't want to allow NaN or infinite values.
+        value.is_finite() &&
+        value == as_currency as f32 &&
+        // Check if the value is out of bounds of a Currency.
+        value >= Currency::MIN as f32 &&
+        value <= Currency::MAX as f32
+    {
+        return Some(as_currency);
     }
     
-    // https://stackoverflow.com/a/71431182
-    // Check if fractional component is 0 and that it can map to an integer
-    // Using fract() is equivalent to using `as Currency as f32` and checking it matches
-    if value.fract() != 0.0 {
-        return None;
-    }
-    
-    // Check if the value is out of bounds of a Currency.
-    if value < Currency::MIN as f32 || value > Currency::MAX as f32 {
-        return None;
-    }
-    
-    Some(value.trunc() as Currency)
+    None
 }
 
 /// Parses currencies from a string.
@@ -126,13 +87,17 @@ fn parse_currencies(
     let mut metal = None;
     
     for element in string.split(',') {
-        let mut element_split = element.trim().split(' ');
+        let mut element_split = element.split_whitespace();
         let count_str = element_split.next().ok_or(ParseError::MissingCount)?;
         let currency_name = element_split.next().ok_or(ParseError::MissingCurrencyName)?;
         
         // We don't expect another element after the currency name.
-        if element_split.next().is_some() {
-            return Err(ParseError::UnexpectedToken);
+        if let Some(token) = element_split.next() {
+            let pos = string.find(token).unwrap_or_default();
+            
+            return Err(ParseError::UnexpectedToken {
+                span: pos..(pos + token.len()),
+            });
         }
         
         if currency_name.eq_ignore_ascii_case(METAL_SYMBOL) {
@@ -140,7 +105,11 @@ fn parse_currencies(
         } else if currency_name.eq_ignore_ascii_case(KEYS_SYMBOL) || currency_name.eq_ignore_ascii_case(KEY_SYMBOL) {
             keys = Some(count_str);
         } else {
-            return Err(ParseError::InvalidCurrencyName);
+            let pos = string.find(currency_name).unwrap_or_default();
+            
+            return Err(ParseError::InvalidCurrencyName {
+                span: pos..(pos + currency_name.len()),
+            });
         }
     }
     
@@ -187,38 +156,6 @@ pub fn parse_float_from_string(
     Ok((keys, metal))
 }
 
-/// Rounds a metal value.
-pub fn round_metal(metal: Currency, rounding: Rounding) -> Currency {
-    // Remainder for refined rounding.
-    let remainder = metal % ONE_REF;
-    
-    match rounding {
-        // No rounding needed if the metal value is an even number.
-        Rounding::UpScrap if metal % 2 != 0 => metal + 1,
-        // No rounding needed if the metal value is an even number.
-        Rounding::DownScrap if metal % 2 != 0 => metal - 1,
-        Rounding::Refined => {
-            let value = metal + (ONE_REF / 2);
-            
-            value - (value % ONE_REF)
-        },
-        // No rounding needed if there is no remainder.
-        Rounding::UpRefined if remainder != 0 => if metal > 0 {
-            metal - (remainder + -ONE_REF)
-        } else {
-            metal - remainder
-        },
-        // No rounding needed if there is no remainder.
-        Rounding::DownRefined if remainder != 0 => if metal > 0 {
-            metal - remainder
-        } else {
-            metal - (remainder + ONE_REF)
-        },
-        // No rounding or already rounded.
-        _ => metal,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -227,16 +164,6 @@ mod tests {
     #[test]
     fn converts_strict_f32_to_currency() {
         assert!(strict_f32_to_currency(Currency::MAX as f32).is_some());
-    }
-    
-    #[test]
-    fn prints_float_rounded_whole_number() {
-        assert_eq!("1", print_float(1.0));
-    }
-    
-    #[test]
-    fn prints_float_proper_decimal_places() {
-        assert_eq!("1.56", print_float(1.55555));
     }
     
     #[test]
