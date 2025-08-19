@@ -8,12 +8,14 @@
 ### Fixed
 - Missing `weapons` suffix for some key price arguments.
 - An issue where deserializing float metal values could overflow the `Currency` when deserializing `Currencies`.
+- Incorrect implementation of `PartialEq<FloatCurrencies>` for `Currencies`.
 
 ### Changed
 - Renamed `weapons!` macro to `ref_to_weps!`.
 - Precision of deserialization for `weapons` for `Currencies` from `f32` to `f64`.
 - Updated documentation.
 - `round` for `Currencies` now accepts owned `Rounding` as it implements `Copy`. 
+- Inlining attributes for performance optimization for many methods. This has substantially improved performance by as much as 90% in some cases.
 
 ### Removed
 - `refined!`, `reclaimed!`, and `scrap!` macros. Use `ONE_REF`, `ONE_REC`, and `ONE_SCRAP` constants instead.

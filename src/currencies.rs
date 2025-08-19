@@ -24,30 +24,9 @@ pub struct Currencies {
     pub weapons: Currency,
 }
 
-impl PartialOrd for Currencies {
-    fn partial_cmp(&self, other: &Currencies) -> Option<Ordering> {
-       Some(self.cmp(other))
-    }
-}
-
-impl Ord for Currencies {
-    fn cmp(&self, other:&Self) -> Ordering {
-        if self.keys > other.keys {
-            Ordering::Greater
-        } else if self.keys < other.keys {
-            Ordering::Less
-        } else if self.weapons > other.weapons {
-            Ordering::Greater
-        } else if self.weapons < other.weapons {
-            Ordering::Less
-        } else {
-            Ordering::Equal
-        }
-    }
-}
-
 impl Currencies {
     /// Creates a new [`Currencies`].
+    #[inline(always)]
     pub fn new() -> Self {
         Self::default()
     }
@@ -66,6 +45,7 @@ impl Currencies {
     /// 
     /// assert_eq!(currencies, Currencies { keys: 1, weapons: ref_to_weps!(20) });
     /// ```
+    #[inline(always)] // -77.764% improvement
     pub fn from_weapons(
         weapons: Currency,
         key_price_weapons: Currency,
@@ -93,16 +73,14 @@ impl Currencies {
     /// 
     /// assert_eq!(currencies, Currencies { keys: 1, weapons: ref_to_weps!(20) });
     /// ```
+    #[inline] // -58.006% improvement
     pub fn checked_from_weapons(
         weapons: Currency,
         key_price_weapons: Currency,
     ) -> Option<Self> {
-        let keys = weapons.checked_div(key_price_weapons)?;
-        let weapons = weapons.checked_rem(key_price_weapons)?;
-        
         Some(Self {
-            keys,
-            weapons,
+            keys: weapons.checked_div(key_price_weapons)?,
+            weapons: weapons.checked_rem(key_price_weapons)?,
         })
     }
     
@@ -124,18 +102,17 @@ impl Currencies {
     /// assert_eq!(currencies.keys, 1);
     /// assert_eq!(currencies.weapons, ref_to_weps!(30));
     /// ```
+    #[inline] // -62.106% improvement
     pub fn from_float_currencies_with(
         currencies: FloatCurrencies,
         key_price_weapons: Currency,
     ) -> Self {
-        let keys_weapons = (
-            (currencies.keys.fract()) * key_price_weapons as f32
-        ).round() as Currency;
+        let keys_weapons = ((currencies.keys.fract()) * key_price_weapons as f32).round();
         let weapons = helpers::get_weapons_from_metal_float(currencies.metal);
         
         Self {
             keys: currencies.keys as Currency,
-            weapons: weapons.saturating_add(keys_weapons),
+            weapons: weapons.saturating_add(keys_weapons as Currency),
         }
     }
     
@@ -178,6 +155,7 @@ impl Currencies {
     /// // None, as the keys value is out of bounds.
     /// assert!(currencies.is_none());
     /// ```
+    #[inline] // -92.206% improvement
     pub fn try_from_float_currencies_with(
         currencies: FloatCurrencies,
         key_price_weapons: Currency,
@@ -237,6 +215,7 @@ impl Currencies {
     /// 
     /// assert_eq!(currencies.to_weapons(key_price), ref_to_weps!(60));
     /// ```
+    #[inline(always)] // -86.377% improvement
     pub fn to_weapons(&self, key_price_weapons: Currency) -> Currency {
         helpers::to_metal(self.weapons, self.keys, key_price_weapons)
     }
@@ -269,6 +248,7 @@ impl Currencies {
     /// 
     /// assert!(Currencies { keys: 0, weapons: 0 }.is_empty());
     /// ```
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.keys == 0 && self.weapons == 0
     }
@@ -288,6 +268,7 @@ impl Currencies {
     /// assert_eq!(currencies.round(Rounding::Refined).weapons, ref_to_weps!(1));
     /// assert_eq!(currencies.round(Rounding::UpRefined).weapons, ref_to_weps!(2));
     /// ```
+    #[inline] // -72.528% improvement
     pub fn round(mut self, rounding: Rounding) -> Self {
         self.weapons = helpers::round_metal(self.weapons, rounding);
         self
@@ -330,6 +311,7 @@ impl Currencies {
     /// // Not enough metal - we can't afford this.
     /// assert!(!currencies.can_afford(&Currencies { keys: 50, weapons: ref_to_weps!(100) }));
     /// ```
+    #[inline(always)]
     pub fn can_afford(&self, other: &Self) -> bool {
         self.keys >= other.keys && self.weapons >= other.weapons
     }
@@ -349,49 +331,75 @@ impl Currencies {
     /// // Overflows, returns None.
     /// assert!(currencies.checked_mul(5).is_none());
     /// ```
+    #[inline]
     pub fn checked_mul(&self, rhs: Currency) -> Option<Self> {
-        let keys = self.keys.checked_mul(rhs)?;
-        let weapons = self.weapons.checked_mul(rhs)?;
-        
-        Some(Self { keys, weapons })
+        Some(Self {
+            keys: self.keys.checked_mul(rhs)?,
+            weapons: self.weapons.checked_mul(rhs)?,
+        })
     }
     
     /// Checked integer division. Computes `self / rhs`, returning `None` if `rhs == 0` or the
     /// division results in overflow.
+    #[inline]
     pub fn checked_div(&self, rhs: Currency) -> Option<Self> {
-        let keys = self.keys.checked_div(rhs)?;
-        let weapons = self.weapons.checked_div(rhs)?;
-        
-        Some(Self { keys, weapons })
+        Some(Self {
+            keys: self.keys.checked_div(rhs)?,
+            weapons: self.weapons.checked_div(rhs)?,
+        })
     }
     
     /// Adds currencies. `None` if the result overflows integer bounds.
+    #[inline]
     pub fn checked_add(&self, other: Self) -> Option<Self> {
-        let keys = self.keys.checked_add(other.keys)?;
-        let weapons = self.weapons.checked_add(other.weapons)?;
-        
-        Some(Self { keys, weapons })
+        Some(Self {
+            keys: self.keys.checked_add(other.keys)?,
+            weapons: self.weapons.checked_add(other.weapons)?,
+        })
     }
     
     /// Subtracts currencies. `None` if the result overflows integer bounds.
+    #[inline]
     pub fn checked_sub(&self, other: Self) -> Option<Self> {
-        let keys = self.keys.checked_sub(other.keys)?;
-        let weapons = self.weapons.checked_sub(other.weapons)?;
-        
-        Some(Self { keys, weapons })
+        Some(Self {
+            keys: self.keys.checked_sub(other.keys)?,
+            weapons: self.weapons.checked_sub(other.weapons)?,
+        })
     }
 }
 
-/// Comparison with [`FloatCurrencies`] will fail if [`FloatCurrencies`] has a fractional key
-/// value.
 impl PartialEq<FloatCurrencies> for Currencies {
+    /// Comparison with [`FloatCurrencies`] will fail if [`FloatCurrencies`] has a fractional key
+    /// value.
     fn eq(&self, other: &FloatCurrencies) -> bool {
         if let Some(weapons) = helpers::checked_get_weapons_from_metal_float(other.metal) {
-            other.keys.fract() != 0.0 &&
+            other.keys.fract() == 0.0 &&
             self.keys == other.keys as Currency &&
             self.weapons == weapons
         } else {
             false
+        }
+    }
+}
+
+impl PartialOrd for Currencies {
+    fn partial_cmp(&self, other: &Currencies) -> Option<Ordering> {
+       Some(self.cmp(other))
+    }
+}
+
+impl Ord for Currencies {
+    fn cmp(&self, other:&Self) -> Ordering {
+        if self.keys > other.keys {
+            Ordering::Greater
+        } else if self.keys < other.keys {
+            Ordering::Less
+        } else if self.weapons > other.weapons {
+            Ordering::Greater
+        } else if self.weapons < other.weapons {
+            Ordering::Less
+        } else {
+            Ordering::Equal
         }
     }
 }
@@ -480,7 +488,7 @@ impl TryFrom<&String> for Currencies {
     type Error = ParseError;
     
     fn try_from(string: &String) -> Result<Self, Self::Error> {
-        string.parse::<Self>()
+        Self::try_from(string.as_str())
     }
 }
 
@@ -488,7 +496,7 @@ impl TryFrom<String> for Currencies {
     type Error = ParseError;
     
     fn try_from(string: String) -> Result<Self, Self::Error> {
-        string.parse::<Self>()
+        Self::try_from(string.as_str())
     }
 }
 
@@ -516,6 +524,7 @@ impl std::str::FromStr for Currencies {
 impl TryFrom<FloatCurrencies> for Currencies {
     type Error = TryFromFloatCurrenciesError;
     
+    #[inline]
     fn try_from(currencies: FloatCurrencies) -> Result<Self, Self::Error> {
         if currencies.keys.fract() != 0.0 {
             return Err(TryFromFloatCurrenciesError::Fractional {
@@ -539,14 +548,15 @@ impl TryFrom<FloatCurrencies> for Currencies {
     }
 }
 
-/// Converts [`FloatCurrencies`] to [`Currencies`].
-/// 
-/// # Errors
-/// - [`FloatCurrencies`] contains a fractional key value.
-/// - [`FloatCurrencies`] contains a value that is out of bounds.
 impl TryFrom<&FloatCurrencies> for Currencies {
     type Error = TryFromFloatCurrenciesError;
     
+    /// Converts [`FloatCurrencies`] to [`Currencies`].
+    /// 
+    /// # Errors
+    /// - [`FloatCurrencies`] contains a fractional key value.
+    /// - [`FloatCurrencies`] contains a value that is out of bounds.
+    #[inline]
     fn try_from(currencies: &FloatCurrencies) -> Result<Self, Self::Error> {
         Self::try_from(*currencies)
     }

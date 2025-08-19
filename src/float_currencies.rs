@@ -64,6 +64,7 @@ impl Eq for FloatCurrencies {}
 
 impl FloatCurrencies {
     /// Creates a new [`FloatCurrencies`].
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
@@ -86,6 +87,7 @@ impl FloatCurrencies {
     /// // 1.0 * 50 refined + 5 refined = 55 refined
     /// assert_eq!(currencies.to_weapons(key_price_weapons), ref_to_weps!(55));
     /// ```
+    #[inline]
     pub fn to_weapons(
         &self,
         key_price_weapons: Currency,
@@ -116,6 +118,7 @@ impl FloatCurrencies {
     /// 
     /// assert!(currencies.checked_to_weapons(key_price_weapons).is_none());
     /// ```
+    #[inline]
     pub fn checked_to_weapons(
         &self,
         key_price_weapons: Currency,
@@ -139,6 +142,7 @@ impl FloatCurrencies {
     /// currencies.keys = 1.0;
     /// assert!(!currencies.is_empty());
     /// ```
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.keys == 0.0 && self.metal == 0.0
     }
@@ -166,6 +170,7 @@ impl FloatCurrencies {
     ///     metal: 100.0,
     /// }));
     /// ```
+    #[inline]
     pub fn can_afford(&self, other: &Self) -> bool {
         self.keys >= other.keys && self.metal >= other.metal
     }
@@ -333,6 +338,7 @@ impl std::str::FromStr for FloatCurrencies {
 }
 
 impl From<Currencies> for FloatCurrencies {
+    #[inline]
     fn from(currencies: Currencies) -> Self {
         Self {
             keys: currencies.keys as f32,
@@ -342,11 +348,9 @@ impl From<Currencies> for FloatCurrencies {
 }
 
 impl From<&Currencies> for FloatCurrencies {
+    #[inline]
     fn from(currencies: &Currencies) -> Self {
-        Self {
-            keys: currencies.keys as f32,
-            metal: helpers::get_metal_float_from_weapons(currencies.weapons),
-        }
+        Self::from(*currencies)
     }
 }
 

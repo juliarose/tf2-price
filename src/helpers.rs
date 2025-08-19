@@ -5,6 +5,7 @@ use crate::Rounding;
 
 /// Converts currencies to a metal value using the given key price (represented as weapons). This
 /// method is saturating.
+#[inline(always)]
 pub fn to_metal(
     metal: Currency,
     keys: Currency,
@@ -16,6 +17,7 @@ pub fn to_metal(
 /// Converts currencies to a metal value using the given key price (represented as weapons).
 /// In cases where the result overflows or underflows beyond the limit for [`Currency`], `None`
 /// is returned.
+#[inline(always)]
 pub fn checked_to_metal(
     metal: Currency,
     keys: Currency,
@@ -88,13 +90,13 @@ pub fn get_weapons_from_metal_float(value: f32) -> Currency {
 /// ```
 /// assert_eq!(tf2_price::checked_get_weapons_from_metal_float(0.33), Some(6));
 /// ```
+#[inline]
 pub fn checked_get_weapons_from_metal_float(value: f32) -> Option<Currency> {
-    let metal = (value * ONE_REF_FLOAT).round();
-    
-    strict_f32_to_currency(metal)
+    strict_f32_to_currency((value * ONE_REF_FLOAT).round())
 }
 
 /// Converts an `f32` into a `Currency` safely.
+#[inline]
 pub fn strict_f32_to_currency(value: f32) -> Option<Currency> {
     // We don't want to allow NaN or infinite values.
     if value.is_nan() || value.is_infinite() {
