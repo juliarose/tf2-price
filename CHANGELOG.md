@@ -18,6 +18,7 @@
 - 20% and 45% performance optimizations for `Display` impls for `Currencies` and `FloatCurrencies`, respectively.
 - `round` method would mutate the original currencies, this is no longer the case.
 - Deserializing will now result in an error if both `keys` and `metal` are missing.
+- `ParseError` is now more descriptive and returns the position in the string where an error occurred for `UnexpectedToken` and `InvalidCurrencyName`.
 
 ### Removed
 - `refined!`, `reclaimed!`, and `scrap!` macros. Use `ONE_REF`, `ONE_REC`, and `ONE_SCRAP` constants instead.

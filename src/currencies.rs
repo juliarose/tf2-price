@@ -1034,6 +1034,13 @@ mod tests {
     }
     
     #[test]
+    fn formats_empty_currencies() {
+        let currencies = Currencies::new();
+        
+        assert_eq!(format!("{currencies}"), "0 keys, 0 ref");
+    }
+    
+    #[test]
     fn formats_currencies_singular() {
         let currencies = Currencies {
             keys: 1,
