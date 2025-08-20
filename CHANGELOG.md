@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.14.0 (2025-08-06)
+## 0.14.0 (2025-08-20)
 
 ### Added
 - `Hash` and `Default` derives for `Rounding`.
